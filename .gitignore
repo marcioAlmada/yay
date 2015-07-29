@@ -1,0 +1,9 @@
+composer.lock
+tmp/
+vendor/
+tests/*/*.diff
+tests/*/*.out
+tests/*/*.php
+tests/*/*.exp
+tests/*/*.log
+tests/*/*.sh

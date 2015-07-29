@@ -1,0 +1,31 @@
+{
+    "name": "yay/yay",
+    "description": "A high level PHP Pre-Processor",
+    "license": "MIT",
+    "keywords": [
+        "pre-processor",
+        "language",
+        "syntax"
+    ],
+    "authors": [
+        {
+            "name": "Márcio Almada",
+            "email": "marcio3w@gmail.com",
+            "homepage": "https://github.com/marcioAlmada"
+        }
+    ],
+    "require": {
+        "php" : "7.*",
+        "ext-mbstring" : "*",
+        "ext-tokenizer": "*",
+        "igorw/get-in": "~1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Yay\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/yay"
+    ]
+}
