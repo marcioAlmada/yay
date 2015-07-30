@@ -1,0 +1,10 @@
+--TEST--
+Bad token types
+--FILE--
+<?php
+
+ignore { T_HAKUNAMATATA·foo };
+
+?>
+--EXPECTF--
+Undefined token type 'T_HAKUNAMATATA' on line 3.

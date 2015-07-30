@@ -1,0 +1,15 @@
+--TEST--
+Comments, comments everywhere.
+--FILE--
+<?php
+
+ignore {
+    /**/
+    #
+    //
+}
+
+?>
+--EXPECTF--
+
+Empty ignore pattern on line 3.

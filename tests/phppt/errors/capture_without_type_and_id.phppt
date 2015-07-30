@@ -1,0 +1,14 @@
+--TEST--
+Bad macro identifier
+--FILE--
+<?php
+
+macro {
+    · foo
+} >> {
+    _
+}
+
+?>
+--EXPECTF--
+Bad macro capture identifier '·' on line 4.
