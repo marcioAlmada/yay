@@ -21,6 +21,9 @@
         "igorw/get-in": "~1.0"
     },
     "autoload": {
+        "files": [
+            "src/parsers.php"
+        ],
         "psr-4": {
             "Yay\\": "src/"
         }
