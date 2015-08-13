@@ -1,0 +1,18 @@
+#!/usr/bin/env php 
+<?php declare(strict_types=1);
+
+include __DIR__ . '/../vendor/autoload.php';
+
+$file = $argv[1] ?? '';
+
+try {
+    $source = @file_get_contents($file);
+
+    if ($source === false)
+        throw new InvalidArgumentException("File '{$file}' not found'.");
+
+    file_put_contents('php://stdout', parse($source));;
+}
+catch (Exception $e) {
+    file_put_contents('php://stderr', $e . PHP_EOL);
+}
