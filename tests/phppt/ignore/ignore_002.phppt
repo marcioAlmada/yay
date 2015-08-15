@@ -1,0 +1,21 @@
+--TEST--
+Ignore should not become a reserved word
+--FILE--
+<?php
+
+function ignore(){}
+
+ignore { ignore };
+ignore { @ };
+
+@ignore();
+
+?>
+--EXPECTF--
+<?php
+
+function ignore(){}
+
+();
+
+?>

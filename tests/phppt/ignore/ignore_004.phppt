@@ -1,0 +1,34 @@
+--TEST--
+Ignore with a token sequence
+--FILE--
+<?php
+
+ignore { $foo->bar->baz; };
+
+ignore { DEBUG {···} };
+
+$foo->bar;
+
+$foo->bar->baz; // match
+
+$foo->/**/bar->/**/baz; // match
+
+DEBUG {
+    log('debug!');
+}
+
+DEBUG();
+
+?>
+--EXPECTF--
+<?php
+
+$foo->bar;
+
+// match
+
+// match
+
+DEBUG();
+
+?>

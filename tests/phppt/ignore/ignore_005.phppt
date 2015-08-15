@@ -1,0 +1,20 @@
+--TEST--
+Comments, comments everywhere.
+--FILE--
+<?php
+
+ignore { @ T_STRING· ; };
+
+@foo;
+
+@ /**/ bar /**/;
+
+@
+    baz
+            ;
+
+?>
+--EXPECTF--
+<?php
+
+?>
