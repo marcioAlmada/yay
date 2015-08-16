@@ -1,5 +1,5 @@
 --TEST--
-Proof of concept backport of enums, from future to to 7.0
+Proof of concept backport of enums from future
 --FILE--
 <?php
 

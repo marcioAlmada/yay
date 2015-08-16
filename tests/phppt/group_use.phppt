@@ -5,40 +5,23 @@ A proof of concept polyfill for group use (not intended to be fully featured)
 
 macro {
     use ·ns()·base \ {
-        ·ls
-        (
-            ·chain
-            (
-                ·optional
-                (
-                    ·either
-                    (
-                        const
-                        ,
-                        function
-                    )
-                )
-                ·type
+        ·ls(
+            ·chain(
+                ·optional(·either(const, function))·type
                 ,
                 ·ns()·entry
                 ,
-                ·optional
-                (
-                    ·chain
-                    (
+                ·optional(
+                    ·chain(
                         as
                         ,
                         ·indentation()
                         ,
-                        ·commit
-                        (
-                            T_STRING
-                        )
+                        ·commit(T_STRING)
                     )
                 )
                 ·alias
-            )
-            ,
+            ),
             ','
         )
         ·entries
