@@ -1,0 +1,48 @@
+--TEST--
+Guards
+--FILE--
+<?php
+
+class FlowError extends \Error {}
+
+macro { UNREACHABLE() } >> {
+    throw new \FlowError('Unreachable point reached.')
+}
+
+macro { UNREACHABLE (T_CONSTANT_ENCAPSED_STRING·message) } >> {
+    throw new \FlowError(T_CONSTANT_ENCAPSED_STRING·message)
+}
+
+$var = '?';
+
+switch ($var) {
+    case '@' : 
+        return true;
+    case '!' :
+        return false;
+    default:
+        UNREACHABLE();
+}
+
+UNREACHABLE('Error message.');
+
+?>
+--EXPECTF--
+<?php
+
+class FlowError extends \Error {}
+
+$var = '?';
+
+switch ($var) {
+    case '@' : 
+        return true;
+    case '!' :
+        return false;
+    default:
+        throw new \FlowError('Unreachable point reached.');
+}
+
+throw new \FlowError('Error message.');
+
+?>

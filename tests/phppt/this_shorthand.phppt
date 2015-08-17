@@ -1,0 +1,62 @@
+--TEST--
+This shorthand $->
+--FILE--
+<?php
+
+macro { $ } >> { $this }
+
+class foo
+{
+    private $bar = 'bar';
+
+    function bar() : string {
+        return $->bar;
+    }
+
+    function baz() : string {
+        return $->bar();
+    }
+
+    function this() : self {
+        return $;
+    }
+
+    function __toString() {
+        return "{$->bar}";
+    }
+}
+
+$foo = new foo;
+var_dumo($foo->bar());
+var_dumo($foo->baz());
+
+?>
+--EXPECTF--
+<?php
+
+class foo
+{
+    private $bar = 'bar';
+
+    function bar() : string {
+        return $this->bar;
+    }
+
+    function baz() : string {
+        return $this->bar();
+    }
+
+    function this() : self {
+        return $this;
+    }
+
+    function __toString() {
+        return "{$this->bar}";
+    }
+}
+
+$foo = new foo;
+var_dumo($foo->bar());
+var_dumo($foo->baz());
+
+?>

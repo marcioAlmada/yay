@@ -1,0 +1,75 @@
+--TEST--
+Proof of concept backport of enums, from future to to 7.0
+--FILE--
+<?php
+
+macro {
+    enum T_STRING·name {
+        ·ls
+        (
+            ·rtoken('/^\w+$/')·field
+            ,
+            ','
+        )
+        ·fields
+    }
+} >> {
+    final class T_STRING·name {
+        private static $store;
+
+        private function __construct(){}
+
+        function __(string $field) : self {
+            if(! self::$store) {
+                self::$store = new \stdclass;
+                ·fields ··· {
+                    self::$store->·field = new class extends T_STRING·name {};
+                }
+            }
+
+            if (! $field = self::$store->$field ?? false)
+                throw new \Exception(
+                    "Undefined enum field " . __CLASS__ . "->{$field}.");
+        }
+    }
+}
+
+macro { \T_STRING·enum->T_STRING·field } >> { \T_STRING·enum::__(@T_STRING·field) }
+
+enum Fruits {
+    Apple,
+    Orange
+}
+
+var_dump(\Fruits->Orange <=> \Fruits->Apple);
+
+$a->b->c->d;
+
+?>
+--EXPECTF--
+<?php
+
+final class Fruits {
+        private static $store;
+
+        private function __construct(){}
+
+        function __(string $field) : self {
+            if(! self::$store) {
+                self::$store = new \stdclass;
+                self::$store->Apple = new class extends Fruits {};
+                self::$store->Orange = new class extends Fruits {};
+                
+            }
+
+            if (! $field = self::$store->$field ?? false)
+                throw new \Exception(
+                    "Undefined enum field " . __CLASS__ . "->{$field}.");
+        }
+    }
+
+var_dump(\Fruits::__(@Orange) <=> \Fruits::__(@Apple));
+
+$a->b->c->d;
+
+?>

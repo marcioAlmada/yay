@@ -1,0 +1,66 @@
+--TEST--
+Proof of concept inlined generics
+--FILE--
+<?php
+
+macro {
+    /** generic queue macro */
+    Queue < T_STRING·type >
+
+} >> {
+
+    class {
+        private $queue = [];
+
+        function push(T_STRING·type $item) {
+            $this->queue[] = $item;
+        }
+
+        function pop() T_STRING·type {
+            return end($this->queue);
+        }
+    }
+}
+
+new Queue
+    <
+    stdclass
+>;
+
+$queue = new Queue<stdclass>;
+
+$queue->push(new stdclass);
+$queue->push(new ArrayObject);
+
+?>
+--EXPECTF--
+<?php
+
+new class {
+        private $queue = [];
+
+        function push(stdclass $item) {
+            $this->queue[] = $item;
+        }
+
+        function pop() stdclass {
+            return end($this->queue);
+        }
+    };
+
+$queue = new class {
+        private $queue = [];
+
+        function push(stdclass $item) {
+            $this->queue[] = $item;
+        }
+
+        function pop() stdclass {
+            return end($this->queue);
+        }
+    };
+
+$queue->push(new stdclass);
+$queue->push(new ArrayObject);
+
+?>
