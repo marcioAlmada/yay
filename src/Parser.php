@@ -48,7 +48,7 @@ abstract class Parser {
             $index = $ts->index();
             $this->onTry && ($this->onTry)();
             $result = $this->parser($ts, ...$this->stack);
-        } 
+        }
         catch(Halt $e) {
             $ts->jump($index);
 

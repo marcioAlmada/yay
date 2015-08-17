@@ -42,7 +42,7 @@ class SpecsTest extends \PHPUnit_Framework_TestCase
         } catch(\Exception $e) {
             $test->dump();
 
-            throw $e;   
+            throw $e;
         }
 
         $this->assertNotEquals(Test::BORKED, $test->status(), 'Test borked!');

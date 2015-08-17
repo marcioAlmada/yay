@@ -118,7 +118,7 @@ function indentation()
         {
             return true;
         }
-    };    
+    };
 }
 
 function always($result) : Parser
@@ -465,7 +465,7 @@ function swallow(parser $parser, int $trim = SWALLOW_NO_TRIM) : Parser
                 if ($trim & SWALLOW_DO_TRIM) $ts->skip(T_WHITESPACE);
                 $to = $ts->index();
                 if ($from < $to) $ts->extract($from, $to);
-                
+
                 return (new Ast($parser->label ?: $this->label))->merge($ast);
             }
 
@@ -521,7 +521,7 @@ function optional(parser $parser) : Parser
             $ast = new Ast($parser->label ?: $this->label);
 
             if ($result instanceof ast) $ast->merge($result);
-            
+
             return $ast;
         }
 
