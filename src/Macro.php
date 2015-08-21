@@ -57,7 +57,7 @@ class Macro extends Directive {
         (
             either
             (
-                rtoken('/^(T_[_\w]+)·(\w+)$/')
+                rtoken('/^(T_\w+)·(\w+)$/')
                     ->onCommit(function(Ast $result) {
                         $token = $result->token();
                         $id = $this->lookupCapture($token);
@@ -86,7 +86,7 @@ class Macro extends Directive {
                                     ,
                                     token(T_CONSTANT_ENCAPSED_STRING)
                                     ,
-                                    rtoken('/^(T_[_\w]+)·(\w+)$/')
+                                    rtoken('/^(T_\w+)·(\w+)$/')
                                     ,
                                     rtoken('/^T_\w+$/')
                                     ,
@@ -264,7 +264,7 @@ class Macro extends Directive {
                     $arg = $val;
                 break;
             case T_STRING:
-                if (preg_match('/^(T_[_\w]+)·(\w+)$/', (string) $arg)) {
+                if (preg_match('/^(T_\w+)·(\w+)$/', (string) $arg)) {
                     $id = $this->lookupCapture($arg);
                     $type = $this->lookupTokenType($arg);
                     $arg = token($type)->as($id);
