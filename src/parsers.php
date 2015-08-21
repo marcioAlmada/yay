@@ -100,7 +100,7 @@ function indentation()
     {
         protected function parser(TokenStream $ts) : Result
         {
-            if (($token = $ts->step(-1))->is(T_WHITESPACE)) {
+            if (($token = $ts->step(-1)) && $token->is(T_WHITESPACE)) {
                 $ts->step();
 
                 return new Ast($this->label, $token);
