@@ -86,6 +86,8 @@ class Macro extends Directive {
                                     ,
                                     token(T_CONSTANT_ENCAPSED_STRING)
                                     ,
+                                    rtoken('/^(T_[_\w]+)·(\w+)$/')
+                                    ,
                                     rtoken('/^T_\w+$/')
                                     ,
                                     rtoken('/^\w+$/')
@@ -262,7 +264,14 @@ class Macro extends Directive {
                     $arg = $val;
                 break;
             case T_STRING:
-                $arg = token($this->lookupTokenType($arg));
+                if (preg_match('/^(T_[_\w]+)·(\w+)$/', (string) $arg)) {
+                    $id = $this->lookupCapture($arg);
+                    $type = $this->lookupTokenType($arg);
+                    $arg = token($type)->as($id);
+                }
+                else {
+                    $arg = token($this->lookupTokenType($arg));
+                }
                 break;
             default: // non T_STRING wordy token
                 $arg = token($arg->type());
