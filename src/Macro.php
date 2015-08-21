@@ -113,17 +113,22 @@ class Macro extends Directive {
                     $this->parsers[] = $this->compileParser($result->array());
                 })
                 ,
+                // handles {···layer}
                 $this->layer('{', '}', braces())
                 ,
+                // handles [···layer]
                 $this->layer('[', ']', brackets())
                 ,
+                // handles (···layer)
                 $this->layer('(', ')', parentheses())
                 ,
-                // TODO non delimited layer ↓
-                // rtoken('/^···(\w+)$/')
-                //     ->onCommit(function(Ast $result) {
-                //     })
-                // ,
+                // handles  non delimited ···layer
+                rtoken('/^···(\w+)$/')
+                    ->onCommit(function(Ast $result) {
+                        $id = $this->lookupCapture($result->token());
+                        $this->parsers[] = layer()->as($id);
+                    })
+                ,
                 swallow
                 (
                     rtoken('/^··$/')
@@ -168,7 +173,7 @@ class Macro extends Directive {
             (
                 chain
                 (
-                    rtoken('/^·\w+$/')->as('label')
+                    rtoken('/^·\w+|···\w+$/')->as('label')
                     ,
                     operator('···')
                     ,
@@ -293,7 +298,7 @@ class Macro extends Directive {
                 (
                     chain
                     (
-                        rtoken('/^·\w+$/')->as('label')
+                        rtoken('/^·\w+|···\w+$/')->as('label')
                         ,
                         operator('···')
                         ,
