@@ -647,7 +647,7 @@ function ls(parser $parser, parser $delimiter) : Parser
 
 function future(&$parser) : Parser
 {
-    $delayed = function() use(&$parser) : parser { return $parser; };
+    $delayed = function() use(&$parser) : parser { return clone $parser; };
 
     return new class(__FUNCTION__, $delayed) extends Parser
     {

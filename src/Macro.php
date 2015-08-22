@@ -66,7 +66,6 @@ class Macro extends Directive {
                     })
                 ,
                 (
-                    clone
                     $parser = chain
                     (
                         rtoken('/^·\w+$/')->as('parser_type')
