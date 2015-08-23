@@ -41,13 +41,16 @@ class Macro extends Directive {
     }
 
     function apply(TokenStream $ts) {
+        $from = $ts->index();
         $crossover = $this->pattern->parse($ts);
-
-        if (! ($crossover instanceof ast) || $crossover->isEmpty()) return;
-
-        $expansion = $this->mutate($this->expansion, $crossover);
-        $ts->inject($expansion);
-        $ts->step(-1);
+        if ($crossover instanceof ast && ! $crossover->isEmpty()) {
+            $ts->unskip(TokenStream::SKIPPABLE);
+            $to = $ts->index();
+            $ts->extract($from, $to);
+            $expansion = $this->mutate($this->expansion, $crossover);
+            $ts->inject($expansion);
+            $ts->step(-1);
+        }
     }
 
     private function compilePattern(int $line, array $pattern) : parser {
@@ -157,7 +160,7 @@ class Macro extends Directive {
         //         throw new YayException(
         //             "Unmatched pair of '{$chars}' on macro '{$pattern}'.");
 
-        return optional(swallow(chain(...$this->parsers)));
+        return chain(...$this->parsers);
     }
 
     private function compileExpansion(int $line, array $expansion) : TokenStream {
