@@ -5,18 +5,18 @@ Proof of concept inlined generics
 
 macro {
     /** generic queue macro */
-    Queue < T_STRING·type >
+    Queue < ·ns()·name >
 
 } >> {
 
     class {
         private $queue = [];
 
-        function push(T_STRING·type $item) {
+        function push(·name $item) {
             $this->queue[] = $item;
         }
 
-        function pop() T_STRING·type {
+        function pop() : ·name {
             return end($this->queue);
         }
     }
@@ -32,6 +32,8 @@ $queue = new Queue<stdclass>;
 $queue->push(new stdclass);
 $queue->push(new ArrayObject);
 
+$queue = new Queue<\Some\Full\Qualified\ClassName>;
+
 ?>
 --EXPECTF--
 <?php
@@ -43,7 +45,7 @@ new class {
             $this->queue[] = $item;
         }
 
-        function pop() stdclass {
+        function pop() : stdclass {
             return end($this->queue);
         }
     };
@@ -55,12 +57,24 @@ $queue = new class {
             $this->queue[] = $item;
         }
 
-        function pop() stdclass {
+        function pop() : stdclass {
             return end($this->queue);
         }
     };
 
 $queue->push(new stdclass);
 $queue->push(new ArrayObject);
+
+$queue = new class {
+        private $queue = [];
+
+        function push(\Some\Full\Qualified\ClassName $item) {
+            $this->queue[] = $item;
+        }
+
+        function pop() : \Some\Full\Qualified\ClassName {
+            return end($this->queue);
+        }
+    };
 
 ?>
