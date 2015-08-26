@@ -16,7 +16,7 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($ts->step()->is(T_WHITESPACE));
         $this->assertTrue($ts->step()->is(T_DOUBLE_COLON));
         $this->assertTrue($ts->step()->is(T_WHITESPACE));
-        $this->assertFalse($ts->step());
+        $this->assertNull($ts->step());
     }
 
     function testNext() {
@@ -24,7 +24,7 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($ts->next()->is(':'));
         $this->assertTrue($ts->next()->is(T_DOUBLE_COLON));
-        $this->assertFalse($ts->next());
+        $this->assertNull($ts->next());
     }
 
     function providerForTestLoop() {
@@ -40,7 +40,7 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
      */
     function testLoop(TokenStream $ts) {
         while($ts->next());
-        $this->assertFalse($ts->current(), 'EOF was not reach.');
+        $this->assertNull($ts->current(), 'EOF was not reach.');
     }
 
     function testClone() {

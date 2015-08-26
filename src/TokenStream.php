@@ -6,13 +6,6 @@ use
     InvalidArgumentException
 ;
 
-use function
-    array_shift as shift,
-    array_pop as pop,
-    array_splice as splice,
-    array_map as map
-;
-
 class TokenStream {
 
     const
@@ -34,7 +27,8 @@ class TokenStream {
     }
 
     function __clone() {
-        $this->tokens = map(function($t) { return clone $t; }, $this->tokens);
+        $this->tokens = array_map(
+            function($t) { return clone $t; }, $this->tokens);
     }
 
     function index() : int {
@@ -49,11 +43,11 @@ class TokenStream {
         $this->jump(self::DEFAULT_INDEX);
     }
 
-    function current() /* : Token|bool */ {
-        return $this->tokens[$this->index()] ?? false;
+    function current() /* : Token|null */ {
+        return $this->tokens[$this->index()] ?? null;
     }
 
-    function step($step = 1) /* : Token|bool */ {
+    function step($step = 1) /* : Token|null */ {
         $this->jump($this->index() + $step);
 
         return $this->current();
@@ -72,7 +66,7 @@ class TokenStream {
         return $this->current();
     }
 
-    function next() /* : Token|bool */ {
+    function next() /* : Token|null */ {
         $this->step();
         $this->skip(...self::SKIPPABLE);
 
@@ -84,8 +78,8 @@ class TokenStream {
     }
 
     function trim() {
-        while (reset($this->tokens)->is(T_WHITESPACE)) shift($this->tokens);
-        while (end($this->tokens)->is(T_WHITESPACE)) pop($this->tokens);
+        while (reset($this->tokens)->is(T_WHITESPACE)) array_shift($this->tokens);
+        while (end($this->tokens)->is(T_WHITESPACE)) array_pop($this->tokens);
     }
 
     function extract(int $from, int $to) : self {
@@ -95,12 +89,13 @@ class TokenStream {
 
         $this->jump($from);
 
-        return self::fromSlice(splice($this->tokens, $from, ($to - $from)));
+        return self::fromSlice(
+            array_splice($this->tokens, $from, ($to - $from)));
     }
 
     function inject(self $tokens) {
         if ($tokens->tokens)
-            splice($this->tokens, $this->index(), 0, $tokens->tokens);
+            array_splice($this->tokens, $this->index(), 0, $tokens->tokens);
     }
 
     function append(self $ts) {
