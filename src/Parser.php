@@ -27,8 +27,6 @@ abstract class Parser {
     {
         $this->type = $type;
         $this->stack = $stack;
-        $this->onTry = null;
-        $this->onCommit = null;
     }
 
     final function __debugInfo()
@@ -46,7 +44,7 @@ abstract class Parser {
     {
         try {
             $index = $ts->index();
-            $this->onTry && ($this->onTry)();
+            if ($this->onTry) ($this->onTry)();
             $result = $this->parser($ts, ...$this->stack);
         }
         catch(Halt $e) {
@@ -55,8 +53,9 @@ abstract class Parser {
             throw $e;
         }
 
-        if ($result instanceof Ast)
-            $this->onCommit && ($this->onCommit)($result);
+        if ($result instanceof Ast) {
+            if ($this->onCommit) ($this->onCommit)($result);
+        }
         else
             $ts->jump($index);
 
@@ -98,18 +97,8 @@ abstract class Parser {
         return $this->type === $type;
     }
 
-    final protected function error(TokenStream $ts, string $message = null)
+    final protected function error(TokenStream $ts)
     {
-        $token = $ts->current() ?: $ts->last();
-        $e = new Error(
-            $this->expected(),
-            ($message ?:
-                ($ts->current()
-                    ? $token->dump()
-                    : "end at {$ts->last()->dump()}"))
-            . " on line {$token->line()}"
-        );
-
-        return $e;
+        return new Error($this->expected(), $ts->current(), $ts->last());
     }
 }

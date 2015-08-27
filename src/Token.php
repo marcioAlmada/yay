@@ -34,9 +34,8 @@ class Token implements \JsonSerializable {
     ;
 
     function __construct($type, string $value = null, int $line = null) {
-        if (! is_scalar($type)) {
+        if (! is_scalar($type))
             throw new YayException("Token type must be int or string.");
-        }
 
         if (is_string($type)) {
             if(1 !== mb_strlen($type))
@@ -63,10 +62,6 @@ class Token implements \JsonSerializable {
         $name = $this->name();
 
         return $this->literal ? "'{$name}'" : "{$name}({$this->value})";
-    }
-
-    function mutate(self $proto) {
-        list($this->type, $this->value) = [$proto->type, $proto->value];
     }
 
     function is(/* string|int */ ...$types): bool {

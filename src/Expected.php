@@ -6,7 +6,7 @@ class Expected {
 
     protected $tokens;
 
-    function __construct(token ...$tokens) {
+    function __construct(Token ...$tokens) {
         $this->tokens = $tokens;
     }
 
