@@ -73,7 +73,11 @@ class Token implements \JsonSerializable {
     }
 
     function equals(self $token): bool {
-        return ($this->is($token->type) && $this->contains($token->value));
+        return
+            // inlined $this->is()
+            ($this->type === $token->type &&
+                // inlined $this->contains()
+                ($token->value === null ?: $this->value === $token->value));
     }
 
     function name(): string {
