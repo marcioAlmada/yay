@@ -12,20 +12,36 @@ function token($type, $value = null) : Parser
 
     return new class(__FUNCTION__, $token) extends Parser
     {
-        function parser(TokenStream $ts, Token $expected) : Result
-        {
-            if (($token = $ts->current()) && $token->equals($expected)) {
-                $ts->next();
+        private $expected;
 
-                return new Ast($this->label, $token);
+        function __construct($type, $token)
+        {
+            $this->type = $type;
+            $this->stack = [$token];
+            $this->expected = new Expected($token);
+        }
+
+        final function parse(TokenStream $ts) : Result
+        {
+            $index = $ts->index();
+            if ($this->onTry) ($this->onTry)();
+
+            if (($token = $ts->current()) && $token->equals($this->stack[0])) {
+                $ts->next();
+                $result = new Ast($this->label, $token);
+                if ($this->onCommit) ($this->onCommit)($result);
+            }
+            else {
+                $result = new Error($this->expected, $token, $ts->last());
+                $ts->jump($index);
             }
 
-            return $this->error($ts);
+            return $result;
         }
 
         function expected() : Expected
         {
-            return new Expected($this->stack[0]);
+            return $this->expected;
         }
 
         function isFallible() : bool

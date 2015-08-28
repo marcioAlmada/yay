@@ -40,7 +40,7 @@ abstract class Parser {
         $this->onCommit = null;
     }
 
-    final function parse(TokenStream $ts) : Result
+    function parse(TokenStream $ts) : Result
     {
         try {
             $index = $ts->index();
