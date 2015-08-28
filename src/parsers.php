@@ -127,7 +127,7 @@ function always(Token $result) : Parser
     {
         protected function parser(TokenStream $ts, Token $result) : Result
         {
-            return new Ast($this->label, [$this->label ?: 0 => $result]);
+            return new Ast($this->label, [($this->label ?: 0) => clone $result]);
         }
 
         function expected() : Expected
@@ -148,6 +148,7 @@ function operator(string $operator) : Parser
     {
         protected function parser(TokenStream $ts, string $operator) : Result
         {
+            $index = $ts->index();
             $max = mb_strlen($operator);
             $buffer = '';
 
@@ -161,7 +162,9 @@ function operator(string $operator) : Parser
                 }
             }
 
-            return $this->error($ts, "'{$buffer}'");
+            $ts->jump($index);
+
+            return $this->error($ts);
         }
 
         function expected() : Expected
@@ -362,11 +365,14 @@ function chain(Parser ...$links) : Parser
                     $ast->append($result);
                 }
                 else {
-                    while ($i-- && $links[$i]->is(optional::class) && ! $asts[$i]->isEmpty()) {
-                       $result->push($links[$i]->error($ts));
+                    $error = $result;
+                    while (--$i >= 0 && $links[$i]->is(optional::class)) {
+                        $lastest = $error;
+                        $error = $links[$i]->error($ts);
+                        $error->with($lastest);
                     }
 
-                    return $result;
+                    return $error;
                 }
             }
 
@@ -412,17 +418,13 @@ function either(Parser ...$routes) : Parser
         protected function parser(TokenStream $ts, Parser ...$routes) : Result
         {
             $errors = [];
+            foreach ($routes as $route) {
+                if (($result = $route->parse($ts)) instanceof ast) return $result;
+                if ($errors) end($errors)->with($result);
+                $errors[] = $result;
+            }
 
-            foreach ($routes as $route)
-                if(($result = $route->parse($ts)) instanceof ast)
-                    return $result;
-                else
-                    $errors[] = $result;
-
-            $error = array_shift($errors);
-            foreach ($errors as $f) $error->push($f);
-
-            return $error;
+            return reset($errors);
         }
 
         function expected() : Expected

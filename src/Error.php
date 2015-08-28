@@ -5,32 +5,55 @@ namespace Yay;
 class Error implements Result {
 
     const
-        UNEXPECTED_TOKEN = "Unexpected %s, expected %s."
+        UNEXPECTED = "Unexpected %s on line %d, ",
+        UNEXPECTED_END = "Unexpected end at %s on line %d, ",
+        EXPECTED = "expected %s."
     ;
 
     protected
-        $stack = [],
+        $expected,
         $unexpected,
-        $expected
+        $last,
+        /**
+         * Points to another Error in case there is a list of errors
+         *
+         * @var self|null
+         */
+        $and
     ;
 
-    function __construct(Expected $expected, string $unexpected) {
+    function __construct(Expected $expected = null, Token $unexpected = null, Token $last) {
         $this->expected = $expected;
         $this->unexpected = $unexpected;
-        $this->push($this);
+        $this->last = $last;
     }
 
-    function push(self $e) {
-        foreach ($e->expected->all() as $token)
-            $this->stack[$e->unexpected][] = $token;
+    function with(self $e) {
+        $this->and = $e;
     }
 
     function message() : string {
+        $errors = [];
+        $error = $this;
+        while($error) {
+            $unexpected = ($error->unexpected ?: $error->last);
+            $prefix = sprintf(
+                $error->unexpected ? self::UNEXPECTED : self::UNEXPECTED_END,
+                $unexpected->dump(),
+                $unexpected->line()
+            );
+            if (isset($errors[$prefix]))
+                $errors[$prefix]->append($error->expected);
+            else
+                $errors[$prefix] = $error->expected;
+
+            $error = $error->and;
+        }
+
         $messages = [];
-        foreach ($this->stack as $unexpected => $expected) {
-            $messages[] = sprintf(
-                self::UNEXPECTED_TOKEN,
-                $unexpected,
+        foreach ($errors as $prefix => $expected) {
+            $messages[] = $prefix . sprintf(
+                self::EXPECTED,
                 implode(
                     ' or ',
                     array_unique(
@@ -38,7 +61,7 @@ class Error implements Result {
                             function(Token $t) {
                                 return $t->dump();
                             },
-                            $expected
+                            $expected->all()
                         )
                     )
                 )

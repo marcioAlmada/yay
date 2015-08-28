@@ -184,7 +184,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseError(
             $ts,
             operator('<~>'),
-            "Unexpected '< ~>' on line 1, expected OPERATOR(<~>)."
+            "Unexpected '<' on line 1, expected OPERATOR(<~>)."
         );
     }
 
@@ -304,6 +304,23 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                 token(T_LNUMBER, '3')
             ),
             "Unexpected '~' on line 1, expected T_LNUMBER(1)."
+        );
+    }
+
+    function testChainOnFailureWithOptionals() {
+        $ts = TokenStream::fromSource("<?php ~ 1 2 3");
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+
+        $this->parseError(
+            $ts,
+            chain(
+                optional(token('+')),
+                optional(token('-')),
+                token(T_LNUMBER, '1'),
+                token(T_LNUMBER, '2'),
+                token(T_LNUMBER, '3')
+            ),
+            "Unexpected '~' on line 1, expected '+' or '-' or T_LNUMBER(1)."
         );
     }
 
@@ -566,6 +583,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->assertRaytrace("';'", optional(token(';')));
         $this->assertRaytrace("'?'", repeat(token('?')));
         $this->assertRaytrace("'!'", chain(token('!'), token('.')));
+        $this->assertRaytrace("'!' | '.'", chain(optional(token('!')), token('.')));
         $this->assertRaytrace("'!' | '.'", either(token('!'), token('.')));
         $this->assertRaytrace("'{'", between(token('{'), token(T_STRING), token('}')));
         $this->assertRaytrace("'{' | T_STRING()", between(optional(token('{')), token(T_STRING), token('}')));
