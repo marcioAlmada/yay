@@ -46,9 +46,8 @@ class Macro extends Directive {
         if ($crossover instanceof ast && ! $crossover->isEmpty()) {
             $ts->unskip(TokenStream::SKIPPABLE);
             $to = $ts->index();
-            $ts->extract($from, $to);
             $expansion = $this->mutate($this->expansion, $crossover);
-            $ts->inject($expansion);
+            $ts->inject($expansion, $from, $to);
             $ts->step(-1);
         }
     }

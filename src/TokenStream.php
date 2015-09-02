@@ -44,11 +44,11 @@ class TokenStream {
     }
 
     function current() /* : Token|null */ {
-        return $this->tokens[$this->index()] ?? null;
+        return $this->tokens[$this->index] ?? null;
     }
 
     function step($step = 1) /* : Token|null */ {
-        $this->jump($this->index() + $step);
+        $this->jump($this->index + $step);
 
         return $this->current();
     }
@@ -82,20 +82,29 @@ class TokenStream {
         while (end($this->tokens)->is(T_WHITESPACE)) array_pop($this->tokens);
     }
 
-    function extract(int $from, int $to) : self {
+    function extract(int $from, int $to) {
+
         if ($from < 0 || $to <= $from)
             throw new InvalidArgumentException(
-                "Invalid stream interval {$from}...{$this->index()}");
+                "Invalid interval {$from}...{$this->index}");
 
         $this->jump($from);
 
-        return self::fromSlice(
-            array_splice($this->tokens, $from, ($to - $from)));
+        array_splice($this->tokens, $from, ($to - $from));
     }
 
-    function inject(self $tokens) {
+    function inject(self $tokens, int $from = 0, int $to = 0) {
+        $from = $from ?: $this->index;
+        $to = $to ?: $from;
+
+        if ($from < 0 || $to < $from)
+            throw new InvalidArgumentException(
+                "Invalid interval {$from}...{$this->index}");
+
+        $this->jump($from);
+
         if ($tokens->tokens)
-            array_splice($this->tokens, $this->index(), 0, $tokens->tokens);
+            array_splice($this->tokens, $from, ($to - $from), $tokens->tokens);
     }
 
     function append(self $ts) {
