@@ -23,7 +23,6 @@ function token($type, $value = null) : Parser
 
         final function parse(TokenStream $ts) : Result
         {
-            $index = $ts->index();
             if ($this->onTry) ($this->onTry)();
 
             if (($token = $ts->current()) && $token->equals($this->stack[0])) {
@@ -33,7 +32,6 @@ function token($type, $value = null) : Parser
             }
             else {
                 $result = new Error($this->expected, $token, $ts->last());
-                $ts->jump($index);
             }
 
             return $result;
