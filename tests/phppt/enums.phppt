@@ -14,12 +14,12 @@ macro {
         ·fields
     }
 } >> {
-    final class T_STRING·name {
+    class T_STRING·name {
         private static $store;
 
         private function __construct(){}
 
-        function __(string $field) : self {
+        static function __(string $field) : self {
             if(! self::$store) {
                 self::$store = new \stdclass;
                 ·fields ··· {
@@ -30,11 +30,13 @@ macro {
             if (! $field = self::$store->$field ?? false)
                 throw new \Exception(
                     "Undefined enum field " . __CLASS__ . "->{$field}.");
+
+            return $field;
         }
     }
 }
 
-macro { \T_STRING·enum->T_STRING·field } >> { \T_STRING·enum::__(@T_STRING·field) }
+macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(T_STRING·field)) }
 
 enum Fruits {
     Apple,
@@ -49,12 +51,12 @@ $a->b->c->d;
 --EXPECTF--
 <?php
 
-final class Fruits {
+class Fruits {
         private static $store;
 
         private function __construct(){}
 
-        function __(string $field) : self {
+        static function __(string $field) : self {
             if(! self::$store) {
                 self::$store = new \stdclass;
                 self::$store->Apple = new class extends Fruits {};
@@ -65,10 +67,12 @@ final class Fruits {
             if (! $field = self::$store->$field ?? false)
                 throw new \Exception(
                     "Undefined enum field " . __CLASS__ . "->{$field}.");
+
+            return $field;
         }
     }
 
-var_dump(\Fruits::__(@Orange) <=> \Fruits::__(@Apple));
+var_dump(\Fruits::__('Orange') <=> \Fruits::__('Apple'));
 
 $a->b->c->d;
 
