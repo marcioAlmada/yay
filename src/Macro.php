@@ -13,10 +13,12 @@ class Macro extends Directive {
     ;
 
     const
-        E_EMPTY_BLOCK = "Empty macro %s on line %d.",
+        E_EMPTY_PATTERN = "Empty macro pattern on line %d.",
+        E_EMPTY_EXPANSION = "Empty macro expansion on line %d.",
         E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
         E_BAD_EXPANSION = "Bad macro expansion identifier '%s' on line %d.",
-        E_BAD_PARSER = "Bad macro parser identifier '%s' on line %d.",
+        E_PARSER = "Bad macro parser identifier '%s' on line %d.",
+        E_EXPANDER = "Bad macro expander '%s' on line %d.",
         E_LOOKUP = "Redefinition of macro capture identifier '%s' on line %d.",
         E_EXPANSION = "Undefined macro expansion '%s' on line %d with context: %s"
     ;
@@ -52,8 +54,8 @@ class Macro extends Directive {
         }
     }
 
-    private function compilePattern(int $line, array $pattern) : parser {
-        if(! $pattern) $this->fail(self::E_EMPTY_BLOCK, 'pattern', $line);
+    private function compilePattern(int $line, array $pattern) : Parser {
+        if(! $pattern) $this->fail(self::E_EMPTY_PATTERN, $line);
 
         repeat
         (
@@ -154,16 +156,16 @@ class Macro extends Directive {
 
         $this->specificity = count($this->parsers);
 
-        // foreach ($this->pairs as $chars => $count)
-        //     if ($count % 2)
-        //         throw new YayException(
-        //             "Unmatched pair of '{$chars}' on macro '{$pattern}'.");
+        if (count($this->parsers) > 1)
+            $pattern = chain(...$this->parsers);
+        else
+            $pattern = $this->parsers[0];
 
-        return chain(...$this->parsers);
+        return $pattern;
     }
 
     private function compileExpansion(int $line, array $expansion) : TokenStream {
-        if(! $expansion) $this->fail(self::E_EMPTY_BLOCK, 'expansion', $line);
+        if(! $expansion) $this->fail(self::E_EMPTY_EXPANSION, $line);
 
         $ts = TokenStream::fromSlice($expansion);
         $ts->trim();
@@ -172,6 +174,20 @@ class Macro extends Directive {
         (
             either
             (
+                chain
+                (
+                    rtoken('/^·\w+$/')->as('expander')
+                    ,
+                    token('(')
+                    ,
+                    rtoken('/^·\w+|T_\w+·\w+|···\w+$/')->as('arg')
+                    ,
+                    commit
+                    (
+                        token(')')
+                    )
+                )
+                ,
                 chain
                 (
                     rtoken('/^·\w+|···\w+$/')->as('label')
@@ -226,17 +242,11 @@ class Macro extends Directive {
         return $ts;
     }
 
-    private function compileParser(array $result) : parser
+    private function compileParser(array $result) : Parser
     {
-        $ast = $result['parser_type'];
-        $type = (string) $ast;
-        $fqn = __NAMESPACE__ . '\\' . explode('·', $type)[1];
-
-        if (! function_exists($fqn))
-            $this->fail(self::E_BAD_PARSER, $type, $ast->line());
-
+        $parser = $this->lookupParser($result['parser_type']);
         $args = $this->compileParserArgs($result['args']);
-        $parser = $fqn(...$args);
+        $parser = $parser(...$args);
 
         if ($label = $result['label'])
             $parser->as($this->lookupCapture($label));
@@ -288,13 +298,42 @@ class Macro extends Directive {
     }
 
     private function mutate(TokenStream $ts, Ast $crossover) : TokenStream {
-        if ($this->constant) goto end;
 
-        $ts = clone $ts;
+        if ($this->constant) return $ts;
+
+        $cg = (object) [
+            'ts' => clone $ts,
+            'crossover' => $crossover,
+            // 'frames' => [] // @TODO switch frames instead of merging context
+        ];
+
         repeat
         (
             either
             (
+                swallow
+                (
+                    chain
+                    (
+                        rtoken('/^·\w+$/')->as('expander')
+                        ,
+                        token('(')
+                        ,
+                        rtoken('/^·\w+|T_\w+·\w+|···\w+$/')->as('arg')
+                        ,
+                        commit
+                        (
+                            token(')')
+                        )
+                    )
+                )
+                ->onCommit(function(Ast $result) use ($cg) {
+                    $expansion = $cg->crossover->{(string) $result->arg};
+                    $expander = $this->lookupExpander($result->expander);
+                    $mutation = $expander($expansion);
+                    $cg->ts->inject($mutation);
+                })
+                ,
                 swallow
                 (
                     chain
@@ -306,15 +345,15 @@ class Macro extends Directive {
                         braces()->as('expansion')
                     )
                 )
-                ->onCommit(function(Ast $result)  use($ts, $crossover) {
-                    $crossovers = $crossover->{(string) $result->label};
+                ->onCommit(function(Ast $result)  use($cg) {
+                    $crossovers = $cg->crossover->{(string) $result->label};
                     foreach (array_reverse($crossovers) as $context) {
                         $expansion = TokenStream::fromSlice($result->expansion);
                         if(! is_array($context)) $context = [$context];
                         $context = new Ast(
-                            null, array_merge($context, $crossover->all()[0]));
+                            null, array_merge($context, $cg->crossover->all()[0]));
                         $mutation = $this->mutate($expansion, $context);
-                        $ts->inject($mutation);
+                        $cg->ts->inject($mutation);
                     }
                 })
                 ,
@@ -327,25 +366,25 @@ class Macro extends Directive {
                         token(T_STRING, '·n')
                     )
                 )
-                ->onCommit(function(Ast $result) use($ts, $crossover) {
-                    $ts->push(new Token(T_WHITESPACE, PHP_EOL));
+                ->onCommit(function(Ast $result) use($cg) {
+                    $cg->ts->push(new Token(T_WHITESPACE, PHP_EOL));
                 })
                 ,
                 swallow
                 (
                     rtoken('/^T_\w+·\w+$/')
                 )
-                ->onCommit(function(Ast $result) use($ts, $crossover) {
-                    $mutation = $crossover->{(string) $result->token()};
-                    $ts->inject(TokenStream::fromSequence($mutation));
+                ->onCommit(function(Ast $result) use($cg) {
+                    $mutation = $cg->crossover->{(string) $result->token()};
+                    $cg->ts->inject(TokenStream::fromSequence($mutation));
                 })
                 ,
                 swallow
                 (
                     rtoken('/^·\w+|···\w+$/')
                 )
-                ->onCommit(function(Ast $result) use ($ts, $crossover) {
-                    $c = $crossover->{(string) $result->token()};
+                ->onCommit(function(Ast $result) use ($cg) {
+                    $c = $cg->crossover->{(string) $result->token()};
                     $c = is_array($c) ? $c : [$c];
                     $mutation = TokenStream::empty();
                     array_walk_recursive(
@@ -355,17 +394,15 @@ class Macro extends Directive {
                                 $mutation->push($t);
                         }
                     );
-                    $ts->inject($mutation);
+                    $cg->ts->inject($mutation);
                 })
                 ,
                 any()
             )
         )
-        ->parse($ts);
+        ->parse($cg->ts);
 
-        end:
-
-        return $ts;
+        return $cg->ts;
     }
 
     protected function lookupCapture(Token $token) : string {
@@ -378,7 +415,27 @@ class Macro extends Directive {
         return $id;
     }
 
-    private function layer(string $start, string $end, parser $parser) : parser {
+    private function lookupParser(Token $token) : string {
+        $identifier = (string) $token;
+        $parser = '\Yay\\' . explode('·', $identifier)[1];
+
+        if (! function_exists($parser))
+            $this->fail(self::E_PARSER, $identifier, $token->line());
+
+        return $parser;
+    }
+
+    private function lookupExpander(Token $token) : string {
+        $identifier = (string) $token;
+        $expander = '\Yay\Dsl\Expanders\\' . explode('·', $identifier)[1];
+
+        if (! function_exists($expander))
+            $this->fail(self::E_EXPANDER, $identifier, $token->line());
+
+        return $expander;
+    }
+
+    private function layer(string $start, string $end, parser $parser) : Parser {
         return
             chain
             (

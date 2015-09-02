@@ -22,7 +22,7 @@
     },
     "autoload": {
         "files": [
-            "src/parsers.php", "src/parse.php"
+            "src/parsers.php", "src/parse.php", "src/expanders.php"
         ],
         "psr-4": {
             "Yay\\": "src/"
