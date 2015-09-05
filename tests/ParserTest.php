@@ -354,6 +354,18 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Dead Yay\token() parser at Yay\either(...[2])
+     */
+    function testEitherDeadParserDetection() {
+        either(
+            token('.'),
+            optional(token('?')),
+            token('!') // unreachable
+        );
+    }
+
     function testEitherOnError() {
         $ts = TokenStream::fromSource("<?php C");
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
