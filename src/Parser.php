@@ -29,6 +29,10 @@ abstract class Parser {
         $this->stack = $stack;
     }
 
+    final function __toString() : string {
+        return $this->type;
+    }
+
     final function __debugInfo()
     {
         return [$this->type, $this->label, $this->stack];
@@ -85,16 +89,6 @@ abstract class Parser {
         $this->onCommit = $fn;
 
         return $this;
-    }
-
-    final function type() : string
-    {
-        return $this->type;
-    }
-
-    final function is(string $type) : bool
-    {
-        return $this->type === $type;
     }
 
     final protected function error(TokenStream $ts)

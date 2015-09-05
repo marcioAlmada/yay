@@ -62,7 +62,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         )
         ->parse($ts);
 
-        $this->assertTrue($commited, "Missing commit on {$parser->type()}().");
+        $this->assertTrue($commited, "Missing commit on {$parser}().");
 
         return $ast;
     }

@@ -264,7 +264,7 @@ function between(Parser $a, Parser $b, Parser $c): Parser
 
             foreach ($this->stack as $substack) {
                 $tokens->append($substack->expected());
-                if (optional::class !== $substack->type()) break;
+                if ($substack->isFallible()) break;
             }
 
             return $tokens;
@@ -380,7 +380,7 @@ function chain(Parser ...$links) : Parser
                 }
                 else {
                     $error = $result;
-                    while (--$i >= 0 && $links[$i]->is(optional::class)) {
+                    while (--$i >= 0 && ! $links[$i]->isFallible()) {
                         $lastest = $error;
                         $error = $links[$i]->error($ts);
                         $error->with($lastest);
@@ -399,7 +399,7 @@ function chain(Parser ...$links) : Parser
 
             foreach ($this->stack as $substack) {
                 $tokens->append($substack->expected());
-                if (optional::class !== $substack->type()) break;
+                if ($substack->isFallible()) break;
             }
 
             return $tokens;
@@ -417,14 +417,12 @@ function chain(Parser ...$links) : Parser
 
 function either(Parser ...$routes) : Parser
 {
-    $last = count($routes) - 1;
+    $last = end($routes);
     foreach ($routes as $i => $route)
-        if (! $route->isFallible() && $i !== $last && ++$i) {
-            $u = $routes[$i];
+        if ($route !== $last && ! $route->isFallible()) {
+            $parser = $routes[++$i];
             throw new InvalidArgumentException(
-                "Unreachable {$u->type()}() parser at "
-                . __FUNCTION__ . "(...)[{$i}]"
-            );
+                "Dead {$parser}() parser at " . __FUNCTION__ . "(...[{$i}])");
         }
 
     return new class(__FUNCTION__, ...$routes) extends Parser
@@ -447,7 +445,7 @@ function either(Parser ...$routes) : Parser
 
             foreach ($this->stack as $substack) {
                 $tokens->append($substack->expected());
-                if ($substack->is(optional::class)) break;
+                if (! $substack->isFallible()) break;
             }
 
             return $tokens;
