@@ -285,8 +285,11 @@ class Macro extends Directive {
                     $type = $this->lookupTokenType($arg);
                     $arg = token($type)->as($id);
                 }
-                else {
+                elseif (preg_match('/^(T_\w+)$/', (string) $arg)) {
                     $arg = token($this->lookupTokenType($arg));
+                }
+                else {
+                    $arg = token(T_STRING, (string) $arg);
                 }
                 break;
             default: // non T_STRING wordy token
