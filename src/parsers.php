@@ -212,7 +212,7 @@ function repeat(Parser $parser, Parser $until = null) : Parser
                 if (
                     ! ($current = $ts->current()) ||
                     ($until && $current->equals($until)) ||
-                    ($result = $parser->parse($ts)) instanceof error
+                    ($result = $parser->parse($ts)) instanceof Error
                 ){
                     $result = $result ?? $this->error($ts);
                     $ts->jump($index);
@@ -249,7 +249,7 @@ function between(Parser $a, Parser $b, Parser $c): Parser
 
             foreach ([$a, $b, $c] as $parser) {
                 $result = $parser->parse($ts);
-                if ($result instanceof ast)
+                if ($result instanceof Ast)
                     $asts[] = $result;
                 else
                     return $result;
@@ -374,7 +374,7 @@ function chain(Parser ...$links) : Parser
             $ast = new Ast($this->label);
 
             foreach ($links as $i => $link) {
-                if (($result = $link->parse($ts)) instanceof ast) {
+                if (($result = $link->parse($ts)) instanceof Ast) {
                     $asts[$i] = $result;
                     $ast->append($result);
                 }
@@ -431,7 +431,7 @@ function either(Parser ...$routes) : Parser
         {
             $errors = [];
             foreach ($routes as $route) {
-                if (($result = $route->parse($ts)) instanceof ast) return $result;
+                if (($result = $route->parse($ts)) instanceof Ast) return $result;
                 if ($errors) end($errors)->with($result);
                 $errors[] = $result;
             }
@@ -474,7 +474,7 @@ function swallow(Parser $parser, int $trim = SWALLOW_NO_TRIM) : Parser
         {
             $from = $ts->index();
             $ast = $parser->parse($ts);
-            if ($ast instanceof ast) {
+            if ($ast instanceof Ast) {
                 $ts->unskip(TokenStream::SKIPPABLE);
                 if ($trim & SWALLOW_DO_TRIM) $ts->skip(T_WHITESPACE);
                 $to = $ts->index();
@@ -508,7 +508,7 @@ function lookahead(Parser $parser) : Parser
             $index = $ts->index();
             $result = $parser->parse($ts);
             $ts->jump($index);
-            if ($result instanceof ast) return (new Ast($label))->merge($result);
+            if ($result instanceof Ast) return (new Ast($label))->merge($result);
 
             return $result;
         }
@@ -534,7 +534,7 @@ function optional(Parser $parser) : Parser
             $result = $parser->parse($ts);
             $ast = new Ast($parser->label ?: $this->label);
 
-            if ($result instanceof ast) $ast->merge($result);
+            if ($result instanceof Ast) $ast->merge($result);
 
             return $ast;
         }
@@ -559,7 +559,7 @@ function commit(Parser $parser) : Parser
         {
             $result = $parser->parse($ts);
 
-            if ($result instanceof error) $result->halt();
+            if ($result instanceof Error) $result->halt();
 
             return (new Ast($parser->label ?: $this->label))->merge($result);
         }
@@ -661,7 +661,7 @@ function ls(Parser $parser, Parser $delimiter) : Parser
 
 function future(&$parser) : Parser
 {
-    $delayed = function() use(&$parser) : parser { return clone $parser; };
+    $delayed = function() use(&$parser) : Parser { return clone $parser; };
 
     return new class(__FUNCTION__, $delayed) extends Parser
     {
