@@ -21,6 +21,7 @@ can be expressed in pure PHP code, and the implementation is fast enough).
 - [ ] Allow operator precedence and infix macros declarations
 - [ ] Allow macro importing between files like `use macro some\file{macro_name}` (right now macros are limited to be local per file)
 - [ ] Global macros
+- [ ] Support user defined parsers and expanders (add proper D.I for DSL lookups)
 - [ ] **Real time mode**: pass included files through the preprocessor automatically
     - [ ] Make it fast enough
     - [ ] Composer integration
