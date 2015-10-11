@@ -1,0 +1,20 @@
+--TEST--
+Test ·concat expander
+--FILE--
+<?php
+
+macro {
+    yay\concat( ·rtoken('/^\w+$/')·identifier )
+} >> {
+    ·concat(foo_, ·identifier, _baz)
+}
+
+yay\concat(bar);
+
+?>
+--EXPECTF--
+<?php
+
+foo_bar_baz;
+
+?>

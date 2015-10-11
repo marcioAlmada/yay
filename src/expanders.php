@@ -2,7 +2,7 @@
 
 namespace Yay\DSL\Expanders;
 
-use Yay\{Token, TokenStream};
+use Yay\{Token, TokenStream, YayException};
 
 function stringify(/* TokenStream|Token */ $i) : TokenStream {
     $str = str_replace("'", "\'", (string) $i);
@@ -14,4 +14,23 @@ function stringify(/* TokenStream|Token */ $i) : TokenStream {
             )
         )
     ;
+}
+
+function concat(TokenStream $ts) : TokenStream {
+    $buffer = [];
+    while($t = $ts->current()) {
+        $str = (string) $t;
+        if (! preg_match('/^\w+$/', $str))
+            throw new YayException(
+                "Only valid identifiers are mergeable, '{$t->dump()}' given.");
+
+        $buffer[] = $str;
+        $ts->next();
+    }
+
+    return TokenStream::fromSequence(
+        new Token(
+            T_STRING, implode('', $buffer)
+        )
+    );
 }
