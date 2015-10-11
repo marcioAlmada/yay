@@ -180,13 +180,22 @@ class Macro extends Directive {
                     ,
                     token('(')
                     ,
-                    rtoken('/^·\w+|T_\w+·\w+|···\w+$/')->as('arg')
+                    ls
+                    (
+                        rtoken('/^\w+|·\w+|T_\w+·\w+|···\w+$/')
+                        ,
+                        token(',')
+                    )
+                    ->as('args')
                     ,
                     commit
                     (
                         token(')')
                     )
                 )
+                ->onCommit(function($r){
+                    $this->constant = false;
+                })
                 ,
                 chain
                 (
@@ -322,7 +331,13 @@ class Macro extends Directive {
                         ,
                         token('(')
                         ,
-                        rtoken('/^·\w+|T_\w+·\w+|···\w+$/')->as('arg')
+                        ls
+                        (
+                            rtoken('/^\w+|·\w+|T_\w+·\w+|···\w+$/')
+                            ,
+                            token(',')
+                        )
+                        ->as('args')
                         ,
                         commit
                         (
@@ -331,9 +346,19 @@ class Macro extends Directive {
                     )
                 )
                 ->onCommit(function(Ast $result) use ($cg) {
-                    $expansion = $cg->crossover->{(string) $result->arg};
                     $expander = $this->lookupExpander($result->expander);
-                    $mutation = $expander($expansion);
+                    $args = [];
+                    foreach ($result->args as $arg) {
+                        if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key = (string) $arg)) {
+                            $arg = $cg->crossover->{$key};
+                        }
+
+                        if (is_array($arg))
+                            array_push($args, ...$arg);
+                        else
+                            $args[] = $arg;
+                    }
+                    $mutation = $expander(TokenStream::fromSlice($args));
                     $cg->ts->inject($mutation);
                 })
                 ,
