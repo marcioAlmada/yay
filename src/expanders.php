@@ -4,8 +4,8 @@ namespace Yay\DSL\Expanders;
 
 use Yay\{Token, TokenStream, YayException};
 
-function stringify(/* TokenStream|Token */ $i) : TokenStream {
-    $str = str_replace("'", "\'", (string) $i);
+function stringify(TokenStream $ts) : TokenStream {
+    $str = str_replace("'", "\'", (string) $ts);
 
     return
         TokenStream::fromSequence(
