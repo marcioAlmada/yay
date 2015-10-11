@@ -462,11 +462,11 @@ function either(Parser ...$routes) : Parser
 }
 
 const
-    SWALLOW_DO_TRIM = 0x10,
-    SWALLOW_NO_TRIM = 0x01
+    CONSUME_DO_TRIM = 0x10,
+    CONSUME_NO_TRIM = 0x01
 ;
 
-function swallow(Parser $parser, int $trim = SWALLOW_NO_TRIM) : Parser
+function consume(Parser $parser, int $trim = CONSUME_NO_TRIM) : Parser
 {
     return new class(__FUNCTION__, $parser, $trim) extends Parser
     {
@@ -476,7 +476,7 @@ function swallow(Parser $parser, int $trim = SWALLOW_NO_TRIM) : Parser
             $ast = $parser->parse($ts);
             if ($ast instanceof Ast) {
                 $ts->unskip(TokenStream::SKIPPABLE);
-                if ($trim & SWALLOW_DO_TRIM) $ts->skip(T_WHITESPACE);
+                if ($trim & CONSUME_DO_TRIM) $ts->skip(T_WHITESPACE);
                 $to = $ts->index();
                 if ($from < $to) $ts->extract($from, $to);
 

@@ -132,7 +132,7 @@ class Macro extends Directive {
                         $this->parsers[] = layer()->as($id);
                     })
                 ,
-                swallow
+                consume
                 (
                     rtoken('/^··$/')
                 )
@@ -323,7 +323,7 @@ class Macro extends Directive {
         (
             either
             (
-                swallow
+                consume
                 (
                     chain
                     (
@@ -362,7 +362,7 @@ class Macro extends Directive {
                     $cg->ts->inject($mutation);
                 })
                 ,
-                swallow
+                consume
                 (
                     chain
                     (
@@ -385,7 +385,7 @@ class Macro extends Directive {
                     }
                 })
                 ,
-                swallow
+                consume
                 (
                     chain
                     (
@@ -398,7 +398,7 @@ class Macro extends Directive {
                     $cg->ts->push(new Token(T_WHITESPACE, PHP_EOL));
                 })
                 ,
-                swallow
+                consume
                 (
                     rtoken('/^T_\w+·\w+$/')
                 )
@@ -407,7 +407,7 @@ class Macro extends Directive {
                     $cg->ts->inject(TokenStream::fromSequence($mutation));
                 })
                 ,
-                swallow
+                consume
                 (
                     rtoken('/^·\w+|···\w+$/')
                 )

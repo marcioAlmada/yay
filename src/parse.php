@@ -2,12 +2,12 @@
 
 use Yay\{
     TokenStream, Ast, Directives, Macro, Ignore,
-    const SWALLOW_DO_TRIM
+    const CONSUME_DO_TRIM
 };
 
 use function Yay\{
     token, any, optional, operator, repeat, either, chain, lookahead, commit,
-    braces, swallow
+    braces, consume
 };
 
 function parse(string $source) : string {
@@ -46,7 +46,7 @@ function parse(string $source) : string {
     (
         either
         (
-            swallow
+            consume
             (
                 either
                 (
@@ -96,7 +96,7 @@ function parse(string $source) : string {
                     })
                 )
                 ,
-                SWALLOW_DO_TRIM
+                CONSUME_DO_TRIM
             )
             ,
             any()

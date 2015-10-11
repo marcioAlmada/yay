@@ -74,7 +74,7 @@ class Ignore extends Directive {
         if (! $ignorables)
             $this->fail(self::E_EMPTY_PATTERN, $line);
 
-        return optional(swallow(chain(...$this->parsers), SWALLOW_DO_TRIM));
+        return optional(consume(chain(...$this->parsers), CONSUME_DO_TRIM));
     }
 
     private function layer(string $start, string $end) : parser {
