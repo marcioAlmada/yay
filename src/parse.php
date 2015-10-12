@@ -6,8 +6,8 @@ use Yay\{
 };
 
 use function Yay\{
-    token, any, optional, operator, repeat, either, chain, lookahead, commit,
-    braces, consume
+    token, any, optional, operator, either, chain, lookahead, commit,
+    braces, consume, passthru
 };
 
 function yay_parse(string $source) : string {
@@ -42,7 +42,7 @@ function yay_parse(string $source) : string {
         )
     ;
 
-    repeat
+    passthru
     (
         either
         (

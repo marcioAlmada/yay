@@ -193,6 +193,29 @@ function operator(string $operator) : Parser
     };
 }
 
+function passthru(Parser $parser) : Parser
+{
+    return new class(__FUNCTION__, $parser) extends Parser
+    {
+        protected function parser(TokenStream $ts, Parser $parser) : Result
+        {
+            while ($parser->parse($ts) instanceof Ast);
+
+            return new Ast($this->label);
+        }
+
+        function expected() : Expected
+        {
+            return $this->stack[0]->expected();
+        }
+
+        function isFallible() : bool
+        {
+            return $this->stack[0]->isFallible();
+        }
+    };
+}
+
 function repeat(Parser $parser, Parser $until = null) : Parser
 {
     if (! $parser->isFallible())
