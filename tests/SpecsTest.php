@@ -94,7 +94,7 @@ class Test {
             list($this->name, $this->source, $this->expected) = $sections;
 
             try {
-                $this->out = (string) parse($this->source);
+                $this->out = (string) yay_parse($this->source);
             } catch(\Exception $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;

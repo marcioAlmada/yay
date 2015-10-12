@@ -10,7 +10,7 @@ use function Yay\{
     braces, consume
 };
 
-function parse(string $source) : string {
+function yay_parse(string $source) : string {
 
     $cg = (object) [
         'line' => 0,
