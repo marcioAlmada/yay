@@ -1,6 +1,6 @@
 # YAY!
 
-**YAY!** is a high level parser combinator based PHP pre processor that allows anyone to augment PHP with PHP :boom:
+**YAY!** is a high level parser combinator based PHP preprocessor that allows anyone to augment PHP with PHP :boom:
 
 This means that language features could be distributed as composer packages (as long as the macro based implementations
 can be expressed in pure PHP code, and the implementation is fast enough).
@@ -156,8 +156,17 @@ macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(
 
 # Conclusion
 
-No conclusions. This is just an experiment about how a high level pre processor DSL can be designed
-using parser combinators.
+For now this is an experiment about how to build a high level preprocessor DSL using parser combinators
+on a languages like PHP. Why?
+
+PHP is very far from being [homoiconic](https://en.wikipedia.org/wiki/Homoiconicity) and therefore requires
+complex deterministic parsing and a big AST implementation with a node visitor API to modify source code - and
+in the end, you're not even able to easily process unknown syntax `¯\_(⊙_ʖ⊙)_/¯`.
+
+That's why this project was born. It was also part of the challenge:
+
+0. Create a minimalistic architecture that exposes a subset of the internal components, that power the preprocessor itself, to the user DSL.
+0. Create parser combinators with decent error reporting and grammar invalidation, because of 1
 
 ## Copyright
 
