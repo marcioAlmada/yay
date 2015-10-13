@@ -1,0 +1,28 @@
+--TEST--
+Disallow simple infine macro recursion
+--FILE--
+<?php
+
+macro { FOO } >> { FOO(FOO) : FOO() };
+
+FOO;
+
+macro { BAR } >> { BAR BAR(BAR) };
+
+BAR;
+
+macro { T_STRING·A(T_STRING·B) } >> { T_STRING·A(T_STRING·B) };
+
+A(B);
+
+?>
+--EXPECTF--
+<?php
+
+FOO(FOO) : FOO();
+
+BAR BAR(BAR);
+
+A(B);
+
+?>

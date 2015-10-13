@@ -14,7 +14,7 @@ function token($type, $value = null) : Parser
     {
         private $expected;
 
-        function __construct($type, $token)
+        function __construct($type, Token $token)
         {
             $this->type = $type;
             $this->stack = [$token];

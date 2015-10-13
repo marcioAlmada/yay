@@ -30,7 +30,8 @@ class Token implements \JsonSerializable {
         $type,
         $value,
         $line,
-        $literal = false
+        $literal = false,
+        $blue = false
     ;
 
     function __construct($type, string $value = null, int $line = null) {
@@ -55,7 +56,7 @@ class Token implements \JsonSerializable {
     }
 
     function __debugInfo() {
-        return [$this->dump()];
+        return [$this->dump(), $this->blue ? 'blue' : 'live'];
     }
 
     function dump(): string {
@@ -65,15 +66,16 @@ class Token implements \JsonSerializable {
     }
 
     function is(/* string|int */ ...$types): bool {
-        return in_array($this->type, $types);
+        return !$this->blue && in_array($this->type, $types);
     }
 
     function contains($value): bool {
-        return $value === null ?: $this->value === $value;
+        return !$this->blue && ($value === null ?: $this->value === $value);
     }
 
     function equals(self $token): bool {
         return
+            !$this->blue &&
             // inlined $this->is()
             ($this->type === $token->type &&
                 // inlined $this->contains()
@@ -98,6 +100,10 @@ class Token implements \JsonSerializable {
 
     function literal() : bool {
         return $this->literal;
+    }
+
+    function blue()/* : void*/ {
+        $this->blue = true;
     }
 
     static function eof() : self {

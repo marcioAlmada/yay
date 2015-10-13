@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 use Yay\{
-    TokenStream, Ast, Directives, Macro, Ignore,
+    YayException, TokenStream, Ast, Directives, Macro, Ignore,
     const CONSUME_DO_TRIM
 };
 
@@ -10,10 +10,12 @@ use function Yay\{
     braces, consume, passthru
 };
 
-function yay_parse(string $source) : string {
+function yay_parse(string $source, int $timeout = 2) : string {
 
     $cg = (object) [
         'line' => 0,
+        'time' => time(),
+        'timeout' => $timeout,
         'directives' => new Directives,
         'TokenStream' => TokenStream::fromSource($source)
     ];
@@ -21,26 +23,6 @@ function yay_parse(string $source) : string {
     $cgline = function($result) use($cg) {
         $cg->line = $result->token()->line();
     };
-
-    $macrorule =
-        commit
-        (
-            chain
-            (
-                braces()->as('pattern')
-                ,
-                operator('>>')
-                ,
-                braces()->as('mutation')
-                ,
-                optional
-                (
-                    token(';')
-                )
-            )
-            ->as('rule')
-        )
-    ;
 
     passthru
     (
@@ -83,7 +65,24 @@ function yay_parse(string $source) : string {
                             token('{')
                         )
                         ,
-                        $macrorule
+                        commit
+                        (
+                            chain
+                            (
+                                braces()->as('pattern')
+                                ,
+                                operator('>>')
+                                ,
+                                braces()->as('mutation')
+                                ,
+                                optional
+                                (
+                                    token(';')
+                                )
+                            )
+                            ->as('rule')
+                        )
+
                     )
                     ->onCommit(function(Ast $result) use($cg) {
                         $cg->directives->insert(
@@ -101,6 +100,10 @@ function yay_parse(string $source) : string {
             ,
             any()
                 ->onTry(function() use($cg) {
+                    if (time() - $cg->time > $cg->timeout)
+                        throw new YayException(
+                            "Timeout or exceeded macro recursion at line {$cg->line}.");
+
                     $cg->directives->apply($cg->TokenStream);
                 })
         )

@@ -50,7 +50,6 @@ class Macro extends Directive {
             $to = $ts->index();
             $expansion = $this->mutate($this->expansion, $crossover);
             $ts->inject($expansion, $from, $to);
-            $ts->step(-1);
         }
     }
 
@@ -248,6 +247,29 @@ class Macro extends Directive {
 
         $ts->reset();
 
+        if ($this->constant) {
+            passthru
+            (
+                either
+                (
+                    // prevents infinite macro expansion by marking blue tokens
+                    (clone $this->pattern)
+                        ->onCommit(function($result) {
+                            $tokens = $result->all();
+                            array_walk_recursive($tokens, function(Token $token){
+                                $token->blue();
+                            });
+                        })
+                    ,
+                    any()
+                )
+            )
+            ->parse($ts);
+            
+            $ts->reset();
+        }
+
+
         return $ts;
     }
 
@@ -429,6 +451,8 @@ class Macro extends Directive {
             )
         )
         ->parse($cg->ts);
+
+        $cg->ts->reset();
 
         return $cg->ts;
     }
