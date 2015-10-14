@@ -16,7 +16,7 @@ can be expressed in pure PHP code, and the implementation is fast enough).
 - [ ] Dominant macros (macros that throw syntax errors if not fulfilled after a given entry point)
 - [x] \(Partial) Expansion iteration like `·matched_scope ··· { ·a ·b ·c }`
 - [ ] Make expansion DSL recursive
-- [ ] Disallow infinite recursion while expanding macros
+- [x] Disallow infinite recursion while expanding macros
 - [ ] Add more high level parsers like `·expression()` or `·exp()`, `·word()`, `·list()`
 - [ ] Allow operator precedence and infix macros declarations
 - [ ] Allow macro importing between files like `use macro some\file{macro_name}` (right now macros are limited to be local per file)
