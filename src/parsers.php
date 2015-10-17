@@ -114,7 +114,7 @@ function indentation()
     {
         protected function parser(TokenStream $ts) : Result
         {
-            if (($token = $ts->step(-1)) && $token->is(T_WHITESPACE)) {
+            if (($token = $ts->back()) && $token->is(T_WHITESPACE)) {
                 $ts->step();
 
                 return new Ast($this->label, $token);
@@ -498,10 +498,10 @@ function consume(Parser $parser, int $trim = CONSUME_NO_TRIM) : Parser
             $from = $ts->index();
             $ast = $parser->parse($ts);
             if ($ast instanceof Ast) {
-                $ts->unskip(TokenStream::SKIPPABLE);
+                $ts->unskip(...TokenStream::SKIPPABLE);
                 if ($trim & CONSUME_DO_TRIM) $ts->skip(T_WHITESPACE);
                 $to = $ts->index();
-                if ($from < $to) $ts->extract($from, $to);
+                $ts->extract($from, $to);
 
                 return (new Ast($parser->label ?: $this->label))->merge($ast);
             }

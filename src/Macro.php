@@ -45,11 +45,12 @@ class Macro extends Directive {
     function apply(TokenStream $ts) {
         $from = $ts->index();
         $crossover = $this->pattern->parse($ts);
-        if ($crossover instanceof ast && ! $crossover->isEmpty()) {
-            $ts->unskip(TokenStream::SKIPPABLE);
+        if ($crossover instanceof Ast && ! $crossover->isEmpty()) {
+            $ts->unskip(...TokenStream::SKIPPABLE);
             $to = $ts->index();
+            $ts->extract($from, $to);
             $expansion = $this->mutate($this->expansion, $crossover);
-            $ts->inject($expansion, $from, $to);
+            $ts->inject($expansion, $from);
         }
     }
 
@@ -288,7 +289,7 @@ class Macro extends Directive {
     private function compileParserArgs(array $args) : array {
         $compiled = [];
         foreach ($args as $i => $arg)
-            if ($arg instanceof token) {
+            if ($arg instanceof Token) {
                 $compiled[] = $this->compileParserArg($arg);
             }
             else if(is_array($arg)) {
@@ -333,10 +334,12 @@ class Macro extends Directive {
 
     private function mutate(TokenStream $ts, Ast $crossover) : TokenStream {
 
+        $ts = clone $ts;
+
         if ($this->constant) return $ts;
 
         $cg = (object) [
-            'ts' => clone $ts,
+            'ts' => $ts,
             'crossover' => $crossover,
             // 'frames' => [] // @TODO switch frames instead of merging context
         ];
@@ -436,7 +439,7 @@ class Macro extends Directive {
                 ->onCommit(function(Ast $result) use ($cg) {
                     $c = $cg->crossover->{(string) $result->token()};
                     $c = is_array($c) ? $c : [$c];
-                    $mutation = TokenStream::empty();
+                    $mutation = TokenStream::fromEmpty();
                     array_walk_recursive(
                         $c,
                         function($t) use($mutation) {

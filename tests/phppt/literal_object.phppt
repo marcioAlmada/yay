@@ -28,7 +28,7 @@ macro {
 
 }
 
-$obj = { key : ("value"), other_key : (1 + 1), another_key : (new \stdclass) }
+$obj = { key : ("value"), other_key : (1 + 1), another_key : (new \stdclass) };
 
 var_dump($obj);
 
@@ -36,7 +36,7 @@ var_dump($obj);
 --EXPECTF--
 <?php
 
-$obj = ((object)[@key => ("value"), @other_key => (1 + 1), @another_key => (new \stdclass), ])
+$obj = ((object)[@key => ("value"), @other_key => (1 + 1), @another_key => (new \stdclass), ]);
 
 var_dump($obj);
 

@@ -25,7 +25,7 @@ class Ignore extends Directive {
     function apply(TokenStream $ts) {
         $result = $this->ignorable->parse($ts);
 
-       if ($result instanceof Ast && ! $result->isEmpty()) $ts->step(-1);
+        if ($result instanceof Ast && ! $result->isEmpty()) $ts->back();
     }
 
     private function compile(int $line, token ...$ignorables) : parser {

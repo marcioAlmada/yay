@@ -1,5 +1,5 @@
 --TEST--
-Disallow simple infine macro recursion
+Disallow simple infinite macro recursion (constant macros)
 --FILE--
 <?php
 
@@ -11,10 +11,6 @@ macro { BAR } >> { BAR BAR(BAR) };
 
 BAR;
 
-macro { T_STRING·A(T_STRING·B) } >> { T_STRING·A(T_STRING·B) };
-
-A(B);
-
 ?>
 --EXPECTF--
 <?php
@@ -22,7 +18,5 @@ A(B);
 FOO(FOO) : FOO();
 
 BAR BAR(BAR);
-
-A(B);
 
 ?>

@@ -589,6 +589,58 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    function testConsume() {
+        $ts = TokenStream::fromSource('<?php A  {X} B {X} C    {x} ');
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+
+        passthru
+        (
+            either
+            (
+                consume
+                (
+                    chain(
+                        token('{')
+                        ,
+                        token(T_STRING)
+                        ,
+                        token('}')
+                    )
+                )
+                ,
+                any()
+            )
+        )
+        ->parse($ts);
+
+        $this->assertEquals('<?php A   B  C     ', (string) $ts);
+
+        $ts = TokenStream::fromSource('<?php A  {-}   B    {-}     ');
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+        passthru
+        (
+            either
+            (
+                consume
+                (
+                    chain(
+                        token('{')
+                        ,
+                        token('-')
+                        ,
+                        token('}')
+                    )
+                    ,
+                    CONSUME_DO_TRIM
+                ),
+                any()
+            )
+        )
+        ->parse($ts);
+
+        $this->assertEquals('<?php A  B    ', (string) $ts);
+    }
+
     function testRaytrace() {
         $this->assertRaytrace("T_STRING()", token(T_STRING));
         $this->assertRaytrace("ANY()", any());

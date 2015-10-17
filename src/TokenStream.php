@@ -9,58 +9,82 @@ use
 class TokenStream {
 
     const
-        DEFAULT_INDEX = 0
-        ,
         SKIPPABLE = [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT]
     ;
 
     protected
-        $index = self::DEFAULT_INDEX
-        ,
-        $tokens = []
+        $first,
+        $current,
+        $last
     ;
 
     private function __construct() {}
 
     function __toString() : string {
-        return implode('', $this->tokens);
+        // return (string) $this->first;
+        // ↑↑↑ this could be simpler, but recursion exceeds stack frame size :(
+        // ↓↓↓ so instead, we collect all tokens and implode
+        $tokens = [];
+        $node = $this->first;
+        while($node) {
+            $tokens[] = $node->token;
+            $node = $node->next;
+        }
+
+        return implode('', $tokens);
     }
 
     function __clone() {
-        $this->tokens = array_map(
-            function($t) { return clone $t; }, $this->tokens);
+        $node = $this->first;
+        $first = $last = new Node(clone $node->token);
+
+        while($node = $node->next) {
+            $last->next = new Node(clone $node->token);
+            $last->next->previous = $last;
+            $last = $last->next;
+        }
+
+        $this->first = $first;
+        $this->last = $last;
+        $this->reset();
     }
 
-    function index() : int {
-        return $this->index;
-    }
+    function index() /* : Node|null */ { return $this->current; }
 
-    function jump(int $index) {
-        $this->index = $index;
-    }
+    function jump($node) /* : void */ { $this->current = $node; }
 
-    function reset() {
-        $this->jump(self::DEFAULT_INDEX);
-    }
+    function reset() /* : void */ { $this->jump($this->first); }
 
     function current() /* : Token|null */ {
-        return $this->tokens[$this->index] ?? null;
+        return $this->current ? $this->current->token : null;
     }
 
-    function step($step = 1) /* : Token|null */ {
-        $this->jump($this->index + $step);
+    function step() /* : Token|null */ {
+        if ($this->current)
+            $this->current = $this->current->next;
+        else
+            $this->current = $this->first;
 
         return $this->current();
     }
 
-    function skip(...$types) /* : int|char[1] */ {
+    function back() /* : Token|null */ {
+        if ($this->current)
+            $this->current = $this->current->previous;
+        else
+            $this->current = $this->last;
+
+        return $this->current();
+    }
+
+    function skip(int ...$types) /* : Token|null */ {
         while (($t = $this->current()) && $t->is(...$types)) $this->step();
 
         return $this->current();
     }
 
-    function unskip(...$types) /* : int|char[1] */ {
-        while (($t = $this->step(-1)) && $t->is(...self::SKIPPABLE));
+    function unskip(int ...$types) /* : Token|null */ {
+        while (($t = $this->back()) && $t->is(...$types));
         $this->step();
 
         return $this->current();
@@ -74,49 +98,105 @@ class TokenStream {
     }
 
     function last() : Token {
-        return end($this->tokens);
+        return $this->last->token;
+    }
+
+    function first() : Token {
+        return $this->first->token;
     }
 
     function trim() {
-        while (reset($this->tokens)->is(T_WHITESPACE)) array_shift($this->tokens);
-        while (end($this->tokens)->is(T_WHITESPACE)) array_pop($this->tokens);
+        while ($this->first && $this->first->token->is(T_WHITESPACE)) $this->shift();
+        while ($this->last && $this->last->token->is(T_WHITESPACE)) $this->pop();
     }
 
-    function extract(int $from, int $to) {
+    function extract(Node $from, Node $to = null) {
+        if (! $from->previous) {
+            $from->previous = new Node(new Token(T_WHITESPACE, '', $from->token->line()));
+            $from->previous->next = $from;
+            $this->first = $from->previous;
+        }
 
-        if ($from < 0 || $to <= $from)
-            throw new InvalidArgumentException(
-                "Invalid interval {$from}...{$this->index}");
+        $this->jump($from->previous);
 
-        $this->jump($from);
+        while ($from !== $to) {
+            if ($from->previous === null)
+               $this->first = $from->next;
+           else
+               $from->previous->next = $from->next;
 
-        array_splice($this->tokens, $from, ($to - $from));
+           if ($from->next === null)
+               $this->last = $from->previous;
+           else
+               $from->next->previous = $from->previous;
+
+            $from = $from->next;
+        }
     }
 
-    function inject(self $tokens, int $from = 0, int $to = 0) {
-        $from = $from ?: $this->index;
-        $to = $to ?: $from;
+    function inject(self $tstream) {
+        if (!$tstream->first && !$tstream->last) return;
 
-        if ($from < 0 || $to < $from)
-            throw new InvalidArgumentException(
-                "Invalid interval {$from}...{$this->index}");
-
-        $this->jump($from);
-
-        if ($tokens->tokens)
-            array_splice($this->tokens, $from, ($to - $from), $tokens->tokens);
+        if (! $this->isEmpty()){
+            if ($this->current) {
+                $next = $this->current->next;
+                $this->current->next = $tstream->first;
+                $tstream->first->previous = $this->current;
+                if ($next) {
+                    $tstream->last->next = $next;
+                    $next->previous = $tstream->last;
+                }
+                else {
+                    $this->last = $tstream->last;
+                }
+            }
+            else {
+                $this->first->previous = $tstream->last;
+                $tstream->last->next = $this->first;
+                $this->first = $tstream->first;
+            }
+        }
+        else {
+            $this->first = $tstream->first;
+            $this->last = $tstream->last;
+            $this->current = null;
+        }
     }
 
-    function append(self $ts) {
-        $this->push(...$ts->tokens);
+    function push(Token $token) {
+        $node = new Node($token);
+
+        if ($this->last) {
+            $node->previous = $this->last;
+            $this->last->next = $node;
+            $this->last = $this->last->next;
+        }
+        else $this->current = $this->first = $this->last = $node;
     }
 
-    function push(token ...$tokens) {
-        foreach ($tokens as $token) $this->tokens[] = $token;
+    function shift() {
+        if (! $this->first)
+            throw new YayException("Empty token stream.");
+
+        $this->first = $this->first->next;
+
+        if ($this->first)
+            $this->first->previous = null;
+        else
+            $this->last = null;
     }
 
-    static function empty() : self {
-        return new self;
+    function isEmpty() : bool {
+        return ! ($this->first && $this->last);
+    }
+
+    private function pop() {
+        $this->last = $this->last->previous;
+
+        if ($this->last)
+            $this->last->next = null;
+        else
+            $this->first = null;
     }
 
     static function fromSource(string $source) : self {
@@ -140,14 +220,14 @@ class TokenStream {
     }
 
     static function fromSlice(array $tokens) : self {
-        if(! $tokens)
-            throw new InvalidArgumentException("Empty token stream.");
+        if (! $tokens)
+            throw new InvalidArgumentException("Empty token slice.");
 
-        $ts = new self();
-        $ts->tokens = (function(token ...$tokens) {
-            return $tokens;
-        })(...$tokens);
+        $ts = self::fromEmpty();
+        foreach ($tokens as $token) $ts->push($token);
 
         return $ts;
     }
+
+    static function fromEmpty() : self { return new self; }
 }

@@ -56,7 +56,7 @@ class Token implements \JsonSerializable {
     }
 
     function __debugInfo() {
-        return [$this->dump(), $this->blue ? 'blue' : 'live'];
+        return [$this->dump()];
     }
 
     function dump(): string {
