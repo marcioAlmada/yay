@@ -593,7 +593,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $ts = TokenStream::fromSource('<?php A  {X} B {X} C    {x} ');
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
 
-        passthru
+        traverse
         (
             either
             (
@@ -617,7 +617,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
 
         $ts = TokenStream::fromSource('<?php A  {-}   B    {-}     ');
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
-        passthru
+        traverse
         (
             either
             (

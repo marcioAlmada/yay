@@ -57,7 +57,7 @@ class Macro extends Directive {
     private function compilePattern(int $line, array $pattern) : Parser {
         if(! $pattern) $this->fail(self::E_EMPTY_PATTERN, $line);
 
-        passthru
+        traverse
         (
             either
             (
@@ -170,7 +170,7 @@ class Macro extends Directive {
         $ts = TokenStream::fromSlice($expansion);
         $ts->trim();
 
-        passthru
+        traverse
         (
             either
             (
@@ -249,7 +249,7 @@ class Macro extends Directive {
         $ts->reset();
 
         if ($this->constant) {
-            passthru
+            traverse
             (
                 either
                 (
@@ -344,7 +344,7 @@ class Macro extends Directive {
             // 'frames' => [] // @TODO switch frames instead of merging context
         ];
 
-        passthru
+        traverse
         (
             either
             (

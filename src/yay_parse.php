@@ -7,7 +7,7 @@ use Yay\{
 
 use function Yay\{
     token, any, optional, operator, either, chain, lookahead, commit,
-    braces, consume, passthru
+    braces, consume, traverse
 };
 
 function yay_parse(string $source, int $timeout = 2) : string {
@@ -24,7 +24,7 @@ function yay_parse(string $source, int $timeout = 2) : string {
         $cg->line = $result->token()->line();
     };
 
-    passthru
+    traverse
     (
         either
         (

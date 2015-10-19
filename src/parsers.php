@@ -193,7 +193,7 @@ function operator(string $operator) : Parser
     };
 }
 
-function passthru(Parser $parser) : Parser
+function traverse(Parser $parser) : Parser
 {
     return new class(__FUNCTION__, $parser) extends Parser
     {
