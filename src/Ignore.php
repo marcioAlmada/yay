@@ -15,6 +15,7 @@ class Ignore extends Directive {
     ;
 
     function __construct(int $line, array $ignorables) {
+        parent::__construct();
         $this->ignorable = $this->compile($line, ...$ignorables);
     }
 

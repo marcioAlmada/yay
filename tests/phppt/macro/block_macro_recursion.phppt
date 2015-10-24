@@ -11,6 +11,12 @@ macro { BAR } >> { BAR BAR(BAR) };
 
 BAR;
 
+macro { C } >> { A }
+macro { A } >> { B }
+macro { B } >> { C }
+
+B;
+
 ?>
 --EXPECTF--
 <?php
@@ -18,5 +24,7 @@ BAR;
 FOO(FOO) : FOO();
 
 BAR BAR(BAR);
+
+B;
 
 ?>

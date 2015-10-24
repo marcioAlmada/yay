@@ -11,4 +11,8 @@ A;
 
 ?>
 --EXPECTF--
-Timeout or exceeded macro recursion at line 5.
+<?php
+
+B C A A;
+
+?>

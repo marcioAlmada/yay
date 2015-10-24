@@ -11,9 +11,21 @@ abstract class Directive {
         E_TOKEN_TYPE = "Undefined token type '%s' on line %d."
     ;
 
+    protected $id;
+
     abstract function specificity() : int;
 
     abstract function apply(TokenStream $TokenStream);
+
+    function __construct() {
+        static $id = 0;
+
+        $this->id = $id++;
+    }
+
+    final function id() : int {
+        return $this->id;
+    }
 
     protected function lookupTokenType(Token $token) : int {
         $type = explode('·', (string) $token)[0];

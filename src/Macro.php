@@ -34,6 +34,7 @@ class Macro extends Directive {
     ;
 
     function __construct(int $line, array $pattern, array $expansion) {
+        parent::__construct();
         $this->pattern = $this->compilePattern($line, $pattern);
         $this->expansion = $this->compileExpansion($line, $expansion);
     }
@@ -46,10 +47,27 @@ class Macro extends Directive {
         $from = $ts->index();
         $crossover = $this->pattern->parse($ts);
         if ($crossover instanceof Ast && ! $crossover->isEmpty()) {
+
+            // infer blue context from matched tokens
+            $context = new BlueContext;
+            $tokens = $crossover->all();
+            array_walk_recursive($tokens, function(Token $token) use ($context) {
+                $context->inherit($token->context());
+            });
+
+            if ($context->contains($this->id())) return; // already expanded
+
+            $context->add($this->id());
             $ts->unskip(...TokenStream::SKIPPABLE);
             $to = $ts->index();
             $ts->extract($from, $to);
             $expansion = $this->mutate($this->expansion, $crossover);
+
+            // paint blue context of expasion tokens
+            $expansion->each(function(Token $token) use ($context) {
+                $token->context()->inherit($context);
+            });
+
             $ts->inject($expansion, $from);
         }
     }
@@ -247,29 +265,6 @@ class Macro extends Directive {
         ->parse($ts);
 
         $ts->reset();
-
-        if ($this->constant) {
-            traverse
-            (
-                either
-                (
-                    // prevents infinite macro expansion by marking blue tokens
-                    (clone $this->pattern)
-                        ->onCommit(function($result) {
-                            $tokens = $result->all();
-                            array_walk_recursive($tokens, function(Token $token){
-                                $token->blue();
-                            });
-                        })
-                    ,
-                    any()
-                )
-            )
-            ->parse($ts);
-            
-            $ts->reset();
-        }
-
 
         return $ts;
     }

@@ -49,6 +49,14 @@ class TokenStream {
         $this->reset();
     }
 
+    function each(callable $callback) {
+        $node = $this->first;
+        while($node) {
+            $callback($node->token);
+            $node = $node->next;
+        }
+    }
+
     function index() /* : Node|null */ { return $this->current; }
 
     function jump($node) /* : void */ { $this->current = $node; }
