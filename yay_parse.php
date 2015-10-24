@@ -10,12 +10,10 @@ use function Yay\{
     braces, consume, traverse
 };
 
-function yay_parse(string $source, int $timeout = 2) : string {
+function yay_parse(string $source) : string {
 
     $cg = (object) [
         'line' => 0,
-        'time' => time(),
-        'timeout' => $timeout,
         'directives' => new Directives,
         'TokenStream' => TokenStream::fromSource($source)
     ];
@@ -100,10 +98,6 @@ function yay_parse(string $source, int $timeout = 2) : string {
             ,
             any()
                 ->onTry(function() use($cg) {
-                    if (time() - $cg->time > $cg->timeout)
-                        throw new YayException(
-                            "Timeout or exceeded macro recursion at line {$cg->line}.");
-
                     $cg->directives->apply($cg->TokenStream);
                 })
         )
