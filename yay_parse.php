@@ -6,8 +6,8 @@ use Yay\{
 };
 
 use function Yay\{
-    token, any, optional, operator, either, chain, lookahead, commit,
-    braces, consume, traverse
+    token, rtoken, any, optional, operator, either, chain, lookahead, commit,
+    braces, consume, repeat, traverse
 };
 
 function yay_parse(string $source) : string {
@@ -58,6 +58,15 @@ function yay_parse(string $source) : string {
                     (
                         token(T_STRING, 'macro')->onCommit($cgline)
                         ,
+                        optional
+                        (
+                            repeat
+                            (
+                                rtoken('/^·\w+$/')
+                            )
+                        )
+                        ->as('tags')
+                        ,
                         lookahead
                         (
                             token('{')
@@ -86,6 +95,7 @@ function yay_parse(string $source) : string {
                         $cg->directives->insert(
                             new Macro(
                                 $cg->line,
+                                $result->{'tags'},
                                 $result->{'rule pattern'},
                                 $result->{'rule mutation'}
                             )

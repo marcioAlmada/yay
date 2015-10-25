@@ -26,6 +26,7 @@ class Macro extends Directive {
     protected
         $pattern,
         $expansion,
+        $tags = [],
         $lookup = [],
         $parsers = [],
         $specificity = 0,
@@ -33,8 +34,9 @@ class Macro extends Directive {
         $constant = true
     ;
 
-    function __construct(int $line, array $pattern, array $expansion) {
+    function __construct(int $line, array $tags, array $pattern, array $expansion) {
         parent::__construct();
+        $this->compileTags($tags);
         $this->pattern = $this->compilePattern($line, $pattern);
         $this->expansion = $this->compileExpansion($line, $expansion);
     }
@@ -70,6 +72,11 @@ class Macro extends Directive {
 
             $ts->inject($expansion, $from);
         }
+    }
+
+    private function compileTags(array $tags)/* : void */ {
+        foreach ($tags as $tag)
+            $this->tags[(string) $tag] = true;
     }
 
     private function compilePattern(int $line, array $pattern) : Parser {
