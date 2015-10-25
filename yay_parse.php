@@ -28,80 +28,53 @@ function yay_parse(string $source) : string {
         (
             consume
             (
-                either
+                chain
                 (
-                    chain
+                    token(T_STRING, 'macro')->onCommit($cgline)
+                    ,
+                    optional
                     (
-                        token(T_STRING, 'ignore')->onCommit($cgline)
-                        ,
-                        lookahead
+                        repeat
                         (
-                            token('{')
+                            rtoken('/^·\w+$/')
                         )
-                        ,
-                        commit
+                    )
+                    ->as('tags')
+                    ,
+                    lookahead
+                    (
+                        token('{')
+                    )
+                    ,
+                    commit
+                    (
+                        chain
                         (
                             braces()->as('pattern')
+                            ,
+                            operator('>>')
+                            ,
+                            braces()->as('mutation')
+                            ,
+                            optional
+                            (
+                                token(';')
+                            )
                         )
-                        ,
-                        optional
-                        (
-                            token(';')
-                        )
+                        ->as('rule')
                     )
-                    ->onCommit(function(Ast $result) use($cg) {
-                        $cg->directives->insert(
-                            new Ignore($cg->line, $result->pattern));
-                    })
-                    ,
-                    chain
-                    (
-                        token(T_STRING, 'macro')->onCommit($cgline)
-                        ,
-                        optional
-                        (
-                            repeat
-                            (
-                                rtoken('/^·\w+$/')
-                            )
-                        )
-                        ->as('tags')
-                        ,
-                        lookahead
-                        (
-                            token('{')
-                        )
-                        ,
-                        commit
-                        (
-                            chain
-                            (
-                                braces()->as('pattern')
-                                ,
-                                operator('>>')
-                                ,
-                                braces()->as('mutation')
-                                ,
-                                optional
-                                (
-                                    token(';')
-                                )
-                            )
-                            ->as('rule')
-                        )
 
-                    )
-                    ->onCommit(function(Ast $result) use($cg) {
-                        $cg->directives->insert(
-                            new Macro(
-                                $cg->line,
-                                $result->{'tags'},
-                                $result->{'rule pattern'},
-                                $result->{'rule mutation'}
-                            )
-                        );
-                    })
                 )
+                ->onCommit(function(Ast $result) use($cg) {
+                    $cg->directives->insert(
+                        new Macro(
+                            $cg->line,
+                            $result->{'tags'},
+                            $result->{'rule pattern'},
+                            $result->{'rule mutation'}
+                        )
+                    );
+                })
                 ,
                 CONSUME_DO_TRIM
             )
