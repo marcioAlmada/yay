@@ -57,7 +57,8 @@ class Macro extends Directive {
                 $context->inherit($token->context());
             });
 
-            if ($context->contains($this->id())) return; // already expanded
+            if (! $this->isRecursive())
+                if ($context->contains($this->id())) return; // already expanded
 
             $context->add($this->id());
             $ts->unskip(...TokenStream::SKIPPABLE);
@@ -72,6 +73,10 @@ class Macro extends Directive {
 
             $ts->inject($expansion, $from);
         }
+    }
+
+    private function isRecursive() : bool {
+        return isset($this->tags['·recursion']);
     }
 
     private function compileTags(array $tags)/* : void */ {

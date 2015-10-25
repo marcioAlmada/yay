@@ -3,7 +3,7 @@ Non delimited layer matching
 --FILE--
 <?php
 
-macro {
+macro ·recursion {
     (T_STRING·A ···rest) // matches a lisp form
 } >> {
     T_STRING·A(···rest)
