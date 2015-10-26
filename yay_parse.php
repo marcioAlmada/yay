@@ -12,15 +12,8 @@ use function Yay\{
 
 function yay_parse(string $source) : string {
 
-    $cg = (object) [
-        'line' => 0,
-        'directives' => new Directives,
-        'TokenStream' => TokenStream::fromSource($source)
-    ];
-
-    $cgline = function($result) use($cg) {
-        $cg->line = $result->token()->line();
-    };
+    $tstream = TokenStream::fromSource($source);
+    $directives = new Directives;
 
     traverse
     (
@@ -30,7 +23,7 @@ function yay_parse(string $source) : string {
             (
                 chain
                 (
-                    token(T_STRING, 'macro')->onCommit($cgline)
+                    token(T_STRING, 'macro')->as('declaration')
                     ,
                     optional
                     (
@@ -54,24 +47,23 @@ function yay_parse(string $source) : string {
                             ,
                             operator('>>')
                             ,
-                            braces()->as('mutation')
+                            braces()->as('expansion')
                             ,
                             optional
                             (
                                 token(';')
                             )
                         )
-                        ->as('rule')
                     )
-
+                    ->as('body')
                 )
-                ->onCommit(function(Ast $result) use($cg) {
-                    $cg->directives->insert(
+                ->onCommit(function(Ast $macro) use($directives) {
+                    $directives->add(
                         new Macro(
-                            $cg->line,
-                            $result->{'tags'},
-                            $result->{'rule pattern'},
-                            $result->{'rule mutation'}
+                            $macro->{'declaration'}->line(),
+                            $macro->{'tags'},
+                            $macro->{'body pattern'},
+                            $macro->{'body expansion'}
                         )
                     );
                 })
@@ -80,12 +72,12 @@ function yay_parse(string $source) : string {
             )
             ,
             any()
-                ->onTry(function() use($cg) {
-                    $cg->directives->apply($cg->TokenStream);
+                ->onTry(function() use($directives, $tstream) {
+                    $directives->apply($tstream);
                 })
         )
     )
-    ->parse($cg->TokenStream);
+    ->parse($tstream);
 
-    return (string) $cg->TokenStream;
+    return (string) $tstream;
 }

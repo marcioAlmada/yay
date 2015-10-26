@@ -8,7 +8,7 @@ class Directives {
         $directives = []
     ;
 
-    function insert(Directive $directive) {
+    function add(Directive $directive) {
         $this->directives[$directive->specificity()][] = $directive;
         krsort($this->directives);
     }
