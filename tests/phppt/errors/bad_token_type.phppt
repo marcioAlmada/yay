@@ -3,7 +3,7 @@ Bad token types
 --FILE--
 <?php
 
-ignore { T_HAKUNAMATATA·foo };
+macro { T_HAKUNAMATATA·foo } >> { };
 
 ?>
 --EXPECTF--

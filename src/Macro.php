@@ -2,7 +2,7 @@
 
 namespace Yay;
 
-class Macro extends Directive {
+class Macro implements Directive {
 
     const
         PRETTY_PRINT =
@@ -13,8 +13,8 @@ class Macro extends Directive {
     ;
 
     const
+        E_TOKEN_TYPE = "Undefined token type '%s' on line %d.",
         E_EMPTY_PATTERN = "Empty macro pattern on line %d.",
-        E_EMPTY_EXPANSION = "Empty macro expansion on line %d.",
         E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
         E_BAD_EXPANSION = "Bad macro expansion identifier '%s' on line %d.",
         E_PARSER = "Bad macro parser identifier '%s' on line %d.",
@@ -34,11 +34,21 @@ class Macro extends Directive {
         $constant = true
     ;
 
+    private
+        $id
+    ;
+
     function __construct(int $line, array $tags, array $pattern, array $expansion) {
-        parent::__construct();
+        static $id = 0;
         $this->compileTags($tags);
         $this->pattern = $this->compilePattern($line, $pattern);
-        $this->expansion = $this->compileExpansion($line, $expansion);
+        if ($expansion)
+            $this->expansion = $this->compileExpansion($line, $expansion);
+        $this->id = $id++;
+    }
+
+    function id() : int {
+        return $this->id;
     }
 
     function specificity() : int {
@@ -48,8 +58,9 @@ class Macro extends Directive {
     function apply(TokenStream $ts) {
         $from = $ts->index();
         $crossover = $this->pattern->parse($ts);
-        if ($crossover instanceof Ast && ! $crossover->isEmpty()) {
+        if ($crossover instanceof Error || $crossover->isEmpty()) return;
 
+        if ($this->expansion) {
             // infer blue context from matched tokens
             $context = new BlueContext;
             $tokens = $crossover->all();
@@ -64,6 +75,7 @@ class Macro extends Directive {
             $ts->unskip(...TokenStream::SKIPPABLE);
             $to = $ts->index();
             $ts->extract($from, $to);
+
             $expansion = $this->mutate($this->expansion, $crossover);
 
             // paint blue context of expasion tokens
@@ -72,6 +84,12 @@ class Macro extends Directive {
             });
 
             $ts->inject($expansion, $from);
+        }
+        else {
+            $ts->unskip(...TokenStream::SKIPPABLE);
+            $ts->skip(T_WHITESPACE);
+            $to = $ts->index();
+            $ts->extract($from, $to);
         }
     }
 
@@ -195,8 +213,6 @@ class Macro extends Directive {
     }
 
     private function compileExpansion(int $line, array $expansion) : TokenStream {
-        if(! $expansion) $this->fail(self::E_EMPTY_EXPANSION, $line);
-
         $ts = TokenStream::fromSlice($expansion);
         $ts->trim();
 
@@ -514,5 +530,17 @@ class Macro extends Directive {
                 $id = $this->lookupCapture($result->label);
                 $this->parsers[] = (clone $parser)->as($id);
             });
+    }
+
+    private function lookupTokenType(Token $token) : int {
+        $type = explode('·', (string) $token)[0];
+        if (! defined($type))
+            $this->fail(self::E_TOKEN_TYPE, $type, $token->line());
+
+        return constant($type);
+    }
+
+    private function fail(string $error, ...$args) {
+        throw new YayException(sprintf($error, ...$args));
     }
 }
