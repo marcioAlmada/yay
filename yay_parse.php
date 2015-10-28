@@ -72,7 +72,7 @@ function yay_parse(string $source) : string {
             )
             ,
             any()
-                ->onTry(function() use($directives, $tstream) {
+                ->onCommit(function() use($directives, $tstream) {
                     $directives->apply($tstream);
                 })
         )

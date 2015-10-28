@@ -15,7 +15,6 @@ abstract class Parser {
         $type,
         $label,
         $stack,
-        $onTry,
         $onCommit
     ;
 
@@ -40,7 +39,6 @@ abstract class Parser {
 
     final function __clone()
     {
-        $this->onTry = null;
         $this->onCommit = null;
     }
 
@@ -48,7 +46,6 @@ abstract class Parser {
     {
         try {
             $index = $ts->index();
-            if ($this->onTry) ($this->onTry)();
             $result = $this->parser($ts, ...$this->stack);
         }
         catch(Halt $e) {
@@ -73,13 +70,6 @@ abstract class Parser {
                 "Parser label cannot contain spaces, '{$label}' given.");
 
         $this->label = $label;
-
-        return $this;
-    }
-
-    final function onTry(callable $fn) : self
-    {
-        $this->onTry = $fn;
 
         return $this;
     }
