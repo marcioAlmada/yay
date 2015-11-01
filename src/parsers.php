@@ -168,7 +168,7 @@ function operator(string $operator) : Parser
                 $buffer .= (string) $current;
                 $ts->step();
                 if($buffer === $operator) {
-                    $ts->skip(T_WHITESPACE);
+                    $ts->skip(...TokenStream::SKIPPABLE);
 
                     return new Ast($this->label, Token::operator($buffer));
                 }

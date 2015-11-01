@@ -31,6 +31,10 @@ $f;
 $foo < (o.o) > $bar;
      // ^ this is not a hug!
 
+$e
+<(o . o)> /**/
+$f;
+
 ?>
 --EXPECTF--
 <?php
@@ -52,5 +56,7 @@ $foo <(o.o)> $bar;
 
 $foo < (o.o) > $bar;
      // ^ this is not a hug!
+
+($e ."hug". $f);
 
 ?>
