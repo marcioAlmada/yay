@@ -12,6 +12,8 @@ use function Yay\{
 
 function yay_parse(string $source) : string {
 
+    if ($gc = gc_enabled()) gc_disable();
+
     $tstream = TokenStream::fromSource($source);
     $directives = new Directives;
 
@@ -79,5 +81,9 @@ function yay_parse(string $source) : string {
     )
     ->parse($tstream);
 
-    return (string) $tstream;
+    $expansion = (string) $tstream;
+
+    if ($gc) gc_enable();
+
+    return $expansion;
 }
