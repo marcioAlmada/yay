@@ -214,38 +214,26 @@ function traverse(Parser $parser) : Parser
     };
 }
 
-function repeat(Parser $parser, Parser $until = null) : Parser
+function repeat(Parser $parser) : Parser
 {
     if (! $parser->isFallible())
         throw new InvalidArgumentException(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser->type() . '(*))');
 
-    return new class(__FUNCTION__, $parser, $until->stack[0] ?? null) extends Parser
+    return new class(__FUNCTION__, $parser) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser, Token $until = null) : Result
+        protected function parser(TokenStream $ts, Parser $parser) : Result
         {
             $ast = new Ast($this->label);
-            $index = $ts->index();
 
-            if ($until) $parser = commit($parser);
-
-            while(true) {
-                if (
-                    ! ($current = $ts->current()) ||
-                    ($until && $current->equals($until)) ||
-                    ($result = $parser->parse($ts)) instanceof Error
-                ){
-                    $result = $result ?? $this->error($ts);
-                    $ts->jump($index);
-                    if ($ast->isEmpty()) $ast = $result;
-                    break;
-                }
-
-                $index = $ts->index();
-                $ast->append($result);
+            while(
+                ($current = $ts->current()) &&
+                (($partial = $parser->parse($ts)) instanceof Ast)
+            ){
+                $ast->append($partial);
             }
 
-            return $ast;
+            return $ast->isEmpty() ? ($partial ?? $this->error($ts)) : $ast;
         }
 
         function expected() : Expected
