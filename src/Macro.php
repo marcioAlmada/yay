@@ -513,7 +513,7 @@ class Macro implements Directive {
         return $expander;
     }
 
-    private function layer(string $start, string $end, parser $parser) : Parser {
+    private function layer(string $start, string $end, Parser $parser) : Parser {
         return
             chain
             (
