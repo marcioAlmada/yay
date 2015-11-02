@@ -528,7 +528,7 @@ class Macro implements Directive {
             )
             ->onCommit(function(Ast $result) use($parser) {
                 $id = $this->lookupCapture($result->label);
-                $this->parsers[] = (clone $parser)->as($id);
+                $this->parsers[] = $parser->as($id);
             });
     }
 
