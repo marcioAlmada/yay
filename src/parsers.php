@@ -686,7 +686,7 @@ function future(&$parser) : Parser
 
     return new class(__FUNCTION__, $delayed) extends Parser
     {
-        protected function parser(TokenStream $ts, $delayed) : Result
+        protected function parser(TokenStream $ts, callable $delayed) : Result
         {
             return $delayed()->parse($ts);
         }
