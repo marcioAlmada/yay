@@ -21,18 +21,18 @@ function token($type, $value = null) : Parser
             $this->expected = new Expected($token);
         }
 
-        final function parse(TokenStream $ts) : Result
+        final function parse(TokenStream $ts) /*: Result|null*/
         {
             if (($token = $ts->current()) && $token->equals($this->stack[0])) {
                 $ts->next();
                 $result = new Ast($this->label, $token);
                 if ($this->onCommit) ($this->onCommit)($result);
-            }
-            else {
-                $result = new Error($this->expected, $token, $ts->last());
+
+                return $result;
             }
 
-            return $result;
+            if (self::$errorLevel)
+                return new Error($this->expected, $token, $ts->last());
         }
 
         function expected() : Expected
@@ -54,7 +54,7 @@ function rtoken(string $regexp) : Parser
 
     return new class(__FUNCTION__, $regexp) extends Parser
     {
-        protected function parser(TokenStream $ts, string $regexp) : Result
+        protected function parser(TokenStream $ts, string $regexp) /*: Result|null*/
         {
             $token = $ts->current();
 
@@ -83,7 +83,7 @@ function any() : Parser
 {
     return new class(__FUNCTION__) extends Parser
     {
-        protected function parser(TokenStream $ts) : Result
+        protected function parser(TokenStream $ts) /*: Result|null*/
         {
             if ($token = $ts->current()) {
                 $ts->next();
@@ -110,7 +110,7 @@ function indentation()
 {
     return new class(__FUNCTION__) extends Parser
     {
-        protected function parser(TokenStream $ts) : Result
+        protected function parser(TokenStream $ts) /*: Result|null*/
         {
             if (($token = $ts->back()) && $token->is(T_WHITESPACE)) {
                 $ts->step();
@@ -137,7 +137,7 @@ function always(Token $result) : Parser
 {
     return new class(__FUNCTION__, $result) extends Parser
     {
-        protected function parser(TokenStream $ts, Token $result) : Result
+        protected function parser(TokenStream $ts, Token $result) /*: Result|null*/
         {
             return new Ast($this->label, [($this->label ?: 0) => clone $result]);
         }
@@ -158,7 +158,7 @@ function operator(string $operator) : Parser
 {
     return new class(__FUNCTION__, trim($operator)) extends Parser
     {
-        protected function parser(TokenStream $ts, string $operator) : Result
+        protected function parser(TokenStream $ts, string $operator) /*: Result|null*/
         {
             $index = $ts->index();
             $max = mb_strlen($operator);
@@ -195,7 +195,7 @@ function traverse(Parser $parser) : Parser
 {
     return new class(__FUNCTION__, $parser) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) : Result
+        protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
         {
             while ($parser->parse($ts) instanceof Ast);
 
@@ -222,7 +222,7 @@ function repeat(Parser $parser) : Parser
 
     return new class(__FUNCTION__, $parser) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) : Result
+        protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
         {
             $ast = new Ast($this->label);
 
@@ -252,7 +252,7 @@ function between(Parser $a, Parser $b, Parser $c): Parser
 {
     return new class(__FUNCTION__, $a, commit($b), commit($c)) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $a, Parser $b, Parser $c) : Result
+        protected function parser(TokenStream $ts, Parser $a, Parser $b, Parser $c) /*: Result|null*/
         {
             $asts = [];
 
@@ -305,7 +305,7 @@ function layer() : Parser
             ')' => -1,
         ];
 
-        function parser(TokenStream $ts) : Result
+        function parser(TokenStream $ts) /*: Result|null*/
         {
             $level = 1;
             $tokens = [];
@@ -377,7 +377,7 @@ function chain(Parser ...$links) : Parser
 {
     return new class(__FUNCTION__, ...$links) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser ...$links) : Result
+        protected function parser(TokenStream $ts, Parser ...$links) /*: Result|null*/
         {
             $asts = [];
             $ast = new Ast($this->label);
@@ -389,10 +389,12 @@ function chain(Parser ...$links) : Parser
                 }
                 else {
                     $error = $result;
-                    while (--$i >= 0 && ! $links[$i]->isFallible()) {
-                        $lastest = $error;
-                        $error = $links[$i]->error($ts);
-                        $error->with($lastest);
+                    if (self::$errorLevel) {
+                        while (--$i >= 0 && ! $links[$i]->isFallible()) {
+                            $lastest = $error;
+                            $error = $links[$i]->error($ts);
+                            $error->with($lastest);
+                        }
                     }
 
                     return $error;
@@ -436,16 +438,18 @@ function either(Parser ...$routes) : Parser
 
     return new class(__FUNCTION__, ...$routes) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser ...$routes) : Result
+        protected function parser(TokenStream $ts, Parser ...$routes) /*: Result|null*/
         {
             $errors = [];
             foreach ($routes as $route) {
                 if (($result = $route->parse($ts)) instanceof Ast) return $result;
-                if ($errors) end($errors)->with($result);
-                $errors[] = $result;
+                if (self::$errorLevel) {
+                    if ($errors) end($errors)->with($result);
+                    $errors[] = $result;
+                }
             }
 
-            return reset($errors);
+            return reset($errors) ?: null;
         }
 
         function expected() : Expected
@@ -479,7 +483,7 @@ function consume(Parser $parser, int $trim = CONSUME_NO_TRIM) : Parser
 {
     return new class(__FUNCTION__, $parser, $trim) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser, int $trim) : Result
+        protected function parser(TokenStream $ts, Parser $parser, int $trim) /*: Result|null*/
         {
             $from = $ts->index();
             $ast = $parser->parse($ts);
@@ -511,7 +515,7 @@ function lookahead(Parser $parser) : Parser
 {
     return new class(__FUNCTION__, $parser) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) : Result
+        protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
         {
             $label = $parser->label ?: $this->label;
             $index = $ts->index();
@@ -566,7 +570,9 @@ function commit(Parser $parser) : Parser
     {
         protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
+            $errorLevel = self::errorLevel(self::E_ENABLE);
             $result = $parser->parse($ts);
+            self::errorLevel($errorLevel);
 
             if ($result instanceof Error) $result->halt();
 
@@ -628,7 +634,7 @@ function ls(Parser $parser, Parser $delimiter) : Parser
 {
     return new class(__FUNCTION__, $parser, $delimiter) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) : Result
+        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/
         {
             $ast = new Ast($this->label);
 
@@ -674,7 +680,7 @@ function future(&$parser) : Parser
 
     return new class(__FUNCTION__, $delayed) extends Parser
     {
-        protected function parser(TokenStream $ts, callable $delayed) : Result
+        protected function parser(TokenStream $ts, callable $delayed) /*: Result|null*/
         {
             return $delayed()->parse($ts);
         }

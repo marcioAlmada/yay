@@ -58,7 +58,8 @@ class Macro implements Directive {
     function apply(TokenStream $ts) {
         $from = $ts->index();
         $crossover = $this->pattern->parse($ts);
-        if ($crossover instanceof Error || $crossover->isEmpty()) return;
+
+        if (null === $crossover || $crossover instanceof Error) return;
 
         if ($this->expansion) {
             // infer blue context from matched tokens

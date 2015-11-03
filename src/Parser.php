@@ -11,6 +11,20 @@ use
  */
 abstract class Parser {
 
+    const
+        E_DISABLE = 0,
+        E_ENABLE  = 1,
+        /**
+         * Use for deterministic parsing and debug only. Complex errors may
+         * increase GC cost a lot when parsing large inputs.
+         */
+        E_ALWAYS  = 2
+    ;
+
+    protected static
+        $errorLevel = self::E_DISABLE
+    ;
+
     protected
         $type,
         $label,
@@ -42,7 +56,7 @@ abstract class Parser {
         $this->onCommit = null;
     }
 
-    function parse(TokenStream $ts) : Result
+    function parse(TokenStream $ts) /*: Result|null*/
     {
         try {
             $index = $ts->index();
@@ -81,8 +95,16 @@ abstract class Parser {
         return $this;
     }
 
-    final protected function error(TokenStream $ts)
+    final protected function error(TokenStream $ts) /*: Error|null*/
     {
-        return new Error($this->expected(), $ts->current(), $ts->last());
+        if (self::$errorLevel > 0)
+            return new Error($this->expected(), $ts->current(), $ts->last());
+    }
+
+    public static function errorLevel(int $flag) : int {
+        $previous = self::$errorLevel;
+        if (self::$errorLevel < 2) self::$errorLevel = $flag;
+
+        return $previous;
     }
 }
