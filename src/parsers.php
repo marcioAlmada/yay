@@ -264,7 +264,7 @@ function between(Parser $a, Parser $b, Parser $c): Parser
                     return $result;
             }
 
-            return (new Ast($b->label ?: $this->label))->merge($asts[1]);
+            return $asts[1]->as($this->label);
         }
 
         function expected() : Expected
@@ -442,7 +442,9 @@ function either(Parser ...$routes) : Parser
         {
             $errors = [];
             foreach ($routes as $route) {
-                if (($result = $route->parse($ts)) instanceof Ast) return $result;
+                if (($result = $route->parse($ts)) instanceof Ast) {
+                    return $result->as($this->label);
+                }
                 if (self::$errorLevel) {
                     if ($errors) end($errors)->with($result);
                     $errors[] = $result;
@@ -493,7 +495,7 @@ function consume(Parser $parser, int $trim = CONSUME_NO_TRIM) : Parser
                 $to = $ts->index();
                 $ts->extract($from, $to);
 
-                return (new Ast($parser->label ?: $this->label))->merge($ast);
+                return $ast->as($this->label);
             }
 
             return $ast;
@@ -517,11 +519,10 @@ function lookahead(Parser $parser) : Parser
     {
         protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
         {
-            $label = $parser->label ?: $this->label;
             $index = $ts->index();
             $result = $parser->parse($ts);
             $ts->jump($index);
-            if ($result instanceof Ast) return (new Ast($label))->merge($result);
+            if ($result instanceof Ast) return $result->as($this->label);
 
             return $result;
         }
@@ -545,11 +546,9 @@ function optional(Parser $parser) : Parser
         protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
             $result = $parser->parse($ts);
-            $ast = new Ast($parser->label ?: $this->label);
+            $match = ($result instanceof Ast) ? $result->raw() : [];
 
-            if ($result instanceof Ast) $ast->merge($result);
-
-            return $ast;
+            return (new Ast($parser->label, $match))->as($this->label);
         }
 
         function expected() : Expected
@@ -576,7 +575,7 @@ function commit(Parser $parser) : Parser
 
             if ($result instanceof Error) $result->halt();
 
-            return (new Ast($parser->label ?: $this->label))->merge($result);
+            return $result->as($this->label);
         }
 
         function expected() : Expected

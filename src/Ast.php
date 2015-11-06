@@ -29,6 +29,10 @@ class Ast implements Result {
         return \igorw\get_in($this->ast, preg_split('/\s+/', trim($path)));
     }
 
+    function raw() {
+        return $this->ast;
+    }
+
     function token() : Token {
         return $this->ast;
     }
@@ -60,13 +64,13 @@ class Ast implements Result {
         return $this;
     }
 
-    function merge(self $ast) : self {
-        $this->ast = $ast->ast;
-
-        return $this;
-    }
-
     function isEmpty() : bool {
         return ! count($this->ast);
+    }
+
+    function as(string $label = null) : self {
+        if ($label && ! $this->label) $this->label = $label;
+
+        return $this;
     }
 }
