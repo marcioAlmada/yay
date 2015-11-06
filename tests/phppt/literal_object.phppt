@@ -12,12 +12,12 @@ macro {
             (
                 ·rtoken('/^\w+$/')·key
                 ,
-                ':'
+                ·token(':')
                 ,
                 ·parentheses()·value
             )
             ,
-            ','
+            ·token(',')
         )
         ·properties
     }

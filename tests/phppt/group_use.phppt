@@ -17,12 +17,12 @@ macro {
                         ,
                         ·indentation()
                         ,
-                        ·commit(T_STRING)
+                        ·commit(·token(T_STRING))
                     )
                 )
                 ·alias
             ),
-            ','
+            ·token(',')
         )
         ·entries
     }

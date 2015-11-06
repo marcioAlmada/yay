@@ -135,14 +135,15 @@ class Macro implements Directive {
                                     (
                                         $parser // recursion !!!
                                     )
+                                    ->as('parser')
                                     ,
-                                    token(T_CONSTANT_ENCAPSED_STRING)
+                                    token(T_CONSTANT_ENCAPSED_STRING)->as('string')
                                     ,
-                                    rtoken('/^(T_\w+)·(\w+)$/')
+                                    rtoken('/^T_\w+·\w+$/')->as('token')
                                     ,
-                                    rtoken('/^T_\w+$/')
+                                    rtoken('/^T_\w+$/')->as('constant')
                                     ,
-                                    rtoken('/^\w+$/')
+                                    rtoken('/^\w+$/')->as('word')
                                 )
                                 ,
                                 token(',')
@@ -295,7 +296,6 @@ class Macro implements Directive {
         $parser = $this->lookupParser($result['parser_type']);
         $args = $this->compileParserArgs($result['args']);
         $parser = $parser(...$args);
-
         if ($label = $result['label'])
             $parser->as($this->lookupCapture($label));
 
@@ -304,50 +304,31 @@ class Macro implements Directive {
 
     private function compileParserArgs(array $args) : array {
         $compiled = [];
-        foreach ($args as $i => $arg)
-            if ($arg instanceof Token) {
-                $compiled[] = $this->compileParserArg($arg);
-            }
-            else if(is_array($arg)) {
-                if (isset($arg['parser_type']))
-                    $compiled[] = $this->compileParser($arg);
-                else
-                    array_merge($compiled, $this->compileParserArgs($arg));
-            }
+        foreach ($args as $type => $arg) switch ((string) $type) {
+            case 'token':
+                $type = $this->lookupTokenType($arg);
+                $label = $this->lookupCapture($arg);
+                $compiled[] = token($type)->as($label);
+                break;
+            case 'word':
+                $compiled[] = token($arg);
+                break;
+            case 'parser':
+                $compiled[] = $this->compileParser($arg);
+                break;
+            case 'string':
+                $compiled[] = trim((string) $arg, '"\'');
+                break;
+            case 'constant': // T_*
+                $compiled[] = $this->lookupTokenType($arg);
+                break;
+            default:
+                $compiled = array_merge(
+                    $compiled, $this->compileParserArgs($arg));
+        }
 
         return $compiled;
     }
-
-    private function compileParserArg(Token $arg) {
-        switch ($arg->type()) {
-            case T_CONSTANT_ENCAPSED_STRING:
-                $val = trim((string) $arg, '"\'');
-                if (1 === mb_strlen($val))
-                    $arg = token($val);
-                else
-                    $arg = $val;
-                break;
-            case T_STRING:
-                if (preg_match('/^(T_\w+)·(\w+)$/', (string) $arg)) {
-                    $id = $this->lookupCapture($arg);
-                    $type = $this->lookupTokenType($arg);
-                    $arg = token($type)->as($id);
-                }
-                elseif (preg_match('/^(T_\w+)$/', (string) $arg)) {
-                    $arg = token($this->lookupTokenType($arg));
-                }
-                else {
-                    $arg = token(T_STRING, (string) $arg);
-                }
-                break;
-            default: // non T_STRING wordy token
-                $arg = token($arg->type());
-                break;
-        }
-
-        return $arg;
-    }
-
     private function mutate(TokenStream $ts, Ast $crossover) : TokenStream {
 
         $ts = clone $ts;
@@ -424,19 +405,6 @@ class Macro implements Directive {
                         $mutation = $this->mutate($expansion, $context);
                         $cg->ts->inject($mutation);
                     }
-                })
-                ,
-                consume
-                (
-                    chain
-                    (
-                        token(T_NS_SEPARATOR)
-                        ,
-                        token(T_STRING, '·n')
-                    )
-                )
-                ->onCommit(function(Ast $result) use($cg) {
-                    $cg->ts->push(new Token(T_WHITESPACE, PHP_EOL));
                 })
                 ,
                 consume

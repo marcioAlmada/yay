@@ -9,7 +9,7 @@ macro {
         (
             ·rtoken('/^\w+$/')·field
             ,
-            ','
+            ·token(',')
         )
         ·fields
     }

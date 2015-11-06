@@ -4,7 +4,7 @@ Parser combinator with "T_*·label" argument
 <?php
 
 macro {
-    { ·ls(T_STRING·name, ',')·names }
+    { ·ls(T_STRING·name, ·token(','))·names }
 } >> {
     [·names ··· { T_STRING·name, }]
 }
