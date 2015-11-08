@@ -636,6 +636,9 @@ function ls(Parser $parser, Parser $delimiter) : Parser
         protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/
         {
             $ast = new Ast($this->label);
+            $parser = (clone $parser)->onCommit(function(ast $result) use ($ast){
+                $ast->push($result);
+            });
 
             repeat
             (
@@ -645,15 +648,10 @@ function ls(Parser $parser, Parser $delimiter) : Parser
                     (
                         $delimiter
                         ,
-                        (clone $parser)
+                        $parser
                     )
-                    ->onCommit(function(ast $result) use ($ast, $parser){
-                        $ast->push(new Ast($parser->label, $result->{$parser->label ?: 1}));
-                    })
                     ,
-                    (clone $parser)->onCommit(function(ast $result) use ($ast){
-                        $ast->push($result);
-                    })
+                    $parser
                 )
             )
             ->parse($ts);
