@@ -679,7 +679,10 @@ function future(&$parser) : Parser
     {
         protected function parser(TokenStream $ts, callable $delayed) /*: Result|null*/
         {
-            return $delayed()->parse($ts);
+            $result = $delayed()->parse($ts);
+            if ($result instanceof Ast) $result->as($this->label);
+
+            return $result;
         }
 
         function expected() : Expected
