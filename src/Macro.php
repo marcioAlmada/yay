@@ -181,14 +181,6 @@ class Macro implements Directive {
                         $this->parsers[] = layer()->as($id);
                     })
                 ,
-                consume
-                (
-                    rtoken('/^··$/')
-                )
-                ->onCommit(function(Ast $result) {
-                    $this->dominant = count($this->parsers);
-                })
-                ,
                 rtoken('/·/')
                     ->onCommit(function(Ast $result) {
                         $token = $result->token();
