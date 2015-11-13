@@ -661,12 +661,12 @@ function ls(Parser $parser, Parser $delimiter) : Parser
 
         function expected() : Expected
         {
-            return $this->stack[0]()->expected();
+            return $this->stack[0]->expected();
         }
 
         function isFallible() : bool
         {
-            return $this->stack[0]()->isFallible();
+            return $this->stack[0]->isFallible();
         }
     };
 }
