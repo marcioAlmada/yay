@@ -6,7 +6,7 @@ Test ·concat expander
 macro {
     yay\concat( ·rtoken('/^\w+$/')·identifier )
 } >> {
-    ·concat(foo_, ·identifier, _baz)
+    ·concat(foo_ ·identifier _baz)
 }
 
 yay\concat(bar);

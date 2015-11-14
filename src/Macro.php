@@ -218,20 +218,7 @@ class Macro implements Directive {
                 (
                     rtoken('/^·\w+$/')->as('expander')
                     ,
-                    token('(')
-                    ,
-                    ls
-                    (
-                        rtoken('/^\w+|·\w+|T_\w+·\w+|···\w+$/')
-                        ,
-                        token(',')
-                    )
-                    ->as('args')
-                    ,
-                    commit
-                    (
-                        token(')')
-                    )
+                    parentheses()->as('args')
                 )
                 ->onCommit(function($r){
                     $this->constant = false;
@@ -351,28 +338,18 @@ class Macro implements Directive {
                     (
                         rtoken('/^·\w+$/')->as('expander')
                         ,
-                        token('(')
-                        ,
-                        ls
-                        (
-                            rtoken('/^\w+|·\w+|T_\w+·\w+|···\w+$/')
-                            ,
-                            token(',')
-                        )
-                        ->as('args')
-                        ,
-                        commit
-                        (
-                            token(')')
-                        )
+                        parentheses()->as('args')
                     )
                 )
                 ->onCommit(function(Ast $result) use ($cg) {
                     $expander = $this->lookupExpander($result->expander);
                     $args = [];
                     foreach ($result->args as $arg) {
-                        if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key = (string) $arg)) {
-                            $arg = $cg->crossover->{$key};
+                        if ($arg instanceof Token) {
+                            $key = (string) $arg;
+                            if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key)) {
+                                $arg = $cg->crossover->{$key};
+                            }
                         }
 
                         if (is_array($arg))
