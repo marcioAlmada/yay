@@ -3,7 +3,7 @@ Proof of concept backport of enums from future
 --FILE--
 <?php
 
-macro {
+macro ·dirty {
     enum T_STRING·name {
         ·ls
         (

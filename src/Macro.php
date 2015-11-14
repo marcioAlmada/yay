@@ -2,6 +2,8 @@
 
 namespace Yay;
 
+use function Yay\DSL\Expanders\{ hygienize };
+
 class Macro implements Directive {
 
     const
@@ -26,25 +28,28 @@ class Macro implements Directive {
     protected
         $pattern,
         $expansion,
+        $cycle,
         $tags = [],
         $lookup = [],
         $parsers = [],
         $specificity = 0,
         $dominant = false,
-        $constant = true
+        $constant = true,
+        $unsafe = false
     ;
 
     private
         $id
     ;
 
-    function __construct(int $line, array $tags, array $pattern, array $expansion) {
+    function __construct(int $line, array $tags, array $pattern, array $expansion, Cycle $cycle) {
         static $id = 0;
         $this->compileTags($tags);
         $this->pattern = $this->compilePattern($line, $pattern);
         if ($expansion)
             $this->expansion = $this->compileExpansion($line, $expansion);
         $this->id = $id++;
+        $this->cycle = $cycle;
     }
 
     function id() : int {
@@ -69,7 +74,7 @@ class Macro implements Directive {
                 $context->inherit($token->context());
             });
 
-            if (! $this->isRecursive())
+            if (! $this->hasTag('·recursion'))
                 if ($context->contains($this->id())) return; // already expanded
 
             $context->add($this->id());
@@ -78,6 +83,7 @@ class Macro implements Directive {
             $ts->extract($from, $to);
 
             $expansion = $this->mutate($this->expansion, $crossover);
+            $this->cycle->next();
 
             // paint blue context of expasion tokens
             $expansion->each(function(Token $token) use ($context) {
@@ -94,8 +100,8 @@ class Macro implements Directive {
         }
     }
 
-    private function isRecursive() : bool {
-        return isset($this->tags['·recursion']);
+    private function hasTag(string $tag) : bool {
+        return isset($this->tags[$tag]);
     }
 
     private function compileTags(array $tags)/* : void */ {
@@ -214,6 +220,9 @@ class Macro implements Directive {
         (
             either
             (
+                token(T_VARIABLE)
+                    ->onCommit(function() { $this->unsafe = true; })
+                ,
                 chain
                 (
                     rtoken('/^·\w+$/')->as('expander')
@@ -318,15 +327,15 @@ class Macro implements Directive {
     }
     private function mutate(TokenStream $ts, Ast $crossover) : TokenStream {
 
-        $ts = clone $ts;
-
-        if ($this->constant) return $ts;
-
         $cg = (object) [
-            'ts' => $ts,
+            'ts' => clone $ts,
             'crossover' => $crossover,
             // 'frames' => [] // @TODO switch frames instead of merging context
         ];
+
+        if ($this->unsafe && !$this->hasTag('·dirty')) hygienize($cg->ts, $this->cycle->id());
+
+        if ($this->constant) return $cg->ts;
 
         traverse
         (
@@ -357,7 +366,7 @@ class Macro implements Directive {
                         else
                             $args[] = $arg;
                     }
-                    $mutation = $expander(TokenStream::fromSlice($args));
+                    $mutation = $expander(TokenStream::fromSlice($args), $this->cycle->id());
                     $cg->ts->inject($mutation);
                 })
                 ,

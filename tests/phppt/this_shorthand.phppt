@@ -3,7 +3,7 @@ This shorthand $->
 --FILE--
 <?php
 
-macro { $ } >> { $this }
+macro ·dirty { $ } >> { $this }
 
 class foo
 {

@@ -14,8 +14,14 @@ use
  */
 class SpecsTest extends \PHPUnit_Framework_TestCase
 {
-    function specProvider() : array {
+    public static function setupBeforeClass() {
+        /**
+         * Abusing namespaces to make Cycle->id() predictable during tests only!
+         */
+        function md5($foo) { return $foo; }
+    }
 
+    function specProvider() : array {
         $files = new RegexIterator(
             new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator(__DIR__ . '/phppt/')
@@ -94,7 +100,7 @@ class Test {
             list($this->name, $this->source, $this->expected) = $sections;
 
             try {
-                $this->out = (string) yay_parse($this->source, 1);
+                $this->out = yay_parse($this->source, '');
             } catch(\Exception $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;

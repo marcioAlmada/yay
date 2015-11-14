@@ -1,14 +1,15 @@
 <?php declare(strict_types=1);
 
-use Yay\{ Token, TokenStream, Directives, Macro, Expected, Error };
+use Yay\{ Token, TokenStream, Directives, Macro, Expected, Error, Cycle };
 use Yay\{ const LAYER_DELIMITERS };
 
-function yay_parse(string $source) : string {
+function yay_parse(string $source, string $salt) : string {
 start:
 
     if ($gc = gc_enabled()) gc_disable();
     $ts = TokenStream::fromSource($source);
     $directives = new Directives;
+    $cycle = new Cycle($salt);
 
 declaration:
 
@@ -108,7 +109,8 @@ expansion:
             $declaration->line(),
             $tags,
             $pattern,
-            $expansion
+            $expansion,
+            $cycle
         )
     );
     goto declaration;

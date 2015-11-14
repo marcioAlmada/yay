@@ -1,0 +1,40 @@
+--TEST--
+Macro hygiene
+--FILE--
+<?php
+
+macro { test(T_VARIABLE·A, T_VARIABLE·B); } >> {
+
+$x += T_VARIABLE·A;
+$y += T_VARIABLE·B;
+
+}
+
+test($a, $b);
+
+test($b, $c);
+
+macro { T_VARIABLE·A += T_VARIABLE·B; } >> { $z = (T_VARIABLE·A += T_VARIABLE·B); }
+
+test($a, $b);
+
+macro { unsafe_test(T_VARIABLE·A) } >> { ·unsafe($unsafe = $code) = T_VARIABLE·A; }
+
+unsafe_test($dirty);
+
+?>
+--EXPECTF--
+<?php
+
+$x·0 += $a;
+$y·0 += $b;
+
+$x·1 += $b;
+$y·1 += $c;
+
+$z·3 = ($x·2 += $a);
+$z·4 = ($y·2 += $b);
+
+$unsafe = $code = $dirty;;
+
+?>
