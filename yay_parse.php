@@ -1,87 +1,129 @@
 <?php declare(strict_types=1);
 
-use Yay\{
-    YayException, TokenStream, Ast, Directives, Macro, Ignore,
-    const CONSUME_DO_TRIM
-};
-
-use function Yay\{
-    token, rtoken, any, optional, operator, either, chain, lookahead, commit,
-    braces, consume, repeat, traverse
-};
+use Yay\{ Token, TokenStream, Directives, Macro, Expected, Error };
+use Yay\{ const LAYER_DELIMITERS };
 
 function yay_parse(string $source) : string {
+start:
 
     if ($gc = gc_enabled()) gc_disable();
-
-    $tstream = TokenStream::fromSource($source);
+    $ts = TokenStream::fromSource($source);
     $directives = new Directives;
 
-    traverse
-    (
-        either
-        (
-            consume
-            (
-                chain
-                (
-                    token(T_STRING, 'macro')->as('declaration')
-                    ,
-                    optional
-                    (
-                        repeat
-                        (
-                            rtoken('/^·\w+$/')
-                        )
-                    )
-                    ->as('tags')
-                    ,
-                    lookahead
-                    (
-                        token('{')
-                    )
-                    ,
-                    commit
-                    (
-                        chain
-                        (
-                            braces()->as('pattern')
-                            ,
-                            operator('>>')
-                            ,
-                            braces()->as('expansion')
-                            ,
-                            optional
-                            (
-                                token(';')
-                            )
-                        )
-                    )
-                    ->as('body')
-                )
-                ->onCommit(function(Ast $macro) use($directives) {
-                    $directives->add(
-                        new Macro(
-                            $macro->{'declaration'}->line(),
-                            $macro->{'tags'},
-                            $macro->{'body pattern'},
-                            $macro->{'body expansion'}
-                        )
-                    );
-                })
-                ,
-                CONSUME_DO_TRIM
-            )
-            ,
-            any()
-                ->onCommit(function() use($directives, $tstream) {
-                    $directives->apply($tstream);
-                })
-        )
-    )
-    ->parse($tstream);
+declaration:
 
-    $expansion = (string) $tstream;
+    $from = $ts->index();
+
+    if (! ($token = $ts->current())) goto end;
+
+    if ($token->contains('macro')) {
+        $declaration = $token;
+        $ts->next();
+        goto tags;
+    }
+    goto any;
+
+tags:
+
+    $tags = [];
+    while (($token = $ts->current()) && preg_match('/^·\w+$/', (string) $token)) {
+        $tags[] = $token;
+        $ts->next();
+    }
+
+pattern:
+
+    $index = $ts->index();
+    $pattern = [];
+    $level = 1;
+
+    if (! ($token = $ts->current()) || ! $token->is('{')) goto any;
+
+    $ts->next();
+
+    while (($token = $ts->current()) && $level += (LAYER_DELIMITERS[$token->type()] ?? 0)){
+        $pattern[] = $token;
+        $token = $ts->step();
+    }
+
+    if (! $token || ! $token->is('}')) {
+        $ts->jump($index);
+        (new Error(new Expected(new Token('}')), $ts->current(), $ts->last()))->halt();
+    }
+
+    $ts->next();
+
+__: // >>
+
+    $index = $ts->index();
+    $operator = '>>';
+    $max = strlen($operator);
+    $buffer = '';
+
+    while ((mb_strlen($buffer) <= $max) && $token = $ts->current()) {
+        $buffer .= (string) $token;
+        $ts->step();
+        if($buffer === $operator) {
+            $ts->skip(T_WHITESPACE);
+            goto expansion;
+        }
+    }
+
+    $ts->jump($index);
+    (new Error(new Expected(Token::Operator($operator)), $ts->current(), $ts->last()))->halt();
+
+expansion:
+
+    $index = $ts->index();
+    $expansion = [];
+    $level = 1;
+
+    if (! ($token = $ts->current()) || ! $token->is('{')) {
+        $ts->jump($index);
+        (new Error(new Expected(new Token('}')), $ts->current(), $ts->last()))->halt();
+    }
+
+    $ts->next();
+
+    while (($token = $ts->current()) && $level += (LAYER_DELIMITERS[$token->type()] ?? 0)){
+        $expansion[] = $token;
+        $token = $ts->step();
+    }
+
+    if (! $token || ! $token->is('}')) {
+        $ts->jump($index);
+        (new Error(new Expected(new Token('}')), $ts->current(), $ts->last()))->halt();
+    }
+
+    // optional ';'
+    $token = $ts->next();
+    if ($token->is(';')) $ts->next();
+
+    // cleanup
+    $ts->unskip(...TokenStream::SKIPPABLE);
+    $ts->skip(T_WHITESPACE);
+    $ts->extract($from, $ts->index());
+    $directives->add(
+        new Macro(
+            $declaration->line(),
+            $tags,
+            $pattern,
+            $expansion
+        )
+    );
+    goto declaration;
+
+any:
+
+    if ($token) {
+        $directives->apply($ts);
+        $ts->next();
+    }
+    goto declaration;
+
+end:
+
+    $expansion = (string) $ts;
 
     if ($gc) gc_enable();
 

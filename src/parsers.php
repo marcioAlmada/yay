@@ -290,21 +290,21 @@ function between(Parser $a, Parser $b, Parser $c): Parser
     };
 }
 
+const LAYER_DELIMITERS = [
+    '{' => 1,
+    T_CURLY_OPEN => 1,
+    T_DOLLAR_OPEN_CURLY_BRACES => 1,
+    '}' => -1,
+    '[' => 1,
+    ']' => -1,
+    '(' => 1,
+    ')' => -1,
+];
+
 function layer() : Parser
 {
     return new class(__FUNCTION__) extends Parser
     {
-        protected $delimiters = [
-            '{' => 1,
-            T_CURLY_OPEN => 1,
-            T_DOLLAR_OPEN_CURLY_BRACES => 1,
-            '}' => -1,
-            '[' => 1,
-            ']' => -1,
-            '(' => 1,
-            ')' => -1,
-        ];
-
         function parser(TokenStream $ts) /*: Result|null*/
         {
             $level = 1;
@@ -312,7 +312,7 @@ function layer() : Parser
 
             while (
                 ($token = $ts->current()) &&
-                ($level += ($this->delimiters[$token->type()] ?? 0))
+                ($level += (LAYER_DELIMITERS[$token->type()] ?? 0))
             ){
                 $tokens[] = $token;
                 $ts->step();
