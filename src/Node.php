@@ -14,10 +14,6 @@ class Node {
         $this->token = $token;
     }
 
-    function __toString() : string {
-        return (string) $this->token . (string) $this->next;
-    }
-
     function __debugInfo() {
         return [$this->token];
     }

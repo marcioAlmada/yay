@@ -26,7 +26,7 @@ class Ast implements Result {
 
     function __get($path)
     {
-        return \igorw\get_in($this->ast, preg_split('/\s+/', trim($path)));
+        return \igorw\get_in($this->ast, preg_split('/\s+/', $path));
     }
 
     function raw() {
@@ -46,14 +46,14 @@ class Ast implements Result {
     }
 
     function append(self $ast) : self {
-        if ($ast->label !== null && isset($this->ast[$ast->label]))
-            throw new InvalidArgumentException(
-                "Duplicated AST label '{$ast->label}'.");
+        if (null !== $ast->label) {
+            if (isset($this->ast[$ast->label]))
+                throw new InvalidArgumentException(
+                    "Duplicated AST label '{$ast->label}'.");
 
-        if ($ast->label)
             $this->ast[$ast->label] = $ast->ast;
-        else
-            $this->ast[] = $ast->ast;
+        }
+        else $this->ast[] = $ast->ast;
 
         return $this;
     }
@@ -69,7 +69,7 @@ class Ast implements Result {
     }
 
     function as(string $label = null) : self {
-        if ($label && ! $this->label) $this->label = $label;
+        if (null !== $label && null === $this->label) $this->label = $label;
 
         return $this;
     }

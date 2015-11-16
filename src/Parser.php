@@ -69,7 +69,7 @@ abstract class Parser {
         }
 
         if ($result instanceof Ast) {
-            if ($this->onCommit) ($this->onCommit)($result);
+            if (null !== $this->onCommit) ($this->onCommit)($result);
         }
         else
             $ts->jump($index);

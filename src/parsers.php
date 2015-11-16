@@ -23,10 +23,10 @@ function token($type, $value = null) : Parser
 
         final function parse(TokenStream $ts) /*: Result|null*/
         {
-            if (($token = $ts->current()) && $token->equals($this->stack[0])) {
+            if (null !== ($token = $ts->current()) && $token->equals($this->stack[0])) {
                 $ts->next();
                 $result = new Ast($this->label, $token);
-                if ($this->onCommit) ($this->onCommit)($result);
+                if (null !== $this->onCommit) ($this->onCommit)($result);
 
                 return $result;
             }
@@ -58,7 +58,7 @@ function rtoken(string $regexp) : Parser
         {
             $token = $ts->current();
 
-            if ($token && 1 === preg_match($regexp, (string) $token)) {
+            if (null !== $token && 1 === preg_match($regexp, (string) $token)) {
                 $ts->next();
 
                 return new Ast($this->label, $token);
@@ -85,7 +85,7 @@ function any() : Parser
     {
         protected function parser(TokenStream $ts) /*: Result|null*/
         {
-            if ($token = $ts->current()) {
+            if (null !== ($token = $ts->current())) {
                 $ts->next();
 
                 return new Ast($this->label, $token);
@@ -112,7 +112,7 @@ function indentation()
     {
         protected function parser(TokenStream $ts) /*: Result|null*/
         {
-            if (($token = $ts->back()) && $token->is(T_WHITESPACE)) {
+            if (null !== ($token = $ts->back()) && $token->is(T_WHITESPACE)) {
                 $ts->step();
 
                 return new Ast($this->label, $token);
