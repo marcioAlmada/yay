@@ -18,6 +18,7 @@
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
             <directory>src/</directory>
+            <file>yay_parse.php</file>
         </whitelist>
     </filter>
 
