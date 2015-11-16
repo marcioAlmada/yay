@@ -7,10 +7,6 @@ namespace Yay;
  */
 class ParserTest extends \PHPUnit_Framework_TestCase {
 
-    static function setUpBeforeClass() {
-        Parser::errorLevel(Parser::E_ALWAYS);
-    }
-
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
         $this->setExpectedException(
             Halt::class,
@@ -25,6 +21,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                     $this->fail("Unexpected commit on {$parser}().");
                 }
             )
+            ->withErrorLevel(Error::ENABLED)
             ->parse($ts);
         }
         catch (Halt $e) {
@@ -41,6 +38,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                 $this->fail("Unexpected commit on {$parser->type()}().");
             }
         )
+        ->withErrorLevel(Error::ENABLED)
         ->parse($ts);
 
         $this->assertSame($current, $ts->current());
@@ -64,6 +62,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                 $commited = true;
             }
         )
+        ->withErrorLevel(Error::ENABLED)
         ->parse($ts);
 
         $this->assertTrue($commited, "Missing commit on {$parser}().");

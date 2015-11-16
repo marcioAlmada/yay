@@ -5,6 +5,15 @@ namespace Yay;
 class Error implements Result {
 
     const
+        DISABLED = false,
+        /**
+         * Use for deterministic parsing and debug only. Complex errors may
+         * increase GC cost a lot when parsing large inputs.
+         */
+        ENABLED = true
+    ;
+
+    const
         UNEXPECTED = "Unexpected %s on line %d, ",
         UNEXPECTED_END = "Unexpected end at %s on line %d, ",
         EXPECTED = "expected %s."

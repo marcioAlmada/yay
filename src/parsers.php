@@ -31,7 +31,7 @@ function token($type, $value = null) : Parser
                 return $result;
             }
 
-            if (self::$errorLevel)
+            if ($this->errorLevel === Error::ENABLED)
                 return new Error($this->expected, $token, $ts->last());
         }
 
@@ -388,7 +388,7 @@ function chain(Parser ...$links) : Parser
                 }
                 else {
                     $error = $result;
-                    if (self::$errorLevel) {
+                    if ($this->errorLevel === Error::ENABLED) {
                         while (--$i >= 0 && ! $links[$i]->isFallible()) {
                             $lastest = $error;
                             $error = $links[$i]->error($ts);
@@ -444,7 +444,7 @@ function either(Parser ...$routes) : Parser
                 if (($result = $route->parse($ts)) instanceof Ast) {
                     return $result->as($this->label);
                 }
-                if (self::$errorLevel) {
+                if ($this->errorLevel === Error::ENABLED) {
                     if ($errors) end($errors)->with($result);
                     $errors[] = $result;
                 }
@@ -566,13 +566,13 @@ function commit(Parser $parser) : Parser
 {
     return new class(__FUNCTION__, $parser) extends Parser
     {
+        protected
+            $errorLevel = Error::ENABLED
+        ;
+
         protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
-            $errorLevel = self::errorLevel(self::E_ENABLE);
-            $result = $parser->parse($ts);
-            self::errorLevel($errorLevel);
-
-            if ($result instanceof Error) $result->halt();
+            if (($result = $parser->parse($ts)) instanceof Error) $result->halt();
 
             return $result->as($this->label);
         }
