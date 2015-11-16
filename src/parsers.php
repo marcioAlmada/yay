@@ -160,21 +160,20 @@ function operator(string $operator) : Parser
     {
         protected function parser(TokenStream $ts, string $operator) /*: Result|null*/
         {
-            $index = $ts->index();
             $max = mb_strlen($operator);
             $buffer = '';
 
-            while ((mb_strlen($buffer) <= $max) && $current = $ts->current()) {
-                $buffer .= (string) $current;
+            while (
+                (mb_strlen($buffer) <= $max) &&
+                ($token = $ts->current()) &&
+                (false !== mb_strstr($operator, ($current = (string) $token)))
+            ){
                 $ts->step();
-                if($buffer === $operator) {
+                if(($buffer .= $current) === $operator) {
                     $ts->skip(...TokenStream::SKIPPABLE);
-
                     return new Ast($this->label, Token::operator($buffer));
                 }
             }
-
-            $ts->jump($index);
 
             return $this->error($ts);
         }

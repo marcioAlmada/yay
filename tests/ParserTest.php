@@ -188,7 +188,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseError(
             $ts,
             operator('<~>'),
-            "Unexpected '<' on line 1, expected OPERATOR(<~>)."
+            "Unexpected T_WHITESPACE( ) on line 1, expected OPERATOR(<~>)."
         );
     }
 
