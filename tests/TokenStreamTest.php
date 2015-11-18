@@ -78,11 +78,8 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
     function testClone() {
         $tsa = TokenStream::fromSource('<?php START END');
         $tsb = clone $tsa;
-        $tsb->first()->__construct(T_OPEN_TAG, '<?PHP ');
-        $tsb->last()->__construct(T_STRING, 'THE_END');
-
-        $this->assertEquals('<?php START END', (string) $tsa);
-        $this->assertEquals('<?PHP START THE_END', (string) $tsb);
+        $tsb->reset();
+        $this->assertNotSame($tsa->index(), $tsb->index());
     }
 
     function testInject() {

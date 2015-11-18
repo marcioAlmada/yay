@@ -69,7 +69,7 @@ function rtoken(string $regexp) : Parser
 
         function expected() : Expected
         {
-            return new Expected(Token::match($this->stack[0]));
+            return new Expected(new Token(Token::MATCH, $this->stack[0]));
         }
 
         function isFallible() : bool
@@ -96,7 +96,7 @@ function any() : Parser
 
         function expected() : Expected
         {
-            return new Expected(Token::any());
+            return new Expected(new Token(Token::ANY));
         }
 
         function isFallible() : bool
@@ -171,7 +171,7 @@ function operator(string $operator) : Parser
                 $ts->step();
                 if(($buffer .= $current) === $operator) {
                     $ts->skip(...TokenStream::SKIPPABLE);
-                    return new Ast($this->label, Token::operator($buffer));
+                    return new Ast($this->label, new Token(token::OPERATOR, $buffer));
                 }
             }
 

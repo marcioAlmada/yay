@@ -8,22 +8,22 @@ class Token implements \JsonSerializable {
      * pseudo token types
      */
     const
-        EOF = 1010,
         ANY = 1021,
         NONE = 1032,
         MATCH = 1043,
-        OPERATOR = 1054
+        OPERATOR = 1054,
+        CLOAKED = 1065
     ;
 
     /**
      * lookup table used to dump pseudo token types
      */
     const TOKENS = [
-        self::EOF => 'EOF',
         self::ANY => 'ANY',
         self::NONE => 'NONE',
         self::MATCH => 'MATCH',
-        self::OPERATOR => 'OPERATOR'
+        self::OPERATOR => 'OPERATOR',
+        self::CLOAKED => 'CLOAKED'
     ];
 
     protected
@@ -35,8 +35,9 @@ class Token implements \JsonSerializable {
     ;
 
     function __construct($type, string $value = null, int $line = null) {
-        if (! is_scalar($type))
-            throw new YayException("Token type must be int or string.");
+        assert(null === $this->type, "Attempt to modify immutable token.");
+
+        assert(is_int($type)||is_string($type), "Token type must be int or string.");
 
         if (is_string($type)) {
             if(1 !== mb_strlen($type))
@@ -102,32 +103,8 @@ class Token implements \JsonSerializable {
         return $this->line ?: 0;
     }
 
-    function literal() : bool {
-        return $this->literal;
-    }
-
     function context() : BlueContext {
         return $this->context;
-    }
-
-    static function eof() : self {
-        return new self();
-    }
-
-    static function any() : self {
-        return new self(self::ANY);
-    }
-
-    static function none() : self {
-        return new self(self::NONE);
-    }
-
-    static function match(string $value) : self {
-        return new self(self::MATCH, $value);
-    }
-
-    static function operator(string $value) : self {
-        return new self(self::OPERATOR, $value);
     }
 
     function jsonSerialize() {

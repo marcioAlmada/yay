@@ -44,13 +44,9 @@ function hygienize(TokenStream $ts, string $scope) : TokenStream {
         either
         (
             token(T_VARIABLE)->onCommit(function(Ast $result) use ($scope) {
-                if (($token = $result->token())->is(T_VARIABLE)) {
-                    $token->__construct(
-                        $token->type(),
-                        (string) $token . '·' . $scope,
-                        $token->line()
-                    );
-                }
+                (function() use($scope) {
+                    $this->value = (string) $this . '·' . $scope;
+                })->call($result->token());
             })
             ,
             any()

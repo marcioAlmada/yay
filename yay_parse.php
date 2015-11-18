@@ -71,7 +71,7 @@ __: // >>
     }
 
     $ts->jump($index);
-    (new Error(new Expected(Token::Operator($operator)), $ts->current(), $ts->last()))->halt();
+    (new Error(new Expected(new Token(token::OPERATOR, $operator)), $ts->current(), $ts->last()))->halt();
 
 expansion:
 
