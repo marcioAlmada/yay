@@ -7,25 +7,7 @@ can be expressed in pure PHP code, and the implementation is fast enough).
 
 > Not ready for real world usage yet :bomb:
 
-# Roadmap
-
-- [x] Literal matchers and expansions
-- [x] Token type matchers and expansions like `T_TYPE·label`. Ex: `T_STRING·name`
-- [x] Non deterministic greedy layer matching and expansion `{···label}`, `[···label]`, `(···label)`
-- [x] Non dominant macros (macros that only expand if fully matched and never throw errors during matching)
-- [ ] Dominant macros (macros that throw syntax errors if not fulfilled after a given entry point)
-- [x] \(Partial) Expansion iteration like `·matched_scope ··· { ·a ·b ·c }`
-- [ ] Make expansion DSL recursive
-- [x] Disallow infinite recursion while expanding macros
-- [ ] Add more high level parsers like `·expression()` or `·exp()`, `·word()`, `·list()`
-- [ ] Allow operator precedence and infix macros declarations
-- [ ] Allow macro importing between files like `use macro some\file{macro_name}` (right now macros are limited to be local per file)
-- [ ] Global macros
-- [ ] Support user defined parsers and expanders (add proper D.I for DSL lookups)
-- [ ] **Real time mode**: pass included files through the preprocessor automatically
-    - [ ] Make it fast enough
-    - [ ] Composer integration
-- [ ] Write more documentation [![Docs](https://img.shields.io/badge/documentation-0%-green.svg?style=flat-square)]()
+[Roadmap](https://github.com/marcioAlmada/yay/issues/3).
 
 ## How it works
 
@@ -68,7 +50,7 @@ macro {
 
 The expansion should be pretty obvious:
 ```php
-// source            |    // expansion
+// source             |    // expansion
 swap!($foo, $bar);    |    (list($foo, $bar) = [$bar, $foo]); 
 ```
 
