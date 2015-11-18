@@ -242,6 +242,13 @@ class TokenStream {
         return self::fromSequence(...$tokens);
     }
 
+    static function fromSourceWithoutOpenTag(string $source) : self {
+        $ts = self::fromSource('<?php ' . $source);
+        $ts->shift();
+
+        return $ts;
+    }
+
     static function fromSequence(...$tokens) : self {
         foreach ($tokens as $i => $t)
             $tokens[$i] = ($t instanceof Token) ? clone $t : new Token(...$t);

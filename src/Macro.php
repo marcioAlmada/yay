@@ -35,7 +35,8 @@ class Macro implements Directive {
         $specificity = 0,
         $dominant = false,
         $constant = true,
-        $unsafe = false
+        $unsafe = false,
+        $cloaked = false
     ;
 
     private
@@ -112,10 +113,24 @@ class Macro implements Directive {
     private function compilePattern(int $line, array $pattern) : Parser {
         if(! $pattern) $this->fail(self::E_EMPTY_PATTERN, $line);
 
+        $ts = TokenStream::fromSlice($pattern);
+
         traverse
         (
             either
             (
+                consume
+                (
+                    token(Token::CLOAKED)
+                )
+                ->onCommit(function(Ast $result) use($ts) {
+                    $ts->inject(
+                        TokenStream::fromSourceWithoutOpenTag(
+                            (string) $result->token()
+                        )
+                    );
+                })
+                ,
                 rtoken('/^(T_\w+)·(\w+)$/')
                     ->onCommit(function(Ast $result) {
                         $token = $result->token();
@@ -200,7 +215,7 @@ class Macro implements Directive {
                     })
             )
         )
-        ->parse(TokenStream::fromSlice($pattern));
+        ->parse($ts);
 
         $this->specificity = count($this->parsers);
 
@@ -220,6 +235,31 @@ class Macro implements Directive {
         (
             either
             (
+                consume
+                (
+                    chain
+                    (
+                        token(T_NS_SEPARATOR)
+                        ,
+                        token(T_NS_SEPARATOR)
+                        ,
+                        parentheses()->as('cloaked')
+                    )
+                )
+                ->onCommit(function(Ast $result) use ($ts){
+                    $ts->inject(
+                        TokenStream::fromSequence(
+                            new Token(
+                                Token::CLOAKED,
+                                implode('', $result->cloaked)
+                            )
+                        )
+                    );
+                    $this->cloaked = true;
+                })
+                ,
+                token(Token::CLOAKED)
+                ,
                 token(T_VARIABLE)
                     ->onCommit(function() { $this->unsafe = true; })
                 ,
@@ -341,6 +381,8 @@ class Macro implements Directive {
         (
             either
             (
+                token(Token::CLOAKED)
+                ,
                 consume
                 (
                     chain
@@ -426,6 +468,31 @@ class Macro implements Directive {
         ->parse($cg->ts);
 
         $cg->ts->reset();
+
+        if ($this->cloaked) {
+            traverse
+            (
+                either
+                (
+                    consume
+                    (
+                        token(Token::CLOAKED)
+                    )
+                    ->onCommit(function(Ast $result) use($cg) {
+                        $cg->ts->inject(
+                            TokenStream::fromSourceWithoutOpenTag(
+                                (string) $result->token()
+                            )
+                        );
+                    })
+                    ,
+                    any()
+                )
+            )
+            ->parse($cg->ts);
+
+            $cg->ts->reset();
+        }
 
         return $cg->ts;
     }
