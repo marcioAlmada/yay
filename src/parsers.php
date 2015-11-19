@@ -695,3 +695,18 @@ function future(&$parser) : Parser
         }
     };
 }
+
+function identifier() : Parser
+{
+    return token(T_STRING);
+}
+
+function word() : Parser
+{
+    return rtoken('/^\w+$/');
+}
+
+function string() : Parser
+{
+    return token(T_CONSTANT_ENCAPSED_STRING);
+}

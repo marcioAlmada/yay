@@ -10,7 +10,7 @@ macro {
         (
             ·chain
             (
-                ·rtoken('/^\w+$/')·key
+                ·word()·key
                 ,
                 ·token(':')
                 ,

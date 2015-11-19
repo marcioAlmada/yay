@@ -7,7 +7,7 @@ macro ·unsafe {
     enum T_STRING·name {
         ·ls
         (
-            ·rtoken('/^\w+$/')·field
+            ·word()·field
             ,
             ·token(',')
         )

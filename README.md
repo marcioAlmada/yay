@@ -78,7 +78,7 @@ macro {
     enum T_STRING·name {
         ·ls
         (
-            ·rtoken('/^\w+$/')·field
+            ·word()·field
             ,
             ','
         )
@@ -104,7 +104,7 @@ macro {
     enum T_STRING·name {
         ·ls
         (
-            ·rtoken('/^\w+$/')·field
+            ·word()·field
             ,
             ','
         )

@@ -158,13 +158,13 @@ class Macro implements Directive {
                                     )
                                     ->as('parser')
                                     ,
-                                    token(T_CONSTANT_ENCAPSED_STRING)->as('string')
+                                    string()->as('string')
                                     ,
                                     rtoken('/^T_\w+·\w+$/')->as('token')
                                     ,
                                     rtoken('/^T_\w+$/')->as('constant')
                                     ,
-                                    rtoken('/^\w+$/')->as('word')
+                                    word()->as('word')
                                 )
                                 ,
                                 token(',')
@@ -340,7 +340,7 @@ class Macro implements Directive {
 
     private function compileParserArgs(array $args) : array {
         $compiled = [];
-        foreach ($args as $type => $arg) switch ((string) $type) {
+        foreach ($args as $label => $arg) switch ((string) $label) {
             case 'token':
                 $type = $this->lookupTokenType($arg);
                 $label = $this->lookupCapture($arg);

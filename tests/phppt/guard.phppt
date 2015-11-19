@@ -5,9 +5,9 @@ Guards
 
 class GuardError extends \Error {}
 
-macro { guard (···condition) : T_CONSTANT_ENCAPSED_STRING·message ; } >> {
+macro { guard (···condition) : ·string()·message ; } >> {
     guard (···condition) {
-        throw new \GuardError(T_CONSTANT_ENCAPSED_STRING·message);
+        throw new \GuardError(·message);
     }
 }
 

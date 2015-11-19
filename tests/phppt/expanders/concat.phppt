@@ -4,9 +4,9 @@ Test ·concat expander
 <?php
 
 macro {
-    yay\concat( ·rtoken('/^\w+$/')·identifier )
+    yay\concat( ·word('/^\w+$/')·word )
 } >> {
-    ·concat(foo_ ·identifier _baz)
+    ·concat(foo_ ·word _baz)
 }
 
 yay\concat(bar);

@@ -9,8 +9,8 @@ macro { UNREACHABLE() } >> {
     throw new \FlowError('Unreachable point reached.')
 }
 
-macro { UNREACHABLE (T_CONSTANT_ENCAPSED_STRING·message) } >> {
-    throw new \FlowError(T_CONSTANT_ENCAPSED_STRING·message)
+macro { UNREACHABLE (·string()·message) } >> {
+    throw new \FlowError(·message)
 }
 
 $var = '?';

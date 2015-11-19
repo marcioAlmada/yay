@@ -17,7 +17,7 @@ macro {
                         ,
                         ·indentation()
                         ,
-                        ·commit(·token(T_STRING))
+                        ·commit(·identifier())
                     )
                 )
                 ·alias
