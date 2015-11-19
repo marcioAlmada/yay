@@ -6,6 +6,31 @@ use
     InvalidArgumentException
 ;
 
+/*
+macro ·unsafe { $this->jump(···args) } >> { ($this->current = ···args) }
+
+macro ·unsafe { $this->current() } >>  {
+    ($this->current ? $this->current->token : null)
+}
+
+macro ·unsafe { $this->step() } >> {
+    {
+        if (null !== $this->current)
+            $this->current = $this->current->next;
+        else
+            $this->current = $this->first;
+    }
+}
+
+macro ·unsafe { $this->skip(···args) } >> {
+    while (null !== ($t = $this->current()) && $t->is(···args)) $this->step();
+}
+
+macro ·unsafe { T_VARIABLE·subject->isEmpty() } >> {
+    (null === T_VARIABLE·subject->first && null === T_VARIABLE·subject->last)
+}
+*/
+
 class TokenStream {
 
     const
