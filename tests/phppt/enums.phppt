@@ -3,7 +3,7 @@ Proof of concept backport of enums from future
 --FILE--
 <?php
 
-macro ·dirty {
+macro ·unsafe {
     enum T_STRING·name {
         ·ls
         (

@@ -333,7 +333,7 @@ class Macro implements Directive {
             // 'frames' => [] // @TODO switch frames instead of merging context
         ];
 
-        if ($this->unsafe && !$this->hasTag('·dirty')) hygienize($cg->ts, $this->cycle->id());
+        if ($this->unsafe && !$this->hasTag('·unsafe')) hygienize($cg->ts, $this->cycle->id());
 
         if ($this->constant) return $cg->ts;
 

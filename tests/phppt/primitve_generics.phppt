@@ -3,7 +3,7 @@ Proof of concept inlined generics
 --FILE--
 <?php
 
-macro ·dirty {
+macro ·unsafe {
 
     /** generic queue macro */
     Queue < ·ns()·name >
