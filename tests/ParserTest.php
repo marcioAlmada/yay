@@ -785,7 +785,6 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                 )
                 ->as('list')
             )
-            ->as('source')
             ->parse($ts);
 
         $this->assertEquals("T_STRING(a)", $ast->{'list 0'}->dump());

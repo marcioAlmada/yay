@@ -3,7 +3,9 @@
 namespace Yay\DSL\Expanders;
 
 use Yay\{Token, TokenStream, Ast, YayException, Cycle};
-use function Yay\{token, either, any, traverse};
+use function Yay\{
+    token, rtoken, identifier, chain, either, any, parentheses, traverse
+};
 
 function stringify(TokenStream $ts) : TokenStream {
     $str = str_replace("'", "\'", (string) $ts);
@@ -43,11 +45,22 @@ function hygienize(TokenStream $ts, string $scope) : TokenStream {
     (
         either
         (
-            token(T_VARIABLE)->onCommit(function(Ast $result) use ($scope) {
+            either
+            (
+                token(T_VARIABLE)->as('target')
+                ,
+                chain(identifier()->as('target'), token(':'))
+                ,
+                chain(token(T_GOTO), identifier()->as('target'))
+            )
+            ->onCommit(function(Ast $result) use ($scope) {
                 (function() use($scope) {
                     $this->value = (string) $this . '·' . $scope;
-                })->call($result->token());
+                })
+                ->call($result->target);
             })
+            ,
+            chain(rtoken('/·unsafe/'), parentheses())
             ,
             any()
         )
