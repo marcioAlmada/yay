@@ -45,6 +45,8 @@ function hygienize(TokenStream $ts, string $scope) : TokenStream {
     (
         either
         (
+            chain(token(T_STRING, '·unsafe'), parentheses())
+            ,
             either
             (
                 token(T_VARIABLE)->as('target')
@@ -59,8 +61,6 @@ function hygienize(TokenStream $ts, string $scope) : TokenStream {
                 })
                 ->call($result->target);
             })
-            ,
-            chain(rtoken('/·unsafe/'), parentheses())
             ,
             any()
         )
