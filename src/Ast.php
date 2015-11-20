@@ -26,7 +26,12 @@ class Ast implements Result {
 
     function __get($path)
     {
-        return \igorw\get_in($this->ast, preg_split('/\s+/', $path));
+        return
+            \igorw\get_in(
+                (null !== $this->label ? $this->all() : $this->ast),
+                preg_split('/\s+/', $path)
+            )
+        ;
     }
 
     function raw() {
