@@ -121,14 +121,18 @@ class Macro implements Directive {
             (
                 consume
                 (
-                    token(Token::CLOAKED)
+                    chain
+                    (
+                        token(T_NS_SEPARATOR)
+                        ,
+                        token(T_NS_SEPARATOR)
+                        ,
+                        parentheses()->as('cloaked')
+                    )
                 )
                 ->onCommit(function(Ast $result) use($ts) {
-                    $ts->inject(
-                        TokenStream::fromSourceWithoutOpenTag(
-                            (string) $result->token()
-                        )
-                    );
+                    $ts->inject(TokenStream::fromSequence(...$result->cloaked));
+                    $ts->skip(...TokenStream::SKIPPABLE);
                 })
                 ,
                 rtoken('/^(T_\w+)·(\w+)$/')
