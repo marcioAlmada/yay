@@ -430,7 +430,17 @@ class Macro implements Directive {
                     $index = (string) $result->label;
                     $context = $cg->context->{$index};
 
-                    if ($context === null) die('no context');
+                    if ($context === null) {
+                        $this->fail(
+                            self::E_EXPANSION,
+                            $index,
+                            $result->label->line(),
+                            json_encode (
+                                array_keys($cg->context->all()[0]),
+                                self::PRETTY_PRINT
+                            )
+                        );
+                    }
 
                     $expansion = TokenStream::fromSlice($result->expansion);
 
