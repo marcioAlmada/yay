@@ -369,12 +369,11 @@ class Macro implements Directive {
 
         return $compiled;
     }
-    private function mutate(TokenStream $ts, Ast $crossover) : TokenStream {
+    private function mutate(TokenStream $ts, Ast $context) : TokenStream {
 
         $cg = (object) [
             'ts' => clone $ts,
-            'crossover' => $crossover,
-            // 'frames' => [] // @TODO switch frames instead of merging context
+            'context' => $context
         ];
 
         if ($this->unsafe && !$this->hasTag('·unsafe')) hygienize($cg->ts, $this->cycle->id());
@@ -403,7 +402,7 @@ class Macro implements Directive {
                         if ($arg instanceof Token) {
                             $key = (string) $arg;
                             if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key)) {
-                                $arg = $cg->crossover->{$key};
+                                $arg = $cg->context->{$key};
                             }
                         }
 
@@ -428,14 +427,30 @@ class Macro implements Directive {
                     )
                 )
                 ->onCommit(function(Ast $result)  use($cg) {
-                    $crossovers = $cg->crossover->{(string) $result->label};
-                    foreach (array_reverse($crossovers) as $context) {
-                        $expansion = TokenStream::fromSlice($result->expansion);
-                        if(! is_array($context)) $context = [$context];
-                        $context = new Ast(
-                            null, array_merge($context, $cg->crossover->all()[0]));
-                        $mutation = $this->mutate($expansion, $context);
+                    $index = (string) $result->label;
+                    $context = $cg->context->{$index};
+
+                    if ($context === null) die('no context');
+
+                    $expansion = TokenStream::fromSlice($result->expansion);
+
+                    if (array_values($context) !== $context) {
+                        $mutation = $this->mutate(
+                            $expansion,
+                            (new Ast(null, $context))
+                                ->withParent($cg->context)
+                        );
                         $cg->ts->inject($mutation);
+                    }
+                    else {
+                        foreach (array_reverse($context) as $i => $subContext) {
+                            $mutation = $this->mutate(
+                                $expansion,
+                                (new Ast(null, $subContext))
+                                    ->withParent($cg->context)
+                            );
+                            $cg->ts->inject($mutation);
+                        }
                     }
                 })
                 ,
@@ -444,7 +459,7 @@ class Macro implements Directive {
                     rtoken('/^T_\w+·\w+$/')
                 )
                 ->onCommit(function(Ast $result) use($cg) {
-                    $mutation = $cg->crossover->{(string) $result->token()};
+                    $mutation = $cg->context->{(string) $result->token()};
                     $cg->ts->inject(TokenStream::fromSequence($mutation));
                 })
                 ,
@@ -453,7 +468,7 @@ class Macro implements Directive {
                     rtoken('/^·\w+|···\w+$/')
                 )
                 ->onCommit(function(Ast $result) use ($cg) {
-                    $c = $cg->crossover->{(string) $result->token()};
+                    $c = $cg->context->{(string) $result->token()};
                     $c = is_array($c) ? $c : [$c];
                     $mutation = TokenStream::fromEmpty();
                     array_walk_recursive(

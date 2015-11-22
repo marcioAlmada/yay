@@ -16,6 +16,10 @@ class Ast implements Result {
         $ast = []
     ;
 
+    private
+        $parent
+    ;
+
     function __construct(string $label = null, $ast = []) {
         if ($ast instanceof self)
             throw new InvalidArgumentException('Unmerged AST.');
@@ -26,12 +30,16 @@ class Ast implements Result {
 
     function __get($path)
     {
-        return
+        $ret =
             \igorw\get_in(
                 (null !== $this->label ? $this->all() : $this->ast),
                 preg_split('/\s+/', $path)
             )
         ;
+
+        if (null === $ret && $this->parent) $ret = $this->parent->{$path};
+
+        return $ret;
     }
 
     function raw() {
@@ -75,6 +83,12 @@ class Ast implements Result {
 
     function as(string $label = null) : self {
         if (null !== $label && null === $this->label) $this->label = $label;
+
+        return $this;
+    }
+
+    function withParent(self $parent) : self {
+        $this->parent = $parent;
 
         return $this;
     }
