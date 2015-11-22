@@ -6,7 +6,7 @@ Primitive union return types
 macro ·unsafe {
     // this doesn't work with scalars yet
     // a more procedural macro construct would be necessary
-    function T_STRING·name (···args)
+    function ·optional(T_STRING·name) (···args)
         ·optional
         (
             ·chain
@@ -27,9 +27,13 @@ macro ·unsafe {
 } >> {
     function T_STRING·name (···args)
     {
-        $ret = (function(···args){
+        $fn = (function(···args){
             ···body
-        })(...function_get_args());
+        });
+
+        $ret = isset($this)
+            ? $fn->call($this, ...function_get_args())
+            : $fn(...function_get_args());
 
         if (
             ·return_type ··· { ·union ··· {
@@ -54,6 +58,10 @@ class Foo {
     }
 }
 
+$fn = function() : Foo|Bar {
+    return null;
+}
+
 ?>
 --EXPECTF--
 <?php
@@ -61,14 +69,18 @@ class Foo {
 class Foo {
     function bar (bool $x)
     {
-        $ret = (function(bool $x){
+        $fn = (function(bool $x){
             if ($x) {
             return new Z;
         } else {
             return new A;
         }
     
-        })(...function_get_args());
+        });
+
+        $ret = isset($this)
+            ? $fn->call($this, ...function_get_args())
+            : $fn(...function_get_args());
 
         if (
             ! $ret instanceof A &&
@@ -83,5 +95,28 @@ class Foo {
         return $ret;
     }
 }
+
+$fn = function  ()
+    {
+        $fn = (function(){
+            return null;
+
+        });
+
+        $ret = isset($this)
+            ? $fn->call($this, ...function_get_args())
+            : $fn(...function_get_args());
+
+        if (
+            ! $ret instanceof Foo &&
+            ! $ret instanceof Bar &&
+            
+            true
+        ) {
+            throw new TypeError("Some fancy type Error");
+        }
+
+        return $ret;
+    }
 
 ?>
