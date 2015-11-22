@@ -57,7 +57,8 @@ function hygienize(TokenStream $ts, string $scope) : TokenStream {
             )
             ->onCommit(function(Ast $result) use ($scope) {
                 (function() use($scope) {
-                    $this->value = (string) $this . '·' . $scope;
+                    if ((string) $this !== '$this')
+                        $this->value = (string) $this . '·' . $scope;
                 })
                 ->call($result->target);
             })
