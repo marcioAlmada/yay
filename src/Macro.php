@@ -221,9 +221,9 @@ class Macro implements Directive {
         )
         ->parse($ts);
 
-        $this->specificity = count($this->parsers);
+        $this->specificity = \count($this->parsers);
 
-        if (count($this->parsers) > 1)
+        if ($this->specificity > 1)
             $pattern = chain(...$this->parsers);
         else
             $pattern = $this->parsers[0];
@@ -299,7 +299,7 @@ class Macro implements Directive {
                     $this->constant = false;
                 })
                 ,
-                rtoken('/^·\w+|···\w+|T_\w+·\w+$/')
+                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
                     ->onCommit(function(Ast $result) {
                         $token = $result->token();
                         if (! isset($this->lookup[$id = (string) $token]))
@@ -466,29 +466,24 @@ class Macro implements Directive {
                 ,
                 consume
                 (
-                    rtoken('/^T_\w+·\w+$/')
-                )
-                ->onCommit(function(Ast $result) use($cg) {
-                    $mutation = $cg->context->{(string) $result->token()};
-                    $cg->ts->inject(TokenStream::fromSequence($mutation));
-                })
-                ,
-                consume
-                (
-                    rtoken('/^·\w+|···\w+$/')
+                    rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
                 )
                 ->onCommit(function(Ast $result) use ($cg) {
-                    $c = $cg->context->{(string) $result->token()};
-                    $c = is_array($c) ? $c : [$c];
-                    $mutation = TokenStream::fromEmpty();
-                    array_walk_recursive(
-                        $c,
-                        function($t) use($mutation) {
-                            if ($t)
-                                $mutation->push($t);
-                        }
-                    );
-                    $cg->ts->inject($mutation);
+                    $expansion = $cg->context->{(string) $result->token()};
+
+                    if ($expansion instanceof Token) {
+                        $cg->ts->inject(TokenStream::fromSequence($expansion));
+                    }
+                    elseif (is_array($expansion) && \count($expansion)) {
+                        $tokens = [];
+                        array_walk_recursive(
+                            $expansion,
+                            function(Token $token) use(&$tokens) {
+                                $tokens[] = $token;
+                            }
+                        );
+                        $cg->ts->inject(TokenStream::fromSlice($tokens));
+                    }
                 })
                 ,
                 any()
