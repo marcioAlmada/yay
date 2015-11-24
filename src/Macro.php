@@ -264,8 +264,15 @@ class Macro implements Directive {
                 ,
                 token(Token::CLOAKED)
                 ,
-                token(T_VARIABLE)
-                    ->onCommit(function() { $this->unsafe = true; })
+                either
+                (
+                    token(T_VARIABLE)
+                    ,
+                    chain(identifier(), token(':'))
+                    ,
+                    chain(token(T_GOTO), identifier())
+                )
+                ->onCommit(function() { $this->unsafe = true; })
                 ,
                 chain
                 (
