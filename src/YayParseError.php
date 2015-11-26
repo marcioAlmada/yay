@@ -2,4 +2,4 @@
 
 namespace Yay;
 
-class Halt extends YayParseError {}
+class YayParseError extends \ParseError {}

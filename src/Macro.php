@@ -586,6 +586,6 @@ class Macro implements Directive {
     }
 
     private function fail(string $error, ...$args) {
-        throw new YayException(sprintf($error, ...$args));
+        throw new YayParseError(sprintf($error, ...$args));
     }
 }

@@ -101,9 +101,11 @@ class Test {
 
             try {
                 $this->out = yay_parse($this->source, '');
-            } catch(\Exception $e) {
+            } catch(YayParseError $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;
+            } catch(\Exception $e) {
+                $this->out = $e->getMessage();
             }
 
             try{
