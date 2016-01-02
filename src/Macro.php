@@ -451,23 +451,16 @@ class Macro implements Directive {
 
                     $expansion = TokenStream::fromSlice($result->expansion);
 
-                    if (array_values($context) !== $context) {
+                    // normalize single context
+                    if (array_values($context) !== $context) $context = [$context];
+
+                    foreach (array_reverse($context) as $i => $subContext) {
                         $mutation = $this->mutate(
                             $expansion,
-                            (new Ast(null, $context))
+                            (new Ast(null, $subContext))
                                 ->withParent($cg->context)
                         );
                         $cg->ts->inject($mutation);
-                    }
-                    else {
-                        foreach (array_reverse($context) as $i => $subContext) {
-                            $mutation = $this->mutate(
-                                $expansion,
-                                (new Ast(null, $subContext))
-                                    ->withParent($cg->context)
-                            );
-                            $cg->ts->inject($mutation);
-                        }
                     }
                 })
                 ,
