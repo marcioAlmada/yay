@@ -300,18 +300,18 @@ const LAYER_DELIMITERS = [
     ')' => -1,
 ];
 
-function layer() : Parser
+function layer(array $delimiters = LAYER_DELIMITERS) : Parser
 {
-    return new class(__FUNCTION__) extends Parser
+    return new class(__FUNCTION__, $delimiters) extends Parser
     {
-        function parser(TokenStream $ts) /*: Result|null*/
+        function parser(TokenStream $ts, array $delimiters) /*: Result|null*/
         {
             $level = 1;
             $tokens = [];
 
             while (
                 ($token = $ts->current()) &&
-                ($level += (LAYER_DELIMITERS[$token->type()] ?? 0))
+                ($level += ($delimiters[$token->type()] ?? 0))
             ){
                 $tokens[] = $token;
                 $ts->step();
