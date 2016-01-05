@@ -54,6 +54,32 @@ The expansion should be pretty obvious:
 swap!($foo, $bar);    |    (list($foo, $bar) = [$bar, $foo]); 
 ```
 
+### Another Simple Example
+
+To implement `unless` we need to match the literal `unless` keyword followed by a layer of tokens between parentheses
+`(...)` and a block of code `{...}`. Fortunately, the macro DSL has a very straightforward layer matching construct:
+
+```php
+macro {
+    unless (···expression) { ···body }
+} >> {
+    if (! (···expression)) {
+        ···body
+    }
+}
+```
+
+The macro in action:
+
+```php
+// source                   |   // expansion
+unless ($x === 1) {         |   if (! ($x === 1)) {
+    echo "\$x is not 1";    |       echo "\$x is not 1";
+}                           |   }
+```
+
+> PS: Please don't implement "unless". This is here just for didactic reasons.
+
 ### Advanced Example
 
 A more complex example could be porting enums from the future to PHP with a syntax like:
@@ -137,6 +163,16 @@ macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(
 ```
 
 > More examples within the phppt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phppt
+
+# FAQ
+
+> Where is the documentation?
+
+Sorry, there is no documentation yet...
+
+> Why did you use a middle dot `·` charachter?
+
+This is still just an experiment but you can find some research done on issue [#1](https://github.com/marcioAlmada/yay/issues/1). I'm open to suggestions to have a more ergonomic macro DSL :)
 
 # Conclusion
 
