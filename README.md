@@ -136,6 +136,8 @@ macro {
 macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(T_STRING·field)) }
 ```
 
+> More examples within the phppt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phppt
+
 # Conclusion
 
 For now this is an experiment about how to build a high level preprocessor DSL using parser combinators
