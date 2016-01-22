@@ -84,7 +84,7 @@ abstract class Parser {
         return $this;
     }
 
-    final function withErrorLevel($errorLevel)
+    final function withErrorLevel($errorLevel) : self
     {
         $this->errorLevel = (bool) $errorLevel;
         foreach ($this->stack as $substack) {
