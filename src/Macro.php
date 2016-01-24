@@ -110,10 +110,10 @@ class Macro implements Directive {
             $this->tags[(string) $tag] = true;
     }
 
-    private function compilePattern(int $line, array $pattern) : Parser {
-        if(! $pattern) $this->fail(self::E_EMPTY_PATTERN, $line);
+    private function compilePattern(int $line, array $tokens) : Parser {
+        if(! $tokens) $this->fail(self::E_EMPTY_PATTERN, $line);
 
-        $ts = TokenStream::fromSlice($pattern);
+        $ts = TokenStream::fromSlice($tokens);
 
         traverse
         (
