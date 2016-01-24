@@ -566,15 +566,16 @@ function commit(Parser $parser) : Parser
 {
     return new class(__FUNCTION__, $parser) extends Parser
     {
-        protected
-            $errorLevel = Error::ENABLED
-        ;
 
         protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
-            if (($result = $parser->parse($ts)) instanceof Error) $result->halt();
+            $result = $parser->parse($ts);
 
-            return $result->as($this->label);
+            if ($result instanceof Ast) return $result->as($this->label);
+
+            if ($result instanceof Error) $result->halt();
+
+            $parser->withErrorLevel(Error::ENABLED)->error($ts)->halt();
         }
 
         function expected() : Expected
