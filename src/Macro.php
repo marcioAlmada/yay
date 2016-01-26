@@ -225,8 +225,13 @@ class Macro implements Directive {
 
         if ($this->specificity > 1)
             $pattern = chain(...$this->parsers);
-        else
+        else {
+            /*
+              micro optimization to save one function call for every token on the subject
+              token stream whenever the macro pattern consists of a single parser
+            */
             $pattern = $this->parsers[0];
+        }
 
         return $pattern;
     }
