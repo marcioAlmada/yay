@@ -78,7 +78,7 @@ unless ($x === 1) {         |   if (! ($x === 1)) {
 }                           |   }
 ```
 
-> PS: Please don't implement "unless". This is here just for didactic reasons.
+> ~~PS: Please don't implement "unless". This is here just for didactic reasons.~~ You know what? You've read this far already. Go ahead and implement unless...
 
 ### Advanced Example
 
