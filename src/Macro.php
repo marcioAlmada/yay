@@ -22,7 +22,8 @@ class Macro implements Directive {
         E_PARSER = "Bad macro parser identifier '%s' on line %d.",
         E_EXPANDER = "Bad macro expander '%s' on line %d.",
         E_LOOKUP = "Redefinition of macro capture identifier '%s' on line %d.",
-        E_EXPANSION = "Undefined macro expansion '%s' on line %d with context: %s"
+        E_EXPANSION = "Undefined macro expansion '%s' on line %d with context: %s",
+        E_BAD_DOMINANCE = "Bad dominant macro marker '·' offset %d on line %d."
     ;
 
     protected
@@ -33,7 +34,7 @@ class Macro implements Directive {
         $lookup = [],
         $parsers = [],
         $specificity = 0,
-        $dominant = false,
+        $dominance = 0,
         $constant = true,
         $unsafe = false,
         $cloaked = false
@@ -207,6 +208,15 @@ class Macro implements Directive {
                         $this->parsers[] = layer()->as($id);
                     })
                 ,
+                token(T_STRING, '·')
+                    ->onCommit(function(Ast $result) use ($ts) {
+                        $offset = \count($this->parsers);
+                        if (0 !== $this->dominance || 0 === $offset) {
+                            $this->fail(self::E_BAD_DOMINANCE, $offset, $result->token()->line());
+                        }
+                        $this->dominance = $offset;
+                    })
+                ,
                 rtoken('/·/')
                     ->onCommit(function(Ast $result) {
                         $token = $result->token();
@@ -221,10 +231,27 @@ class Macro implements Directive {
         )
         ->parse($ts);
 
+        // check if macro dominance '·' is last token
+        if ($this->dominance === \count($this->parsers))
+            $this->fail(self::E_BAD_DOMINANCE, $this->dominance, $ts->last()->line());
+
         $this->specificity = \count($this->parsers);
 
-        if ($this->specificity > 1)
-            $pattern = chain(...$this->parsers);
+        if ($this->specificity > 1) {
+            if (0 === $this->dominance) {
+                $pattern = chain(...$this->parsers);
+            }
+            else {
+                /*
+                  dominat macros are partially wrapped in commit()s and dominance
+                  is the offset used as the 'event horizon' point... once the entry
+                  point is matched, there is no way back and a parser error arises
+                */
+                $prefix = array_slice($this->parsers, 0, $this->dominance);
+                $suffix = array_slice($this->parsers, $this->dominance);
+                $pattern = chain(...array_merge($prefix, array_map(commit::class, $suffix)));
+            }
+        }
         else {
             /*
               micro optimization to save one function call for every token on the subject
@@ -381,6 +408,7 @@ class Macro implements Directive {
 
         return $compiled;
     }
+
     private function mutate(TokenStream $ts, Ast $context) : TokenStream {
 
         $cg = (object) [
