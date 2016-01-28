@@ -9,6 +9,26 @@ can be expressed in pure PHP code, and the implementation is fast enough).
 
 [Roadmap](https://github.com/marcioAlmada/yay/issues/3).
 
+## Set Up
+
+```bash
+composer require yay/yay:dev-master
+```
+
+## Command Line
+
+```
+yay some/file/with/macros.php >> target/file.php
+```
+
+## Real Time Mode
+
+Real time mode is W.I.P and will use stream wrappers along with composer integration in order
+to preprocess every file that is included. It may have some opcache/cache support, so files are
+only preprocessed/expanded once.
+
+See feature progress at issue [#11](https://github.com/marcioAlmada/yay/issues/11).
+
 ## How it works
 
 ### Very Simple Example
@@ -25,11 +45,11 @@ The macro is basically expanding a literal `$` token to `$this`. The following c
 ```php
 // source                                |   // expansion
 class Foo {                              |   class Foo {
-    protected $a = 1, $b = 2, $c = 3;    |     protected $a = 1, $b = 2, $c = 3;
+    protected $a = 1, $b = 2, $c = 3;    |       protected $a = 1, $b = 2, $c = 3;
                                          |        
-    function getProduct(): int {         |     function getProduct(): int {
-      return $->a * $->b * $->c;         |       return $this->a * $this->b *$this->c;
-    }                                    |     }
+    function getProduct(): int {         |       function getProduct(): int {
+        return $->a * $->b * $->c;       |           return $this->a * $this->b *$this->c;
+    }                                    |       }
 }                                        |   }
 ```
 
@@ -173,6 +193,10 @@ Sorry, there is no documentation yet...
 > Why did you use a middle dot `·` charachter?
 
 This is still just an experiment but you can find some research done on issue [#1](https://github.com/marcioAlmada/yay/issues/1). I'm open to suggestions to have a more ergonomic macro DSL :)
+
+> Why TF are you working on this?
+
+Because it's being fun. It may become useful. [Because we can™](https://github.com/haskellcamargo/because-we-can).
 
 # Conclusion
 
