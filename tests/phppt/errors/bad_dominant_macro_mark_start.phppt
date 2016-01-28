@@ -1,5 +1,5 @@
 --TEST--
-Bad macro identifier
+Bad dominant macro offset
 --FILE--
 <?php
 

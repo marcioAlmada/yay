@@ -1,5 +1,5 @@
 --TEST--
-Capture tokens should always have an type
+Capture tokens should always have a type
 --FILE--
 <?php
 
