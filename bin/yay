@@ -1,7 +1,24 @@
 #!/usr/bin/env php 
 <?php declare(strict_types=1);
 
-include __DIR__ . '/../vendor/autoload.php';
+$autoloads = [
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+
+foreach ($autoloads as $file) {
+    if (file_exists($file) && is_readable($file)) {
+        define('YAY_AUTOLOAD', $file);
+        break;
+    }
+}
+
+if (!defined('YAY_AUTOLOAD')) {
+    fwrite(STDERR, 'autoload.php not found. Check your composer installation.');
+    exit(1);
+}
+
+require_once(YAY_AUTOLOAD);
 
 $file = $argv[1] ?? '';
 
