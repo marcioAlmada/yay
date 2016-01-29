@@ -15,17 +15,19 @@ can be expressed in pure PHP code, and the implementation is fast enough).
 composer require yay/yay:dev-master
 ```
 
-## Command Line
+## Usage
+
+### Command Line
 
 ```
 yay some/file/with/macros.php >> target/file.php
 ```
 
-## Real Time Mode
+### Runtime Mode
 
-Real time mode is W.I.P and will use stream wrappers along with composer integration in order
-to preprocess every file that is included. It may have some opcache/cache support, so files are
-only preprocessed/expanded once.
+The "runtime" mode is W.I.P and will use stream wrappers along with composer integration in order
+to preprocess every file that gets included. It may have some opcache/cache support, so files will be
+only preprocessed/expanded once and when needed.
 
 See feature progress at issue [#11](https://github.com/marcioAlmada/yay/issues/11).
 
@@ -58,11 +60,11 @@ class Foo {                              |   class Foo {
 Apart from literal characher sequences, it's also possible to match specific token types using the token matcher in
 the form of `TOKEN_TYPE·label`.
 
-The following macro matches token sequences like `swap!($x, $y)` or `swap!($foo, $bar)`:
+The following macro matches token sequences like `__swap($x, $y)` or `__swap($foo, $bar)`:
 
 ```php
 macro {
-    swap ! ( T_VARIABLE·A , T_VARIABLE·B ) // swap values between two variables
+    __swap ( T_VARIABLE·A , T_VARIABLE·B ) // swap values between two variables
 } >> {
     (list(T_VARIABLE·A, T_VARIABLE·B) = [T_VARIABLE·B, T_VARIABLE·A])
 }
@@ -70,8 +72,8 @@ macro {
 
 The expansion should be pretty obvious:
 ```php
-// source             |    // expansion
-swap!($foo, $bar);    |    (list($foo, $bar) = [$bar, $foo]); 
+// source              |    // expansion
+__swap($foo, $bar);    |    (list($foo, $bar) = [$bar, $foo]); 
 ```
 
 ### Another Simple Example
