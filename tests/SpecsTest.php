@@ -3,6 +3,7 @@
 namespace Yay;
 
 use
+    Exception,
     RecursiveDirectoryIterator,
     RecursiveIteratorIterator,
     RegexIterator,
@@ -100,11 +101,11 @@ class Test {
             list($this->name, $this->source, $this->expected) = $sections;
 
             try {
-                $this->out = yay_parse($this->source, '');
+                $this->out = yay_parse($this->source);
             } catch(YayParseError $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;
-            } catch(\Exception $e) {
+            } catch(Exception $e) {
                 $this->out = $e->getMessage();
             }
 
@@ -112,7 +113,7 @@ class Test {
                 Assert::assertStringMatchesFormat($this->expected, $this->out);
                 $this->status = self::PASSED;
             }
-            catch(\Exception $e) {
+            catch(Exception $e) {
                 $this->status = self::FAILED;
 
                 throw $e;

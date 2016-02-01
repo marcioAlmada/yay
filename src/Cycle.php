@@ -9,16 +9,13 @@ use
 class Cycle {
 
     protected
-        $id = 0,
-        $salt = ''
+        $id = 0
     ;
-
-    function __construct(string $salt) { $this->salt = $salt; }
 
     function next() /*: void */ { $this->id++; }
 
     /**
      * Not security related, just making scope id not humanely predictable.
      */
-    function id() : string { return md5($this->salt . $this->id); }
+    function id() : string { return md5((string) $this->id); }
 }

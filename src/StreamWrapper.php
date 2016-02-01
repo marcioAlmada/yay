@@ -86,7 +86,7 @@ final class StreamWrapper {
     function stream_read($lengh) : string {
         return
             ! $this->file->eof()
-                ? yay_parse($this->file->fread($lengh), $this->file->getPath())
+                ? yay_parse($this->file->fread($lengh))
                 : ''
         ;
     }

@@ -3,13 +3,13 @@
 use Yay\{ Token, TokenStream, Directives, Macro, Expected, Error, Cycle };
 use Yay\{ const LAYER_DELIMITERS };
 
-function yay_parse(string $source, string $salt) : string {
+function yay_parse(string $source) : string {
 start:
 
     if ($gc = gc_enabled()) gc_disable();
     $ts = TokenStream::fromSource($source);
     $directives = new Directives;
-    $cycle = new Cycle($salt);
+    $cycle = new Cycle($source);
     $halt = function(Token ...$expected) use ($ts) {
         (new Error(new Expected(...$expected), $ts->current(), $ts->last()))->halt();
     };

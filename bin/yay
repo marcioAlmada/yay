@@ -28,7 +28,7 @@ try {
     if ($source === false)
         throw new InvalidArgumentException("File '{$file}' not found'.");
 
-    file_put_contents('php://stdout', yay_parse($source, $file));
+    file_put_contents('php://stdout', yay_parse($source));
 }
 catch (Exception $e) {
     file_put_contents('php://stderr', $e . PHP_EOL);
