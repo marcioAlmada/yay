@@ -4,7 +4,7 @@ A proof of concept polyfill for group use (not intended to be fully featured)
 <?php
 
 macro {
-    use ·ns()·base \ {
+    use ·ns()·base \ · {
         ·ls(
             ·chain(
                 ·optional(·either(const, function))·type
