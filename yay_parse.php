@@ -10,6 +10,9 @@ start:
     $ts = TokenStream::fromSource($source);
     $directives = new Directives;
     $cycle = new Cycle($salt);
+    $halt = function(Token ...$expected) use ($ts) {
+        (new Error(new Expected(...$expected), $ts->current(), $ts->last()))->halt();
+    };
 
 declaration:
 
@@ -49,7 +52,7 @@ pattern:
 
     if (! $token || ! $token->is('}')) {
         $ts->jump($index);
-        (new Error(new Expected(new Token('}')), $ts->current(), $ts->last()))->halt();
+        $halt(new Token('}'));
     }
 
     $ts->next();
@@ -71,7 +74,7 @@ __: // >>
     }
 
     $ts->jump($index);
-    (new Error(new Expected(new Token(token::OPERATOR, $operator)), $ts->current(), $ts->last()))->halt();
+    $halt(new Token(token::OPERATOR, $operator));
 
 expansion:
 
@@ -81,7 +84,7 @@ expansion:
 
     if (! ($token = $ts->current()) || ! $token->is('{')) {
         $ts->jump($index);
-        (new Error(new Expected(new Token('}')), $ts->current(), $ts->last()))->halt();
+        $halt(new Token('}'));
     }
 
     $ts->next();
@@ -93,7 +96,7 @@ expansion:
 
     if (! $token || ! $token->is('}')) {
         $ts->jump($index);
-        (new Error(new Expected(new Token('}')), $ts->current(), $ts->last()))->halt();
+        $halt(new Token('}'));
     }
 
     // optional ';'
