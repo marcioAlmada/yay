@@ -644,18 +644,21 @@ function ls(Parser $parser, Parser $delimiter) : Parser
                 $ast->push($result);
             });
 
-            repeat
+            chain
             (
-                either
+                $parser
+                ,
+                optional
                 (
-                    chain
+                    repeat
                     (
-                        $delimiter
-                        ,
-                        $parser
+                        chain
+                        (
+                            $delimiter
+                            ,
+                            $parser
+                        )
                     )
-                    ,
-                    $parser
                 )
             )
             ->parse($ts);
