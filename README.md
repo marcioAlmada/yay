@@ -188,6 +188,10 @@ macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(
 
 # FAQ
 
+> Why "YAY!"?
+
+\- PHP with feature "x": yay or nay? :wink:
+
 > Where is the documentation?
 
 Sorry, there is no documentation yet...
