@@ -37,7 +37,11 @@ abstract class Parser {
 
     final function __debugInfo()
     {
-        return [$this->type, $this->label, $this->stack];
+        return [
+            'type' => $this->type,
+            'label' => $this->label,
+            'stack' => $this->stack,
+        ];
     }
 
     final function __clone()
