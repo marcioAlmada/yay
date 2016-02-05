@@ -12,18 +12,22 @@ function token($type, $value = null) : Parser
 
     return new class(__FUNCTION__, $token) extends Parser
     {
-        private $expected;
+        private
+            $expected,
+            $token
+        ;
 
         function __construct($type, Token $token)
         {
             $this->type = $type;
             $this->stack = [$token];
+            $this->token = $token;
             $this->expected = new Expected($token);
         }
 
         final function parse(TokenStream $ts) /*: Result|null*/
         {
-            if (null !== ($token = $ts->current()) && $token->equals($this->stack[0])) {
+            if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
                 $ts->next();
                 $result = new Ast($this->label, $token);
                 if (null !== $this->onCommit) ($this->onCommit)($result);
