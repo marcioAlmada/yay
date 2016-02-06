@@ -1,5 +1,7 @@
 # YAY!
 
+[![Join the chat at https://gitter.im/marcioAlmada/yay](https://badges.gitter.im/marcioAlmada/yay.svg)](https://gitter.im/marcioAlmada/yay?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 **YAY!** is a high level parser combinator based PHP preprocessor that allows anyone to augment PHP with PHP :boom:
 
 This means that language features could be distributed as composer packages (as long as the macro based implementations
