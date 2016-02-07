@@ -289,16 +289,18 @@ function between(Parser $a, Parser $b, Parser $c): Parser
     };
 }
 
-const LAYER_DELIMITERS = [
-    '{' => 1,
-    T_CURLY_OPEN => 1,
-    T_DOLLAR_OPEN_CURLY_BRACES => 1,
-    '}' => -1,
-    '[' => 1,
-    ']' => -1,
-    '(' => 1,
-    ')' => -1,
-];
+if(!defined(__NAMESPACE__."\\LAYER_DELIMITERS")) {
+    define(__NAMESPACE__."\\LAYER_DELIMITERS", [
+        '{' => 1,
+        T_CURLY_OPEN => 1,
+        T_DOLLAR_OPEN_CURLY_BRACES => 1,
+        '}' => -1,
+        '[' => 1,
+        ']' => -1,
+        '(' => 1,
+        ')' => -1,
+    ]);
+}
 
 function layer(array $delimiters = LAYER_DELIMITERS) : Parser
 {
@@ -475,10 +477,8 @@ function either(Parser ...$routes) : Parser
     };
 }
 
-const
-    CONSUME_DO_TRIM = 0x10,
-    CONSUME_NO_TRIM = 0x01
-;
+if(!defined(__NAMESPACE__."\\CONSUME_DO_TRIM")) define(__NAMESPACE__."\\CONSUME_DO_TRIM", 0x10);
+if(!defined(__NAMESPACE__."\\CONSUME_NO_TRIM")) define(__NAMESPACE__."\\CONSUME_NO_TRIM", 0x01);
 
 function consume(Parser $parser, int $trim = CONSUME_NO_TRIM) : Parser
 {
