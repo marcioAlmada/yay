@@ -322,6 +322,11 @@ class Macro implements Directive {
                     ,
                     operator('···')
                     ,
+                    optional
+                    (
+                        parentheses()->as('delimiters')
+                    )
+                    ,
                     braces()->as('expansion')
                 )
                 ->onCommit(function(Ast $result){
@@ -463,6 +468,11 @@ class Macro implements Directive {
                         ,
                         operator('···')
                         ,
+                        optional
+                        (
+                            parentheses()->as('delimiters')
+                        )
+                        ,
                         braces()->as('expansion')
                     )
                 )
@@ -483,6 +493,7 @@ class Macro implements Directive {
                     }
 
                     $expansion = TokenStream::fromSlice($result->expansion);
+                    $delimiters = $result->delimiters;
 
                     // normalize single context
                     if (array_values($context) !== $context) $context = [$context];
@@ -493,6 +504,7 @@ class Macro implements Directive {
                             (new Ast(null, $subContext))
                                 ->withParent($cg->context)
                         );
+                        if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
                     }
                 })
