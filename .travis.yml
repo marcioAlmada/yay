@@ -1,0 +1,18 @@
+language: php
+
+php:
+  - 7.0
+  - nightly
+
+sudo: false
+
+before_script:
+  - composer self-update
+  - composer require satooshi/php-coveralls:dev-master --no-update --dev
+  - composer install --dev --prefer-source
+
+script:
+  - php vendor/bin/phpunit
+
+after_script:
+  - php vendor/bin/coveralls

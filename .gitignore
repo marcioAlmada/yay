@@ -1,5 +1,6 @@
 composer.lock
 tmp/
+build/
 vendor/
 tests/phpt/*.diff
 tests/phpt/*.out
