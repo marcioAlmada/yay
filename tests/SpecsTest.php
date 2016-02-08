@@ -24,10 +24,10 @@ class SpecsTest extends \PHPUnit_Framework_TestCase
     function specProvider() : array {
         $files = new RegexIterator(
             new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator(__DIR__ . '/phppt/')
+                new RecursiveDirectoryIterator(__DIR__ . '/phpt/')
             )
             ,
-            '/\.phppt$/', RegexIterator::MATCH
+            '/\.phpt$/', RegexIterator::MATCH
         );
 
         $tests = [];
@@ -83,10 +83,10 @@ class Test {
 
     function __construct(string $file) {
         $this->file = $file;
-        $this->file_expect = preg_replace('/\.phppt$/', '.exp', $this->file);
-        $this->file_diff = preg_replace('/\.phppt$/', '.diff', $this->file);
-        $this->file_out = preg_replace('/\.phppt$/', '.out', $this->file);
-        // $this->file_php = preg_replace('/\.phppt$/', '.php', $this->file);
+        $this->file_expect = preg_replace('/\.phpt$/', '.exp', $this->file);
+        $this->file_diff = preg_replace('/\.phpt$/', '.diff', $this->file);
+        $this->file_out = preg_replace('/\.phpt$/', '.out', $this->file);
+        // $this->file_php = preg_replace('/\.phpt$/', '.php', $this->file);
     }
 
     function run() {
