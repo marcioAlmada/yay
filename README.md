@@ -1,5 +1,11 @@
 # YAY!
 
+[![Build Status](https://travis-ci.org/marcioAlmada/yay.svg?branch=master)](https://travis-ci.org/marcioAlmada/yay)
+[![Coverage Status](https://coveralls.io/repos/github/marcioAlmada/yay/badge.svg?branch=travis)](https://coveralls.io/github/marcioAlmada/yay?branch=travis)
+[![Latest Stable Version](https://poser.pugx.org/yay/yay/v/stable.png)](https://packagist.org/packages/yay/annotations)
+[![Join the chat at https://gitter.im/marcioAlmada/yay](https://badges.gitter.im/marcioAlmada/yay.svg)](https://gitter.im/marcioAlmada/yay?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![License](https://poser.pugx.org/yay/yay/license.png)](https://packagist.org/packages/yay/yay)
+
 **YAY!** is a high level parser combinator based PHP preprocessor that allows anyone to augment PHP with PHP :boom:
 
 This means that language features could be distributed as composer packages (as long as the macro based implementations
