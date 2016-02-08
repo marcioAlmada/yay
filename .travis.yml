@@ -1,0 +1,14 @@
+language: php
+
+php:
+  - '7.0'
+
+before_install:
+  - phpenv config-rm xdebug.ini # Must come before composer - composer is slow with xdebug
+  - composer self-update
+
+install:
+  - composer install --prefer-dist --no-interaction
+
+matrix:
+  fast_finish: true
