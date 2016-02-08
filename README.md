@@ -184,7 +184,7 @@ macro {
 macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(T_STRING·field)) }
 ```
 
-> More examples within the phppt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phppt
+> More examples within the phpt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phpt
 
 # FAQ
 
