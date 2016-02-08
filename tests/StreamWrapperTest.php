@@ -35,24 +35,15 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase {
         include 'yay://' . $file;
     }
 
-    function fixtureProvider() {
-        $fixtures = [
-            '/type_alias.php'
-        ];
-
-        foreach ($fixtures as $file) {
-            yield [self::FIXTURES_DIR . $file];
-            yield [self::ABSOLUTE_FIXTURES_DIR . $file];
-        }
+    function testStreamWrapperInclusionRelative() {
+        include 'yay://' . self::FIXTURES_DIR . '/type_alias.php';
+        $result = \Yay\Fixtures\test_type_alias(__FILE__);
+        $this->assertEquals('pass', $result);
     }
 
-    /**
-     * @dataProvider fixtureProvider
-     * @runInSeparateProcess
-     */
-    function testStreamWrapperInclusion(string $file) {
-        include 'yay://' . $file;
-        $result = \Yay\Fixtures\test_type_alias(__FILE__);
+    function testStreamWrapperInclusionAbsolute() {
+        include 'yay://' . self::ABSOLUTE_FIXTURES_DIR . '/type_alias_absolute.php';
+        $result = \Yay\Fixtures\test_type_alias_absolute(__FILE__);
         $this->assertEquals('pass', $result);
     }
 
