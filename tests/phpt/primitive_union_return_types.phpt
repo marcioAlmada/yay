@@ -7,6 +7,7 @@ macro ·unsafe {
     // this doesn't work with scalars yet
     // a more procedural macro construct would be necessary
     function ·optional(T_STRING·name) (···args)
+        // match union return type, like ":<A>|<\B>|<A\B\C>"
         ·optional
         (
             ·chain
@@ -36,10 +37,9 @@ macro ·unsafe {
             : $fn(...function_get_args());
 
         if (
-            ·return_type ··· { ·union ··· {
-            ! $ret instanceof ·type &&
+            ·return_type ··· { ·union ··· ( && ) {
+                ! $ret instanceof ·type
             }}
-            true
         ) {
             throw new TypeError("Some fancy type Error");
         }
@@ -83,11 +83,10 @@ class Foo {
             : $fn(...function_get_args());
 
         if (
-            ! $ret instanceof A &&
-            ! $ret instanceof Foo\B &&
-            ! $ret instanceof \Foo\Bar\C &&
+            ! $ret instanceof A
+            && ! $ret instanceof Foo\B
+            && ! $ret instanceof \Foo\Bar\C
             
-            true
         ) {
             throw new TypeError("Some fancy type Error");
         }
@@ -108,10 +107,9 @@ $fn = function  ()
             : $fn(...function_get_args());
 
         if (
-            ! $ret instanceof Foo &&
-            ! $ret instanceof Bar &&
+            ! $ret instanceof Foo
+            && ! $ret instanceof Bar
             
-            true
         ) {
             throw new TypeError("Some fancy type Error");
         }
