@@ -17,4 +17,16 @@ class Expected {
     function all() : array {
         return $this->tokens;
     }
+
+    function raytrace() : string {
+        return
+            implode(
+                ' | ',
+                array_map(
+                    function(Token $t){ return $t->dump(); },
+                    $this->tokens
+                )
+            )
+        ;
+    }
 }

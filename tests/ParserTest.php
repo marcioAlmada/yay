@@ -71,15 +71,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     }
 
     protected function assertRaytrace(string $expected, Parser $parser) {
-        $value = implode(
-            ' | ',
-            array_map(
-                function(Token $t){ return $t->dump(); },
-                $parser->expected()->all()
-            )
-        );
-
-        $this->assertEquals($expected, $value);
+        $this->assertEquals($expected, $parser->expected()->raytrace());
     }
 
     function testToken() {
