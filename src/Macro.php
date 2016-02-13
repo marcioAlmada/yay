@@ -62,7 +62,7 @@ class Macro implements Directive {
         return $this->specificity;
     }
 
-    function apply(TokenStream $ts) {
+    function apply(TokenStream $ts, Directives $directives) {
         $from = $ts->index();
         $crossover = $this->pattern->parse($ts);
 
@@ -84,7 +84,7 @@ class Macro implements Directive {
             $to = $ts->index();
             $ts->extract($from, $to);
 
-            $expansion = $this->mutate($this->expansion, $crossover);
+            $expansion = $this->mutate($this->expansion, $crossover, $directives);
             $this->cycle->next();
 
             // paint blue context of expasion tokens
@@ -414,16 +414,18 @@ class Macro implements Directive {
         return $compiled;
     }
 
-    private function mutate(TokenStream $ts, Ast $context) : TokenStream {
+    private function mutate(TokenStream $ts, Ast $context, Directives $directives) : TokenStream {
 
         $cg = (object) [
             'ts' => clone $ts,
-            'context' => $context
+            'context' => $context,
+            'directives' => $directives
         ];
 
         if ($this->unsafe && !$this->hasTag('·unsafe'))
             hygienize($cg->ts, [
                 'scope' => $this->cycle->id(),
+                'directives' => $directives
             ]);
 
         if ($this->constant) return $cg->ts;
@@ -461,6 +463,7 @@ class Macro implements Directive {
                     }
                     $mutation = $expander(TokenStream::fromSlice($args), [
                         'scope' => $this->cycle->id(),
+                        'directives' => $cg->directives
                     ]);
                     $cg->ts->inject($mutation);
                 })
@@ -506,8 +509,8 @@ class Macro implements Directive {
                     foreach (array_reverse($context) as $i => $subContext) {
                         $mutation = $this->mutate(
                             $expansion,
-                            (new Ast(null, $subContext))
-                                ->withParent($cg->context)
+                            (new Ast(null, $subContext))->withParent($cg->context),
+                            $cg->directives
                         );
                         if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);

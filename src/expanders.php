@@ -74,3 +74,10 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
 }
 
 function unsafe(TokenStream $ts) : TokenStream { return $ts; }
+
+function expand(TokenStream $ts, array $context) : TokenStream {
+    $ts = TokenStream::fromSource(yay_parse('<?php ' . (string) $ts, $context['directives']));
+    $ts->shift();
+
+    return $ts;
+}

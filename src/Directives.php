@@ -16,6 +16,6 @@ class Directives {
     function apply(TokenStream $ts) {
         foreach ($this->directives as $directives)
             foreach ($directives as $directive)
-                $directive->apply($ts);
+                $directive->apply($ts, $this);
     }
 }

@@ -8,5 +8,5 @@ interface Directive {
 
     function specificity() : int;
 
-    function apply(TokenStream $TokenStream);
+    function apply(TokenStream $TokenStream, Directives $directives);
 }
