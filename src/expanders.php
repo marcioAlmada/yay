@@ -38,7 +38,7 @@ function concat(TokenStream $ts) : TokenStream {
     );
 }
 
-function hygienize(TokenStream $ts, string $scope) : TokenStream {
+function hygienize(TokenStream $ts, array $context) : TokenStream {
     $ts->reset();
 
     traverse
@@ -55,10 +55,10 @@ function hygienize(TokenStream $ts, string $scope) : TokenStream {
                 ,
                 chain(token(T_GOTO), identifier()->as('target'))
             )
-            ->onCommit(function(Ast $result) use ($scope) {
-                (function() use($scope) {
+            ->onCommit(function(Ast $result) use ($context) {
+                (function() use($context) {
                     if ((string) $this !== '$this')
-                        $this->value = (string) $this . '·' . $scope;
+                        $this->value = (string) $this . '·' . $context['scope'];
                 })
                 ->call($result->target);
             })

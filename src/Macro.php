@@ -421,7 +421,10 @@ class Macro implements Directive {
             'context' => $context
         ];
 
-        if ($this->unsafe && !$this->hasTag('·unsafe')) hygienize($cg->ts, $this->cycle->id());
+        if ($this->unsafe && !$this->hasTag('·unsafe'))
+            hygienize($cg->ts, [
+                'scope' => $this->cycle->id(),
+            ]);
 
         if ($this->constant) return $cg->ts;
 
@@ -456,7 +459,9 @@ class Macro implements Directive {
                         else
                             $args[] = $arg;
                     }
-                    $mutation = $expander(TokenStream::fromSlice($args), $this->cycle->id());
+                    $mutation = $expander(TokenStream::fromSlice($args), [
+                        'scope' => $this->cycle->id(),
+                    ]);
                     $cg->ts->inject($mutation);
                 })
                 ,
