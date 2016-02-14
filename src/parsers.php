@@ -221,7 +221,7 @@ function repeat(Parser $parser) : Parser
 {
     if (! $parser->isFallible())
         throw new InvalidArgumentException(
-            'Infinite loop at ' . __FUNCTION__ . '('. $parser->type() . '(*))');
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
     return new class(__FUNCTION__, $parser) extends Parser
     {
@@ -635,12 +635,16 @@ function ns() : Parser
 
 function ls(Parser $parser, Parser $delimiter) : Parser
 {
+    if (! $parser->isFallible())
+        throw new InvalidArgumentException(
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');       
+
     return new class(__FUNCTION__, $parser, $delimiter) extends Parser
     {
         protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/
         {
             $ast = new Ast($this->label);
-            $parser = (clone $parser)->onCommit(function(ast $result) use ($ast){
+            $parser = (clone $parser)->onCommit(function(Ast $result) use ($ast){
                 $ast->push($result);
             });
 
@@ -663,7 +667,7 @@ function ls(Parser $parser, Parser $delimiter) : Parser
             )
             ->parse($ts);
 
-            return $ast;
+            return $ast->isEmpty() ? $this->error($ts) : $ast;
         }
 
         function expected() : Expected

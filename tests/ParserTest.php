@@ -561,10 +561,6 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                 '<?php a , b , c , ',
                 "T_STRING(a), T_STRING(b), T_STRING(c)"
             ],
-            [
-                '<?php , a , b , c ',
-                ''
-            ],
         ];
     }
 
