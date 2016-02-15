@@ -23,7 +23,7 @@ require_once(YAY_AUTOLOAD);
 $file = $argv[1] ?? '';
 
 try {
-    $source = @file_get_contents($file);
+    $source = @file_get_contents($file) ?: file_get_contents('php://stdin');
 
     if ($source === false)
         throw new InvalidArgumentException("File '{$file}' not found'.");
