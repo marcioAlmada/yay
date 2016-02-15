@@ -102,6 +102,9 @@ class Test {
 
             try {
                 $this->out = yay_parse($this->source);
+                if (false !== strpos($this->name, '--pretty-print'))
+                    $this->out = yay_pretty($this->out) . PHP_EOL . PHP_EOL . '?>';
+
             } catch(YayParseError $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;
