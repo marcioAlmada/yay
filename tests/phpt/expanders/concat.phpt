@@ -6,7 +6,7 @@ Test ·concat expander
 macro {
     yay\concat( ·word('/^\w+$/')·word )
 } >> {
-    ·concat(foo_ ·word _baz)
+    ··concat(foo_ ·word _baz)
 }
 
 yay\concat(bar);

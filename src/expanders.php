@@ -45,7 +45,8 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
     (
         either
         (
-            chain(token(T_STRING, '·unsafe'), parentheses())
+            // hygiene must skip whatever is passed trhough the ··unsafe() expander
+            chain(token(T_STRING, '··unsafe'), parentheses())
             ,
             either
             (

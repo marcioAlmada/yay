@@ -25,7 +25,7 @@ macro {
         ···try_body
     }
     catch(·type T_VARIABLE·exception) {
-        ·expand(···catch_body)
+        ··expand(···catch_body)
     }
 }
 

@@ -6,7 +6,7 @@ Test ·stringify expander
 macro {
     yay\stringify(···args)
 } >> {
-    ·stringify(···args)
+    ··stringify(···args)
 }
 
 $source = yay\stringify(function($a, $b $c){ echo 'the sum is: ' . $a + $b + $c; });

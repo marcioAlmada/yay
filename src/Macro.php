@@ -312,7 +312,7 @@ class Macro implements Directive {
                 ,
                 chain
                 (
-                    rtoken('/^·\w+$/')->as('expander')
+                    rtoken('/^··\w+$/')->as('expander')
                     ,
                     parentheses()->as('args')
                 )
@@ -444,7 +444,7 @@ class Macro implements Directive {
                 (
                     chain
                     (
-                        rtoken('/^·\w+$/')->as('expander')
+                        rtoken('/^··\w+$/')->as('expander')
                         ,
                         parentheses()->as('args')
                     )
@@ -600,7 +600,7 @@ class Macro implements Directive {
 
     private function lookupExpander(Token $token) : string {
         $identifier = (string) $token;
-        $expander = '\Yay\Dsl\Expanders\\' . explode('·', $identifier)[1];
+        $expander = '\Yay\Dsl\Expanders\\' . explode('··', $identifier)[1];
 
         if (! function_exists($expander))
             $this->fail(self::E_EXPANDER, $identifier, $token->line());

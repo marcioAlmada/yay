@@ -36,7 +36,7 @@ macro ·unsafe {
     }
 }
 
-macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(T_STRING·field)) }
+macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(··stringify(T_STRING·field)) }
 
 enum Fruits {
     Apple,

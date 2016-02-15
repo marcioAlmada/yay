@@ -18,7 +18,7 @@ macro { T_VARIABLE·A += T_VARIABLE·B; } >> { $z = (T_VARIABLE·A += T_VARIABLE
 
 test($a, $b);
 
-macro { unsafe_test(T_VARIABLE·A) } >> { $unsafe = ·unsafe($code) = T_VARIABLE·A; }
+macro { unsafe_test(T_VARIABLE·A) } >> { $unsafe = ··unsafe($code) = T_VARIABLE·A; }
 
 unsafe_test($dirty);
 
