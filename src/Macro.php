@@ -47,9 +47,15 @@ class Macro implements Directive {
     function __construct(int $line, array $tags, array $pattern, array $expansion, Cycle $cycle) {
         static $id = 0;
         $this->compileTags($tags);
-        $this->pattern = $this->compilePattern($line, $pattern);
-        if ($expansion)
-            $this->expansion = $this->compileExpansion($line, $expansion);
+
+        if(\count($pattern))
+            $this->pattern = $this->compilePattern($pattern);
+        else
+            $this->fail(self::E_EMPTY_PATTERN, $line);
+
+        if (\count($expansion))
+            $this->expansion = $this->compileExpansion($expansion);
+
         $this->id = $id++;
         $this->cycle = $cycle;
     }
@@ -111,9 +117,7 @@ class Macro implements Directive {
             $this->tags[(string) $tag] = true;
     }
 
-    private function compilePattern(int $line, array $tokens) : Parser {
-        if(! $tokens) $this->fail(self::E_EMPTY_PATTERN, $line);
-
+    private function compilePattern(array $tokens) : Parser {
         $ts = TokenStream::fromSlice($tokens);
 
         traverse
@@ -263,7 +267,7 @@ class Macro implements Directive {
         return $pattern;
     }
 
-    private function compileExpansion(int $line, array $expansion) : TokenStream {
+    private function compileExpansion(array $expansion) : TokenStream {
         $ts = TokenStream::fromSlice($expansion);
         $ts->trim();
 
@@ -312,7 +316,7 @@ class Macro implements Directive {
                     ,
                     parentheses()->as('args')
                 )
-                ->onCommit(function($r){
+                ->onCommit(function(){
                     $this->constant = false;
                 })
                 ,
