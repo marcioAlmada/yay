@@ -137,13 +137,15 @@ function indentation()
     };
 }
 
-function always(Token $result) : Parser
+function always($type, $value = null) : Parser
 {
-    return new class(__FUNCTION__, $result) extends Parser
+    $token = $type instanceof Token ? $type : new Token($type, $value);
+
+    return new class(__FUNCTION__, $token) extends Parser
     {
-        protected function parser(TokenStream $ts, Token $result) /*: Result|null*/
+        protected function parser(TokenStream $ts, Token $token) /*: Result|null*/
         {
-            return new Ast($this->label, [($this->label ?: 0) => clone $result]);
+            return new Ast($this->label, [($this->label ?: 0) => clone $token]);
         }
 
         function expected() : Expected
