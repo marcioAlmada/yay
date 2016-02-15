@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+
+$autoloads = [
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+
+foreach ($autoloads as $file) {
+    if (file_exists($file) && is_readable($file)) {
+        define('YAY_AUTOLOAD', $file);
+        break;
+    }
+}
+
+if (!defined('YAY_AUTOLOAD')) {
+    fwrite(STDERR, 'autoload.php not found. Check your composer installation.');
+    exit(1);
+}
+
+require_once(YAY_AUTOLOAD);
+
+$file = $argv[1] ?? '';
+
+try {
+    $source = @file_get_contents($file) ?: file_get_contents('php://stdin');
+
+    if ($source === false)
+        throw new InvalidArgumentException("File '{$file}' not found'.");
+
+    file_put_contents('php://stdout', yay_pretty($source));
+}
+catch (Exception $e) {
+    file_put_contents('php://stderr', $e . PHP_EOL);
+}
