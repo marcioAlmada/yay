@@ -1,5 +1,5 @@
 --TEST--
-A proof of concept polyfill for group use (not intended to be fully featured)
+A proof of concept polyfill for group use  --pretty-print
 --FILE--
 <?php
 
@@ -46,11 +46,10 @@ use A\B\C\{
 --EXPECTF--
 <?php
 
-use  A\B\C\Foo ;
-use  A\B\C\Foo\Bar ;
-use  A\B\C\Baz as Boo;
+use A\B\C\Foo;
+use A\B\C\Foo\Bar;
+use A\B\C\Baz as Boo;
 use const A\B\C\X as Y;
 use function A\B\C\d\e as f;
-
 
 ?>

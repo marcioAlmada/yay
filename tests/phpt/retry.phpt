@@ -1,5 +1,5 @@
 --TEST--
-Proof of concept "retry" implementation
+Proof of concept "retry" implementation --pretty-print
 --FILE--
 <?php
 
@@ -51,25 +51,21 @@ echo 'END';
 --EXPECTF--
 <?php
 
-function request_something() {
+function request_something()
+{
     static $count = 0;
-
     if ($count < 3) {
         $count++;
         throw new \Exception("Tried {$count}", 1);
     }
 }
-
 try {
-        retry·0:
-        request_something();
-
-    }
-    catch(Exception $e) {
-        echo $e->getMessage() . PHP_EOL;
+    retry·0:
+    request_something();
+} catch (Exception $e) {
+    echo $e->getMessage() . PHP_EOL;
     goto retry·0;
-
-    }
-
+}
 echo 'END';
+
 ?>
