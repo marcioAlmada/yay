@@ -98,7 +98,7 @@ class Macro implements Directive {
                 $token->context()->inherit($context);
             });
 
-            $ts->inject($expansion, $from);
+            $ts->inject($expansion);
         }
         else {
             $ts->unskip(...TokenStream::SKIPPABLE);
