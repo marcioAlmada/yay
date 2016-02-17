@@ -1,5 +1,5 @@
 --TEST--
-A proof of concept polyfill for group use  --pretty-print
+A proof of concept polyfill for group use --pretty-print
 --FILE--
 <?php
 
@@ -15,9 +15,7 @@ macro {
                     ·chain(
                         as
                         ,
-                        ·indentation()
-                        ,
-                        ·commit(·identifier())
+                        ·identifier()·label
                     )
                 )
                 ·alias
@@ -29,7 +27,7 @@ macro {
 } >> {
 
 ·entries ··· {
-    use ·type ·base\·entry ·alias;
+    use ·type ·base\·entry ·alias ··· {as ·label};
 }
 
 }
