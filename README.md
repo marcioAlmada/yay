@@ -124,7 +124,7 @@ So, syntactically, enums are declared with the literal `enum` word followed by a
 separated list of identifiers withing braces `{A, B, C}`.
 
 YAY uses parser combinators internally for everything and these more high level parsers are fully
-exposed on macro declarations. Our enum macro will need high level matchers like `·ls()` and `·rtoken()`
+exposed on macro declarations. Our enum macro will need high level matchers like `·ls()` and `·word()`
 combined to match the desired syntax, like so:
 
 ```php
@@ -134,7 +134,7 @@ macro {
         (
             ·word()·field
             ,
-            ','
+            ·token(',')
         )
         ·fields
     }
@@ -154,23 +154,35 @@ I won't explain how enums are implemented, you can read the [RFC](https://wiki.p
 and then see how the expansion below works:
 
 ```php
-macro {
+// things here would normally be under a namespace, but since we want a concise example...
+
+interface Enum
+{
+}
+
+function enum_field_or_class_constant(string $class, string $field)
+{
+    return (\in_array(\Enum::class, \class_implements($class)) ? $class::$field() : \constant("{$class}::{$field}"));
+}
+
+macro ·unsafe {
+    // the enum declaration
     enum T_STRING·name {
         ·ls
         (
             ·word()·field
             ,
-            ','
+            ·token(',')
         )
         ·fields
     }
 } >> {
-    class T_STRING·name {
+    class T_STRING·name implements Enum {
         private static $store;
 
-        private function __construct(){}
+        private function __construct() {}
 
-        static function __(string $field) : self {
+        static function __callStatic(string $field, array $args) : self {
             if(! self::$store) {
                 self::$store = new \stdclass;
                 ·fields ··· {
@@ -178,16 +190,19 @@ macro {
                 }
             }
 
-            if (! $field = self::$store->$field ?? false)
-                throw new \Exception(
-                    "Undefined enum field " . __CLASS__ . "->{$field}.");
+            if ($field = self::$store->$field ?? false) return $field;
 
-            return $field;
+            throw new \Exception("Undefined enum field " . __CLASS__ . "->{$field}.");
         }
     }
 }
 
-macro { \·ns()·enum_name->T_STRING·field } >> { \·enum_name::__(·stringify(T_STRING·field)) }
+macro {
+    // the enum field access
+    ·ns()·class :: ·word()·field
+} >> {
+    \enum_field_or_class_constant(·class::class, ··stringify(·field))
+}
 ```
 
 > More examples within the phpt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phpt
