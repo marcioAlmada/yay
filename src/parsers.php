@@ -724,3 +724,27 @@ function string() : Parser
 {
     return token(T_CONSTANT_ENCAPSED_STRING);
 }
+
+function not(Parser $parser) : Parser
+{
+    return new class(__FUNCTION__, $parser) extends Parser
+    {
+        protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
+        {
+            $index = $ts->index();
+            $result = $parser->parse($ts);
+            $ts->jump($index); // always backtrack
+            return ($result instanceof Ast) ? $this->error($ts) : new Ast();
+        }
+
+        function expected() : Expected
+        {
+            return new Expected;
+        }
+
+        function isFallible() : bool
+        {
+            return $parser->isFallible();
+        }
+    };
+}
