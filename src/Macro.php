@@ -578,8 +578,11 @@ class Macro implements Directive {
         return $cg->ts;
     }
 
-    protected function lookupCapture(Token $token) : string {
+    protected function lookupCapture(Token $token) /*: string|null*/ {
         $id = (string) $token;
+
+        if ($id === '·_') return null;
+
         if (isset($this->lookup[$id]))
             $this->fail(self::E_LOOKUP, $id, $token->line());
 

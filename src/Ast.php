@@ -81,7 +81,7 @@ class Ast implements Result {
         return ! count($this->ast);
     }
 
-    function as(string $label = null) : self {
+    function as(/*string|null*/ $label = null) : self {
         if (null !== $label && null === $this->label) $this->label = $label;
 
         return $this;

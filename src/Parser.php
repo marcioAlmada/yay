@@ -70,13 +70,15 @@ abstract class Parser {
         return $result;
     }
 
-    final function as(string $label) : self
+    final function as(/*string|null*/ $label) : self
     {
-        if( false !== strpos($label, ' '))
-            throw new InvalidArgumentException(
-                "Parser label cannot contain spaces, '{$label}' given.");
+        if (null !== $label) {
+            if(false !== strpos($label, ' '))
+                throw new InvalidArgumentException(
+                    "Parser label cannot contain spaces, '{$label}' given.");
 
-        $this->label = $label;
+            $this->label = $label;
+        }
 
         return $this;
     }
