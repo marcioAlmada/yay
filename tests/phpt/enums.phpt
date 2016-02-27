@@ -47,8 +47,12 @@ macro ·unsafe {
 }
 
 macro {
-    // the enum field access
-    ·ns()·class :: ·word()·field
+    // sequence that matches the enum field access syntax:
+    ·ns()·class // matches a namespace
+    :: // matches T_DOUBLE_COLON used for static access
+    ·not(·token(T_CLASS))·_ // avoids matching ::class resolution syntax
+    ·word()·field // matches the enum field name
+    ·not(·token('('))·_ // avoids matching static method calls
 } >> {
     \enum_field_or_class_constant(·class::class, ··stringify(·field))
 }
@@ -57,19 +61,28 @@ macro {
 
 enum Fruits { Apple, Orange }
 
-//
+// macro should work with Enums only
 
 var_dump(Fruits::Orange instanceof Fruits);
 var_dump(Fruits::Orange <=> Fruits::Apple);
 var_dump(Fruits::Apple);
 
-//
+// macro skips class constants access
 
 class NotEnum {
     const Orange = 1;
+    static function method() {}
 }
 
 var_dump(NotEnum::Orange);
+
+// macro skips ::class resolution
+
+var_dump(NotEnum::class);
+
+// macro skips static method calls
+
+var_dump(NotEnum::method());
 
 ?>
 --EXPECTF--
@@ -107,15 +120,22 @@ class Fruits implements Enum
         throw new \Exception('Undefined enum field ' . __CLASS__ . "->{$field}.");
     }
 }
-//
+// macro should work with Enums only
 var_dump(\enum_field_or_class_constant(Fruits::class, 'Orange') instanceof Fruits);
 var_dump(\enum_field_or_class_constant(Fruits::class, 'Orange') <=> \enum_field_or_class_constant(Fruits::class, 'Apple'));
 var_dump(\enum_field_or_class_constant(Fruits::class, 'Apple'));
-//
+// macro skips class constants access
 class NotEnum
 {
     const Orange = 1;
+    static function method()
+    {
+    }
 }
 var_dump(\enum_field_or_class_constant(NotEnum::class, 'Orange'));
+// macro skips ::class resolution
+var_dump(NotEnum::class);
+// macro skips static method calls
+var_dump(NotEnum::method());
 
 ?>

@@ -198,8 +198,12 @@ macro ·unsafe {
 }
 
 macro {
-    // the enum field access
-    ·ns()·class :: ·word()·field
+    // sequence that matches the enum field access syntax:
+    ·ns()·class // matches a namespace
+    :: // matches T_DOUBLE_COLON used for static access
+    ·not(·token(T_CLASS))·_ // avoids matching ::class resolution syntax
+    ·word()·field // matches the enum field name
+    ·not(·token('('))·_ // avoids matching static method calls
 } >> {
     \enum_field_or_class_constant(·class::class, ··stringify(·field))
 }
