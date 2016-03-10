@@ -3,9 +3,9 @@ This shorthand $->
 --FILE--
 <?php
 
-macro ·unsafe { $ } >> { $this }
+macro ·unsafe { $ ·not(·token(T_VARIABLE))·_  ·not(·token('{'))·_ } >> { $this }
 
-class foo
+class Foo
 {
     private $bar = 'bar';
 
@@ -26,15 +26,19 @@ class foo
     }
 }
 
-$foo = new foo;
-var_dumo($foo->bar());
-var_dumo($foo->baz());
+// the following should not be matched by the macro
+
+${'var'};
+
+${"${var}"};
+
+$$var;
 
 ?>
 --EXPECTF--
 <?php
 
-class foo
+class Foo
 {
     private $bar = 'bar';
 
@@ -55,8 +59,12 @@ class foo
     }
 }
 
-$foo = new foo;
-var_dumo($foo->bar());
-var_dumo($foo->baz());
+// the following should not be matched by the macro
+
+${'var'};
+
+${"${var}"};
+
+$$var;
 
 ?>
