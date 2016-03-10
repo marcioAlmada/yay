@@ -196,11 +196,35 @@ function operator(string $operator) : Parser
     };
 }
 
-function apply(Parser $parser) : Parser
+/**
+ * Useful to perform oportunistic matches and transformations, this parser
+ * attemps a list of parsers while steps towards the end of a token stream.
+ *
+ * <code>
+ * traverse(<parser 1>, <parser 2>, <parser 3>, <...>)
+ * </code>
+ *
+ * It's basically a shortcut for:
+ *
+ * <code>
+ * $parser =
+ *     either
+ *     (
+ *         <parser 1>,
+ *         <parser 2>,
+ *         <parser 3>,
+ *         <...>,
+ *         any()
+ *     )
+ * ;
+ *
+ * while($parser->parse($subject) instanceof Ast);
+ * </code>
+ */
+function traverse(Parser ...$parsers) : Parser
 {
-    if (! $parser->isFallible())
-        throw new InvalidArgumentException(
-            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
+    $parsers[] = any();
+    $parser = either(...$parsers);
 
     return new class(__FUNCTION__, $parser) extends Parser
     {
@@ -221,37 +245,6 @@ function apply(Parser $parser) : Parser
             return $this->stack[0]->isFallible();
         }
     };
-}
-
-/**
- * Useful to perform oportunistic matches and transformations, this pseudo parser
- * attemps a list of parsers or continues until the end of a token stream.
- *
- * <code>
- * traverse(<parser 1>, <parser 2>, <parser 3>, <...>)
- * </code>
- *
- * Is basically a shortcut for:
- *
- * <code>
- * apply
- * (
- *     either
- *     (
- *          <parser 1>,
- *          <parser 2>,
- *          <parser 3>,
- *          <...>,
- *          any()
- *     )
- * )
- * </code>
- */
-function traverse(Parser ...$parsers) : Parser
-{
-    $parsers[] = any();
-
-    return apply(either(...$parsers));
 }
 
 function repeat(Parser $parser) : Parser
