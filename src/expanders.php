@@ -43,29 +43,24 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
 
     traverse
     (
+        // hygiene must skip whatever is passed through the ··unsafe() expander
+        chain(token(T_STRING, '··unsafe'), parentheses())
+        ,
         either
         (
-            // hygiene must skip whatever is passed trhough the ··unsafe() expander
-            chain(token(T_STRING, '··unsafe'), parentheses())
+            token(T_VARIABLE)->as('target')
             ,
-            either
-            (
-                token(T_VARIABLE)->as('target')
-                ,
-                chain(identifier()->as('target'), token(':'))
-                ,
-                chain(token(T_GOTO), identifier()->as('target'))
-            )
-            ->onCommit(function(Ast $result) use ($context) {
-                (function() use($context) {
-                    if ((string) $this !== '$this')
-                        $this->value = (string) $this . '·' . $context['scope'];
-                })
-                ->call($result->target);
-            })
+            chain(identifier()->as('target'), token(':'))
             ,
-            any()
+            chain(token(T_GOTO), identifier()->as('target'))
         )
+        ->onCommit(function(Ast $result) use ($context) {
+            (function() use($context) {
+                if ((string) $this !== '$this')
+                    $this->value = (string) $this . '·' . $context['scope'];
+            })
+            ->call($result->target);
+        })
     )
     ->parse($ts);
 

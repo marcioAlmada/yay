@@ -196,8 +196,12 @@ function operator(string $operator) : Parser
     };
 }
 
-function traverse(Parser $parser) : Parser
+function apply(Parser $parser) : Parser
 {
+    if (! $parser->isFallible())
+        throw new InvalidArgumentException(
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
+
     return new class(__FUNCTION__, $parser) extends Parser
     {
         protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
@@ -217,6 +221,37 @@ function traverse(Parser $parser) : Parser
             return $this->stack[0]->isFallible();
         }
     };
+}
+
+/**
+ * Useful to perform oportunistic matches and transformations, this pseudo parser
+ * attemps a list of parsers or continues until the end of a token stream.
+ *
+ * <code>
+ * traverse(<parser 1>, <parser 2>, <parser 3>, <...>)
+ * </code>
+ *
+ * Is basically a shortcut for:
+ *
+ * <code>
+ * apply
+ * (
+ *     either
+ *     (
+ *          <parser 1>,
+ *          <parser 2>,
+ *          <parser 3>,
+ *          <...>,
+ *          any()
+ *     )
+ * )
+ * </code>
+ */
+function traverse(Parser ...$parsers) : Parser
+{
+    $parsers[] = any();
+
+    return apply(either(...$parsers));
 }
 
 function repeat(Parser $parser) : Parser
@@ -747,4 +782,19 @@ function not(Parser $parser) : Parser
             return $parser->isFallible();
         }
     };
+}
+
+function source(string $example) : Parser
+{
+    return
+        chain(
+            ...array_map(
+                function($t){ return token($t); },
+                array_slice(
+                    token_get_all('<?php' . $example),
+                    1
+                )
+            )
+        )
+    ;
 }

@@ -122,116 +122,113 @@ class Macro implements Directive {
 
         traverse
         (
-            either
+            consume
             (
-                consume
+                chain
                 (
-                    chain
-                    (
-                        token(T_NS_SEPARATOR)
-                        ,
-                        token(T_NS_SEPARATOR)
-                        ,
-                        parentheses()->as('cloaked')
-                    )
+                    token(T_NS_SEPARATOR)
+                    ,
+                    token(T_NS_SEPARATOR)
+                    ,
+                    parentheses()->as('cloaked')
                 )
-                ->onCommit(function(Ast $result) use($ts) {
-                    $ts->inject(TokenStream::fromSequence(...$result->cloaked));
-                    $ts->skip(...TokenStream::SKIPPABLE);
-                })
-                ,
-                rtoken('/^(T_\w+)·(\w+)$/')
-                    ->onCommit(function(Ast $result) {
-                        $token = $result->token();
-                        $id = $this->lookupCapture($token);
-                        $type = $this->lookupTokenType($token);
-                        $this->parsers[] = token($type)->as($id);
-                    })
-                ,
-                (
-                    $parser = chain
-                    (
-                        rtoken('/^·\w+$/')->as('parser_type')
-                        ,
-                        token('(')
-                        ,
-                        optional
-                        (
-                            ls
-                            (
-                                either
-                                (
-                                    future
-                                    (
-                                        $parser // recursion !!!
-                                    )
-                                    ->as('parser')
-                                    ,
-                                    string()->as('string')
-                                    ,
-                                    rtoken('/^T_\w+·\w+$/')->as('token')
-                                    ,
-                                    rtoken('/^T_\w+$/')->as('constant')
-                                    ,
-                                    word()->as('word')
-                                )
-                                ,
-                                token(',')
-                            )
-                        )
-                        ->as('args')
-                        ,
-                        commit
-                        (
-                            token(')')
-                        )
-                        ,
-                        optional
-                        (
-                            rtoken('/^·\w+$/')->as('label')
-                        )
-                    )
-                )
-                ->onCommit(function(Ast $result) {
-                    $this->parsers[] = $this->compileParser($result->array());
-                })
-                ,
-                // handles {···layer}
-                $this->layer('{', '}', braces())
-                ,
-                // handles [···layer]
-                $this->layer('[', ']', brackets())
-                ,
-                // handles (···layer)
-                $this->layer('(', ')', parentheses())
-                ,
-                // handles  non delimited ···layer
-                rtoken('/^···(\w+)$/')
-                    ->onCommit(function(Ast $result) {
-                        $id = $this->lookupCapture($result->token());
-                        $this->parsers[] = layer()->as($id);
-                    })
-                ,
-                token(T_STRING, '·')
-                    ->onCommit(function(Ast $result) use ($ts) {
-                        $offset = \count($this->parsers);
-                        if (0 !== $this->dominance || 0 === $offset) {
-                            $this->fail(self::E_BAD_DOMINANCE, $offset, $result->token()->line());
-                        }
-                        $this->dominance = $offset;
-                    })
-                ,
-                rtoken('/·/')
-                    ->onCommit(function(Ast $result) {
-                        $token = $result->token();
-                        $this->fail(self::E_BAD_CAPTURE, $token, $token->line());
-                    })
-                ,
-                any()
-                    ->onCommit(function(Ast $result) {
-                        $this->parsers[] = token($result->token());
-                    })
             )
+            ->onCommit(function(Ast $result) use($ts) {
+                $ts->inject(TokenStream::fromSequence(...$result->cloaked));
+                $ts->skip(...TokenStream::SKIPPABLE);
+            })
+            ,
+            rtoken('/^(T_\w+)·(\w+)$/')
+                ->onCommit(function(Ast $result) {
+                    $token = $result->token();
+                    $id = $this->lookupCapture($token);
+                    $type = $this->lookupTokenType($token);
+                    $this->parsers[] = token($type)->as($id);
+                })
+            ,
+            (
+                $parser = chain
+                (
+                    rtoken('/^·\w+$/')->as('parser_type')
+                    ,
+                    token('(')
+                    ,
+                    optional
+                    (
+                        ls
+                        (
+                            either
+                            (
+                                future
+                                (
+                                    $parser // recursion !!!
+                                )
+                                ->as('parser')
+                                ,
+                                string()->as('string')
+                                ,
+                                rtoken('/^T_\w+·\w+$/')->as('token')
+                                ,
+                                rtoken('/^T_\w+$/')->as('constant')
+                                ,
+                                word()->as('word')
+                            )
+                            ,
+                            token(',')
+                        )
+                    )
+                    ->as('args')
+                    ,
+                    commit
+                    (
+                        token(')')
+                    )
+                    ,
+                    optional
+                    (
+                        rtoken('/^·\w+$/')->as('label')
+                    )
+                )
+            )
+            ->onCommit(function(Ast $result) {
+                $this->parsers[] = $this->compileParser($result->array());
+            })
+            ,
+            // handles {···layer}
+            $this->layer('{', '}', braces())
+            ,
+            // handles [···layer]
+            $this->layer('[', ']', brackets())
+            ,
+            // handles (···layer)
+            $this->layer('(', ')', parentheses())
+            ,
+            // handles  non delimited ···layer
+            rtoken('/^···(\w+)$/')
+                ->onCommit(function(Ast $result) {
+                    $id = $this->lookupCapture($result->token());
+                    $this->parsers[] = layer()->as($id);
+                })
+            ,
+            token(T_STRING, '·')
+                ->onCommit(function(Ast $result) use ($ts) {
+                    $offset = \count($this->parsers);
+                    if (0 !== $this->dominance || 0 === $offset) {
+                        $this->fail(self::E_BAD_DOMINANCE, $offset, $result->token()->line());
+                    }
+                    $this->dominance = $offset;
+                })
+            ,
+            rtoken('/·/')
+                ->onCommit(function(Ast $result) {
+                    $token = $result->token();
+                    $this->fail(self::E_BAD_CAPTURE, $token, $token->line());
+                })
+            ,
+            any()
+                ->onCommit(function(Ast $result) {
+                    $this->parsers[] = token($result->token());
+                })
         )
         ->parse($ts);
 
@@ -273,72 +270,86 @@ class Macro implements Directive {
 
         traverse
         (
+            consume
+            (
+                chain
+                (
+                    token(T_NS_SEPARATOR)
+                    ,
+                    token(T_NS_SEPARATOR)
+                    ,
+                    parentheses()->as('cloaked')
+                )
+            )
+            ->onCommit(function(Ast $result) use ($ts){
+                $ts->inject(
+                    TokenStream::fromSequence(
+                        new Token(
+                            Token::CLOAKED,
+                            implode('', $result->cloaked)
+                        )
+                    )
+                );
+                $this->cloaked = true;
+            })
+            ,
+            token(Token::CLOAKED)
+            ,
             either
             (
-                consume
+                token(T_VARIABLE)
+                ,
+                chain(identifier(), token(':'))
+                ,
+                chain(token(T_GOTO), identifier())
+            )
+            ->onCommit(function() { $this->unsafe = true; })
+            ,
+            chain
+            (
+                rtoken('/^··\w+$/')->as('expander')
+                ,
+                parentheses()->as('args')
+            )
+            ->onCommit(function(){
+                $this->constant = false;
+            })
+            ,
+            chain
+            (
+                rtoken('/^·\w+|···\w+$/')->as('label')
+                ,
+                operator('···')
+                ,
+                optional
                 (
-                    chain
-                    (
-                        token(T_NS_SEPARATOR)
-                        ,
-                        token(T_NS_SEPARATOR)
-                        ,
-                        parentheses()->as('cloaked')
-                    )
+                    parentheses()->as('delimiters')
                 )
-                ->onCommit(function(Ast $result) use ($ts){
-                    $ts->inject(
-                        TokenStream::fromSequence(
-                            new Token(
-                                Token::CLOAKED,
-                                implode('', $result->cloaked)
-                            )
+                ,
+                braces()->as('expansion')
+            )
+            ->onCommit(function(Ast $result){
+                if (! isset($this->lookup[$id = (string) $result->label]))
+                    $this->fail(
+                        self::E_EXPANSION,
+                        $id,
+                        $result->label->line(),
+                        json_encode (
+                            array_keys($this->lookup),
+                            self::PRETTY_PRINT
                         )
                     );
-                    $this->cloaked = true;
-                })
-                ,
-                token(Token::CLOAKED)
-                ,
-                either
-                (
-                    token(T_VARIABLE)
-                    ,
-                    chain(identifier(), token(':'))
-                    ,
-                    chain(token(T_GOTO), identifier())
-                )
-                ->onCommit(function() { $this->unsafe = true; })
-                ,
-                chain
-                (
-                    rtoken('/^··\w+$/')->as('expander')
-                    ,
-                    parentheses()->as('args')
-                )
-                ->onCommit(function(){
-                    $this->constant = false;
-                })
-                ,
-                chain
-                (
-                    rtoken('/^·\w+|···\w+$/')->as('label')
-                    ,
-                    operator('···')
-                    ,
-                    optional
-                    (
-                        parentheses()->as('delimiters')
-                    )
-                    ,
-                    braces()->as('expansion')
-                )
-                ->onCommit(function(Ast $result){
-                    if (! isset($this->lookup[$id = (string) $result->label]))
+                $this->constant = false;
+            })
+            ,
+            rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
+                ->onCommit(function(Ast $result) {
+                    $token = $result->token();
+                    if (! isset($this->lookup[$id = (string) $token]))
                         $this->fail(
                             self::E_EXPANSION,
                             $id,
-                            $result->label->line(),
+                            $token->line(),
                             json_encode (
                                 array_keys($this->lookup),
                                 self::PRETTY_PRINT
@@ -346,31 +357,12 @@ class Macro implements Directive {
                         );
                     $this->constant = false;
                 })
-                ,
-                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
-                    ->onCommit(function(Ast $result) {
-                        $token = $result->token();
-                        if (! isset($this->lookup[$id = (string) $token]))
-                            $this->fail(
-                                self::E_EXPANSION,
-                                $id,
-                                $token->line(),
-                                json_encode (
-                                    array_keys($this->lookup),
-                                    self::PRETTY_PRINT
-                                )
-                            );
-                        $this->constant = false;
-                    })
-                ,
-                rtoken('/·/')
-                    ->onCommit(function(Ast $result) {
-                        $token = $result->token();
-                        $this->fail(self::E_BAD_EXPANSION, $token, $token->line());
-                    })
-                ,
-                any()
-            )
+            ,
+            rtoken('/·/')
+                ->onCommit(function(Ast $result) {
+                    $token = $result->token();
+                    $this->fail(self::E_BAD_EXPANSION, $token, $token->line());
+                })
         )
         ->parse($ts);
 
@@ -436,115 +428,110 @@ class Macro implements Directive {
 
         traverse
         (
-            either
+            token(Token::CLOAKED)
+            ,
+            consume
             (
-                token(Token::CLOAKED)
-                ,
-                consume
+                chain
                 (
-                    chain
-                    (
-                        rtoken('/^··\w+$/')->as('expander')
-                        ,
-                        parentheses()->as('args')
-                    )
+                    rtoken('/^··\w+$/')->as('expander')
+                    ,
+                    parentheses()->as('args')
                 )
-                ->onCommit(function(Ast $result) use ($cg) {
-                    $expander = $this->lookupExpander($result->expander);
-                    $args = [];
-                    foreach ($result->args as $arg) {
-                        if ($arg instanceof Token) {
-                            $key = (string) $arg;
-                            if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key)) {
-                                $arg = $cg->context->{$key};
-                            }
-                        }
-
-                        if (is_array($arg))
-                            array_push($args, ...$arg);
-                        else
-                            $args[] = $arg;
-                    }
-                    $mutation = $expander(TokenStream::fromSlice($args), [
-                        'scope' => $this->cycle->id(),
-                        'directives' => $cg->directives
-                    ]);
-                    $cg->ts->inject($mutation);
-                })
-                ,
-                consume
-                (
-                    chain
-                    (
-                        rtoken('/^·\w+|···\w+$/')->as('label')
-                        ,
-                        operator('···')
-                        ,
-                        optional
-                        (
-                            parentheses()->as('delimiters')
-                        )
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($cg) {
-                    $index = (string) $result->label;
-                    $context = $cg->context->{$index};
-
-                    if ($context === null) {
-                        $this->fail(
-                            self::E_EXPANSION,
-                            $index,
-                            $result->label->line(),
-                            json_encode (
-                                array_keys($cg->context->all()[0]),
-                                self::PRETTY_PRINT
-                            )
-                        );
-                    }
-
-                    $expansion = TokenStream::fromSlice($result->expansion);
-                    $delimiters = $result->delimiters;
-
-                    // normalize single context
-                    if (array_values($context) !== $context) $context = [$context];
-
-                    foreach (array_reverse($context) as $i => $subContext) {
-                        $mutation = $this->mutate(
-                            $expansion,
-                            (new Ast(null, $subContext))->withParent($cg->context),
-                            $cg->directives
-                        );
-                        if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
-                        $cg->ts->inject($mutation);
-                    }
-                })
-                ,
-                consume
-                (
-                    rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
-                )
-                ->onCommit(function(Ast $result) use ($cg) {
-                    $expansion = $cg->context->{(string) $result->token()};
-
-                    if ($expansion instanceof Token) {
-                        $cg->ts->inject(TokenStream::fromSequence($expansion));
-                    }
-                    elseif (is_array($expansion) && \count($expansion)) {
-                        $tokens = [];
-                        array_walk_recursive(
-                            $expansion,
-                            function(Token $token) use(&$tokens) {
-                                $tokens[] = $token;
-                            }
-                        );
-                        $cg->ts->inject(TokenStream::fromSlice($tokens));
-                    }
-                })
-                ,
-                any()
             )
+            ->onCommit(function(Ast $result) use ($cg) {
+                $expander = $this->lookupExpander($result->expander);
+                $args = [];
+                foreach ($result->args as $arg) {
+                    if ($arg instanceof Token) {
+                        $key = (string) $arg;
+                        if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key)) {
+                            $arg = $cg->context->{$key};
+                        }
+                    }
+
+                    if (is_array($arg))
+                        array_push($args, ...$arg);
+                    else
+                        $args[] = $arg;
+                }
+                $mutation = $expander(TokenStream::fromSlice($args), [
+                    'scope' => $this->cycle->id(),
+                    'directives' => $cg->directives
+                ]);
+                $cg->ts->inject($mutation);
+            })
+            ,
+            consume
+            (
+                chain
+                (
+                    rtoken('/^·\w+|···\w+$/')->as('label')
+                    ,
+                    operator('···')
+                    ,
+                    optional
+                    (
+                        parentheses()->as('delimiters')
+                    )
+                    ,
+                    braces()->as('expansion')
+                )
+            )
+            ->onCommit(function(Ast $result)  use($cg) {
+                $index = (string) $result->label;
+                $context = $cg->context->{$index};
+
+                if ($context === null) {
+                    $this->fail(
+                        self::E_EXPANSION,
+                        $index,
+                        $result->label->line(),
+                        json_encode (
+                            array_keys($cg->context->all()[0]),
+                            self::PRETTY_PRINT
+                        )
+                    );
+                }
+
+                $expansion = TokenStream::fromSlice($result->expansion);
+                $delimiters = $result->delimiters;
+
+                // normalize single context
+                if (array_values($context) !== $context) $context = [$context];
+
+                foreach (array_reverse($context) as $i => $subContext) {
+                    $mutation = $this->mutate(
+                        $expansion,
+                        (new Ast(null, $subContext))->withParent($cg->context),
+                        $cg->directives
+                    );
+                    if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
+                    $cg->ts->inject($mutation);
+                }
+            })
+            ,
+            consume
+            (
+                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
+            )
+            ->onCommit(function(Ast $result) use ($cg) {
+                $expansion = $cg->context->{(string) $result->token()};
+
+                if ($expansion instanceof Token) {
+                    $cg->ts->inject(TokenStream::fromSequence($expansion));
+                }
+                elseif (is_array($expansion) && \count($expansion)) {
+                    $tokens = [];
+                    array_walk_recursive(
+                        $expansion,
+                        function(Token $token) use(&$tokens) {
+                            $tokens[] = $token;
+                        }
+                    );
+                    $cg->ts->inject(TokenStream::fromSlice($tokens));
+                }
+            })
         )
         ->parse($cg->ts);
 
@@ -553,22 +540,17 @@ class Macro implements Directive {
         if ($this->cloaked) {
             traverse
             (
-                either
+                consume
                 (
-                    consume
-                    (
-                        token(Token::CLOAKED)
-                    )
-                    ->onCommit(function(Ast $result) use($cg) {
-                        $cg->ts->inject(
-                            TokenStream::fromSourceWithoutOpenTag(
-                                (string) $result->token()
-                            )
-                        );
-                    })
-                    ,
-                    any()
+                    token(Token::CLOAKED)
                 )
+                ->onCommit(function(Ast $result) use($cg) {
+                    $cg->ts->inject(
+                        TokenStream::fromSourceWithoutOpenTag(
+                            (string) $result->token()
+                        )
+                    );
+                })
             )
             ->parse($cg->ts);
 

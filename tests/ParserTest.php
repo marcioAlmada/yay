@@ -590,20 +590,15 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
 
         traverse
         (
-            either
+            consume
             (
-                consume
-                (
-                    chain(
-                        token('{')
-                        ,
-                        token(T_STRING)
-                        ,
-                        token('}')
-                    )
+                chain(
+                    token('{')
+                    ,
+                    token(T_STRING)
+                    ,
+                    token('}')
                 )
-                ,
-                any()
             )
         )
         ->parse($ts);
@@ -614,21 +609,17 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         traverse
         (
-            either
+            consume
             (
-                consume
-                (
-                    chain(
-                        token('{')
-                        ,
-                        token('-')
-                        ,
-                        token('}')
-                    )
+                chain(
+                    token('{')
                     ,
-                    CONSUME_DO_TRIM
-                ),
-                any()
+                    token('-')
+                    ,
+                    token('}')
+                )
+                ,
+                CONSUME_DO_TRIM
             )
         )
         ->parse($ts);
