@@ -1,4 +1,4 @@
-<?php namespace Yay\Fixtures;
+<?php namespace Yay\Fixtures\Wrapper;
 
 macro {
     type T_STRING·newtype = T_STRING·basetype;

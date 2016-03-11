@@ -8,11 +8,11 @@ namespace Yay;
 class StreamWrapperTest extends \PHPUnit_Framework_TestCase {
 
     const
-        FIXTURES_DIR = 'fixtures',
+        FIXTURES_DIR = 'fixtures/wrapper',
         ABSOLUTE_FIXTURES_DIR = __DIR__ . '/' . self::FIXTURES_DIR
     ;
 
-    static function setupBeforeClass() { StreamWrapper::register(); }
+    function setUp() { StreamWrapper::register(); }
 
     function syntaxErrorProvider() {
 
@@ -37,15 +37,15 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase {
 
     function testStreamWrapperInclusionRelative() {
         include 'yay://' . self::FIXTURES_DIR . '/type_alias.php';
-        $result = \Yay\Fixtures\test_type_alias(__FILE__);
+        $result = \Yay\Fixtures\Wrapper\test_type_alias(__FILE__);
         $this->assertEquals('pass', $result);
     }
 
     function testStreamWrapperInclusionAbsolute() {
         include 'yay://' . self::ABSOLUTE_FIXTURES_DIR . '/type_alias_absolute.php';
-        $result = \Yay\Fixtures\test_type_alias_absolute(__FILE__);
+        $result = \Yay\Fixtures\Wrapper\test_type_alias_absolute(__FILE__);
         $this->assertEquals('pass', $result);
     }
 
-    static function tearDownAfterClass() { StreamWrapper::unregister(); }
+   function tearDown() { StreamWrapper::unregister(); }
 }
