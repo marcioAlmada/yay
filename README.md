@@ -45,7 +45,7 @@ Every macro consist of a matcher and an expander that when executed allows you t
 Consider the simplest example possible:
 
 ```php
-macro { $ } >> { $this } // this shorthand
+macro ·unsafe { $ } >> { $this } // this shorthand
 ```
 
 The macro is basically expanding a literal `$` token to `$this`. The following code would expand to:
@@ -60,6 +60,8 @@ class Foo {                              |   class Foo {
     }                                    |       }
 }                                        |   }
 ```
+
+Notice that the `·unsafe` tag is necessary to avoid macro hygiene on `$this` expansion.
 
 ### Simple Example
 
