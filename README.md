@@ -221,7 +221,7 @@ macro {
 
 Sorry, there is no documentation yet...
 
-> Why did you use a middle dot `·` charachter?
+> Why did you use a middle dot `·` character?
 
 This is still just an experiment but you can find some research done on issue [#1](https://github.com/marcioAlmada/yay/issues/1). I'm open to suggestions to have a more ergonomic macro DSL :)
 
