@@ -95,7 +95,7 @@ final class StreamWrapper {
 
     function stream_stat() : array
     {
-        $stat =
+        return
             $this->file ? [
                 'dev' => 0,
                 'ino' => 0,
@@ -113,8 +113,6 @@ final class StreamWrapper {
                 'blocks' => -1
             ] : []
         ;
-
-        return array_merge(array_values($stat), $stat);
     }
 
     function url_stat() { $this->notImplemented(__FUNCTION__); }
