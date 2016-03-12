@@ -39,7 +39,7 @@ macro ·unsafe {
                 }
             }
 
-            if ($field = self::$store->$field ?? false) return $field;
+            if (isset(self::$store->$field)) return self::$store->$field;
 
             throw new \Exception("Undefined enum field " . __CLASS__ . "->{$field}.");
         }
@@ -114,8 +114,8 @@ class Fruits implements Enum
             {
             };
         }
-        if ($field = self::$store->{$field} ?? false) {
-            return $field;
+        if (isset(self::$store->{$field})) {
+            return self::$store->{$field};
         }
         throw new \Exception('Undefined enum field ' . __CLASS__ . "->{$field}.");
     }
