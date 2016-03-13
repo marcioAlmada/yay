@@ -102,7 +102,7 @@ expansion:
 
     // optional ';'
     $token = $ts->next();
-    if ($token->is(';')) $ts->next();
+    if (null !== $token && $token->is(';')) $ts->next();
 
     // cleanup
     $ts->unskip(...TokenStream::SKIPPABLE);
