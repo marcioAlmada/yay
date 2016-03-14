@@ -9,7 +9,7 @@ class Directives {
     ;
 
     function add(Directive $directive) {
-        $this->directives[$directive->specificity()][] = $directive;
+        $this->directives[$directive->specificity()][$directive->id()] = $directive;
         krsort($this->directives);
     }
 

@@ -15,6 +15,9 @@ start:
         (new Error(new Expected(...$expected), $ts->current(), $ts->last()))->halt();
     };
 
+    static $globalDirectives = [];
+    foreach($globalDirectives as $d) $directives->add($d);
+
 declaration:
 
     $from = $ts->index();
@@ -108,15 +111,18 @@ expansion:
     $ts->unskip(...TokenStream::SKIPPABLE);
     $ts->skip(T_WHITESPACE);
     $ts->extract($from, $ts->index());
-    $directives->add(
-        new Macro(
-            $declaration->line(),
-            $tags,
-            $pattern,
-            $expansion,
-            $cycle
-        )
+    $directive = new Macro(
+        $declaration->line(),
+        $tags,
+        $pattern,
+        $expansion,
+        $cycle
     );
+    $directives->add($directive);
+
+    if ($directive->hasTag('·global'))
+        $globalDirectives[] = $directive;
+
     goto declaration;
 
 any:

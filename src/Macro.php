@@ -108,7 +108,7 @@ class Macro implements Directive {
         }
     }
 
-    private function hasTag(string $tag) : bool {
+    function hasTag(string $tag) : bool {
         return isset($this->tags[$tag]);
     }
 
