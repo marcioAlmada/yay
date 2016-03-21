@@ -772,7 +772,7 @@ function not(Parser $parser) : Parser
 
         function isFallible() : bool
         {
-            return $parser->isFallible();
+            return $this->stack[0]->isFallible();
         }
     };
 }
