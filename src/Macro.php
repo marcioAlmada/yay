@@ -450,12 +450,23 @@ class Macro implements Directive {
                         }
                     }
 
-                    if (is_array($arg))
-                        array_push($args, ...$arg);
-                    else
+                    if (is_array($arg)) {
+                        if (\count($arg) > 1) array_push($args, ...$arg);
+                    }
+                    else if ($arg instanceof Token)
                         $args[] = $arg;
+                    else
+                        assert(false, 'unexpected expander argument type.');
                 }
-                $mutation = $expander(TokenStream::fromSlice($args), [
+
+                $subject =
+                    \count($args)
+                        ? TokenStream::fromSlice($args)
+                        : TokenStream::fromEmpty()
+                ;
+
+                $mutation = $expander(
+                    $subject, [
                     'scope' => $this->cycle->id(),
                     'directives' => $cg->directives
                 ]);
