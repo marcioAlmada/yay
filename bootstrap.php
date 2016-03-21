@@ -1,0 +1,3 @@
+<?php
+
+\Yay\StreamWrapper::register();
