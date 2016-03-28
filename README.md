@@ -120,7 +120,7 @@ enum Fruits {
     Orange
 }
 
-var_dump(\Fruits->Orange <=> \Fruits->Apple);
+var_dump(\Fruits::Orange <=> \Fruits::Apple);
 ```
 So, syntactically, enums are declared with the literal `enum` word followed by a `T_STRING` and a comma
 separated list of identifiers withing braces `{A, B, C}`.
@@ -210,6 +210,9 @@ macro {
     \enum_field_or_class_constant(·class::class, ··stringify(·field))
 }
 ```
+
+You can use https://github.com/marcioAlmada/yay-enums to run the example above
+on your own environment, as a playground.
 
 > More examples within the phpt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phpt
 
