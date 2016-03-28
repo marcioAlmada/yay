@@ -90,7 +90,12 @@ class Macro implements Directive {
             $to = $ts->index();
             $ts->extract($from, $to);
 
-            $expansion = $this->mutate($this->expansion, $crossover, $directives);
+            $expansion = clone $this->expansion;
+
+            if ($this->unsafe && !$this->hasTag('·unsafe'))
+                hygienize($expansion, ['scope' => $this->cycle->id(),]);
+
+            $expansion = $this->mutate($expansion, $crossover, $directives);
             $this->cycle->next();
 
             // paint blue context of expasion tokens
@@ -413,16 +418,10 @@ class Macro implements Directive {
     private function mutate(TokenStream $ts, Ast $context, Directives $directives) : TokenStream {
 
         $cg = (object) [
-            'ts' => clone $ts,
+            'ts' => $ts,
             'context' => $context,
             'directives' => $directives
         ];
-
-        if ($this->unsafe && !$this->hasTag('·unsafe'))
-            hygienize($cg->ts, [
-                'scope' => $this->cycle->id(),
-                'directives' => $directives
-            ]);
 
         if ($this->constant) return $cg->ts;
 
@@ -441,36 +440,19 @@ class Macro implements Directive {
             )
             ->onCommit(function(Ast $result) use ($cg) {
                 $expander = $this->lookupExpander($result->expander);
-                $args = [];
-                foreach ($result->args as $arg) {
-                    if ($arg instanceof Token) {
-                        $key = (string) $arg;
-                        if (preg_match('/^·\w+|T_\w+·\w+|···\w+$/', $key)) {
-                            $arg = $cg->context->{$key};
-                        }
-                    }
-
-                    if (is_array($arg)) {
-                        if (\count($arg) > 1) array_push($args, ...$arg);
-                    }
-                    else if ($arg instanceof Token)
-                        $args[] = $arg;
-                    else
-                        assert(false, 'unexpected expander argument type.');
-                }
-
                 $subject =
-                    \count($args)
-                        ? TokenStream::fromSlice($args)
+                    \count($result->args)
+                        ? TokenStream::fromSlice($result->args)
                         : TokenStream::fromEmpty()
                 ;
-
-                $mutation = $expander(
-                    $subject, [
-                    'scope' => $this->cycle->id(),
-                    'directives' => $cg->directives
-                ]);
-                $cg->ts->inject($mutation);
+                $expansion = $expander(
+                    $this->mutate(clone $subject, $cg->context, $cg->directives),
+                    [
+                        'scope' => $this->cycle->id(),
+                        'directives' => $cg->directives
+                    ]
+                );
+                $cg->ts->inject($expansion);
             })
             ,
             consume
@@ -513,7 +495,7 @@ class Macro implements Directive {
 
                 foreach (array_reverse($context) as $i => $subContext) {
                     $mutation = $this->mutate(
-                        $expansion,
+                        clone $expansion,
                         (new Ast(null, $subContext))->withParent($cg->context),
                         $cg->directives
                     );
