@@ -15,22 +15,28 @@
         }
     ],
     "require": {
-        "php" : "7.*",
-        "ext-mbstring" : "*",
+        "php": "7.*",
+        "ext-mbstring": "*",
         "ext-tokenizer": "*",
         "igorw/get-in": "~1.0",
         "nikic/php-parser": "^2.0"
     },
     "autoload": {
         "files": [
-            "bootstrap.php", "yay_parse.php", "yay_pretty.php", "yay_compile.php", "src/parsers.php", "src/expanders.php"
+            "yay_parse.php",
+            "yay_pretty.php",
+            "yay_compile.php",
+            "src/parsers.php",
+            "src/expanders.php",
+            "bootstrap.php"
         ],
         "psr-4": {
             "Yay\\": "src/"
         }
     },
     "bin": [
-        "bin/yay"
+        "bin/yay",
+        "bin/yay-pretty"
     ],
     "require-dev": {
         "phpunit/phpunit": "~5.2"
