@@ -16,6 +16,7 @@ abstract class Parser {
         $label,
         $stack,
         $onCommit,
+        $onTry,
         $errorLevel = Error::DISABLED
     ;
 
@@ -51,6 +52,8 @@ abstract class Parser {
 
     function parse(TokenStream $ts) /*: Result|null*/
     {
+        if (null !== $this->onTry) ($this->onTry)();
+
         try {
             $index = $ts->index();
             $result = $this->parser($ts, ...$this->stack);
@@ -90,12 +93,12 @@ abstract class Parser {
         return $this;
     }
 
-    final function withErrorLevel($errorLevel) : self
+    final function onTry(callable $fn) : self
     {
-        $this->errorLevel = (bool) $errorLevel;
-        foreach ($this->stack as $substack) {
-            if ($substack instanceof self) {
-                $substack->{__FUNCTION__}($this->errorLevel);
+        $this->onTry = $fn;
+
+        return $this;
+    }
 
     final function withErrorLevel(bool $errorLevel) : self
     {
