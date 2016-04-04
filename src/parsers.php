@@ -602,13 +602,11 @@ function commit(Parser $parser) : Parser
     {
         protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
-            $result = $parser->parse($ts);
-
-            if ($result instanceof Ast) return $result->as($this->label);
+            $result = $parser->withErrorLevel(Error::ENABLED)->parse($ts);
 
             if ($result instanceof Error) $result->halt();
 
-            $parser->withErrorLevel(Error::ENABLED)->error($ts)->halt();
+            return $result->as($this->label);
         }
 
         function expected() : Expected

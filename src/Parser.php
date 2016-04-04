@@ -96,6 +96,15 @@ abstract class Parser {
         foreach ($this->stack as $substack) {
             if ($substack instanceof self) {
                 $substack->{__FUNCTION__}($this->errorLevel);
+
+    final function withErrorLevel(bool $errorLevel) : self
+    {
+        if ($this->errorLevel !== $errorLevel) {
+            $this->errorLevel = $errorLevel;
+            foreach ($this->stack as $substack) {
+                if ($substack instanceof self) {
+                    $substack->{__FUNCTION__}($this->errorLevel);
+                }
             }
         }
 
