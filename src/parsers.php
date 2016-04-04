@@ -177,7 +177,7 @@ function operator(string $operator) : Parser
                 $ts->step();
                 if(($buffer .= $current) === $operator) {
                     $ts->skip(...TokenStream::SKIPPABLE);
-                    return new Ast($this->label, new Token(token::OPERATOR, $buffer));
+                    return new Ast($this->label, new Token(Token::OPERATOR, $buffer));
                 }
             }
 
@@ -186,7 +186,7 @@ function operator(string $operator) : Parser
 
         function expected() : Expected
         {
-            return new Expected(new Token(token::OPERATOR, $this->stack[0]));
+            return new Expected(new Token(Token::OPERATOR, $this->stack[0]));
         }
 
         function isFallible() : bool
@@ -600,7 +600,6 @@ function commit(Parser $parser) : Parser
 {
     return new class(__FUNCTION__, $parser) extends Parser
     {
-
         protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
             $result = $parser->parse($ts);
