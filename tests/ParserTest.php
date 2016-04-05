@@ -50,15 +50,6 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $commited = false;
         $ast = $parser->onCommit(
             function($ast) use ($expected, &$commited){
-                $this->assertEquals(
-                    $expected,
-                    ($dump = function($ast) use(&$dump) {
-                        if(is_array($ast))
-                            return implode(', ', array_map($dump, $ast));
-                        else
-                            return $ast->dump(false);
-                    })($ast->all())
-                );
                 $commited = true;
             }
         )
@@ -66,6 +57,14 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         ->parse($ts);
 
         $this->assertTrue($commited, "Missing commit on {$parser}().");
+
+        $buffer = [];
+        $astArray = $ast->all();
+        array_walk_recursive($astArray, function(Token $token) use (&$buffer){
+            $buffer[] = $token->dump();
+        });
+
+        $this->assertEquals($expected, implode(', ', $buffer));
 
         return $ast;
     }
@@ -522,18 +521,25 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     function providerForTestNamespace() {
         return [
             [
-                '<?php \foo\bar\baz ',
-                "T_NS_SEPARATOR(\), T_STRING(foo), T_NS_SEPARATOR(\), T_STRING(bar), T_NS_SEPARATOR(\), T_STRING(baz)"
+                '<?php \FullQualified\Composed ',
+                "T_NS_SEPARATOR(\), T_STRING(FullQualified), T_NS_SEPARATOR(\), T_STRING(Composed)"
             ],
             [
-                '<?php namespace\foo\bar ',
-                "T_NAMESPACE(namespace), T_NS_SEPARATOR(\), T_STRING(foo), T_NS_SEPARATOR(\), T_STRING(bar)"
-            ]
-            ,
+                '<?php \FullQualifiedSimple ',
+                "T_NS_SEPARATOR(\), T_STRING(FullQualifiedSimple)"
+            ],
             [
-                '<?php foo\bar ',
-                ", T_STRING(foo), T_NS_SEPARATOR(\), T_STRING(bar)"
-            ]
+                '<?php Relative\Composed ',
+                "T_STRING(Relative), T_NS_SEPARATOR(\), T_STRING(Composed)"
+            ],
+            [
+                '<?php RelativeSimple ',
+                "T_STRING(RelativeSimple)"
+            ],
+            [
+                '<?php namespace\ExplicitlyRelative ',
+                "T_NAMESPACE(namespace), T_NS_SEPARATOR(\), T_STRING(ExplicitlyRelative)"
+            ],
         ];
     }
 
