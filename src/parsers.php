@@ -628,24 +628,25 @@ function ns() : Parser
         (
             optional
             (
-                either
+                token(T_NS_SEPARATOR)
+            )
+            ->as('full-qualified')
+            ,
+            optional
+            (
+                chain
                 (
-                    token(T_NS_SEPARATOR)
-                    ,
                     token(T_NAMESPACE)
                     ,
-                    chain
-                    (
-                        token(T_NS_SEPARATOR)
-                        ,
-                        token(T_NAMESPACE)
-                    )
+                    token(T_NS_SEPARATOR)
                 )
             )
             ,
-            repeat
+            token(T_STRING)
+            ,
+            optional
             (
-                either
+                repeat
                 (
                     chain
                     (
@@ -653,11 +654,10 @@ function ns() : Parser
                         ,
                         token(T_STRING)
                     )
-                    ,
-                    token(T_STRING)
                 )
             )
-        );
+        )
+    ;
 }
 
 function ls(Parser $parser, Parser $delimiter) : Parser
