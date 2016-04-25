@@ -154,7 +154,7 @@ class Macro implements Directive {
             (
                 $parser = chain
                 (
-                    rtoken('/^·\w+$/')->as('parser_type')
+                    rtoken('/^·\w+$/')->as('type')
                     ,
                     token('(')
                     ,
@@ -178,6 +178,7 @@ class Macro implements Directive {
                                 ,
                                 word()->as('word')
                             )
+                            ->as('parser')
                             ,
                             token(',')
                         )
@@ -191,12 +192,13 @@ class Macro implements Directive {
                     ,
                     optional
                     (
-                        rtoken('/^·\w+$/')->as('label')
+                        rtoken('/^·\w+$/')->as('label'), null
                     )
                 )
             )
             ->onCommit(function(Ast $result) {
-                $this->parsers[] = $this->compileParser($result->array());
+                $this->parsers[] = $this->compileParser(
+                    $result->type, $result->args, $result->label);
             })
             ,
             // handles {···layer}
@@ -376,12 +378,12 @@ class Macro implements Directive {
         return $ts;
     }
 
-    private function compileParser(array $result) : Parser
+    private function compileParser(Token $type, array $args, Token $label = null) : Parser
     {
-        $parser = $this->lookupParser($result['parser_type']);
-        $args = $this->compileParserArgs($result['args']);
+        $parser = $this->lookupParser($type);
+        $args = $this->compileParserArgs($args);
         $parser = $parser(...$args);
-        if ($label = $result['label'])
+        if ($label)
             $parser->as($this->lookupCapture($label));
 
         return $parser;
@@ -399,7 +401,8 @@ class Macro implements Directive {
                 $compiled[] = token($arg);
                 break;
             case 'parser':
-                $compiled[] = $this->compileParser($arg);
+                $compiled[] = $this->compileParser(
+                    $arg['type'], $arg['args'], $arg['label']);
                 break;
             case 'string':
                 $compiled[] = trim((string) $arg, '"\'');

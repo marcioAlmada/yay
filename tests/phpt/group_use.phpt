@@ -9,7 +9,7 @@ macro {
             ·chain(
                 ·optional(·either(const, function))·type
                 ,
-                ·ns()·entry
+                ·ns()·name
                 ,
                 ·optional(
                     ·chain(
@@ -19,17 +19,20 @@ macro {
                     )
                 )
                 ·alias
-            ),
+            )
+            ·entry
+            ,
             ·token(',')
         )
         ·entries
     }
 } >> {
 
-·entries ··· {
-    use ·type ·base\·entry ·alias ··· {as ·label};
-}
-
+    ·entries ··· {
+        ·entry ··· {
+            use ·type ·base\·name ·alias ··· {as ·label};
+        }
+    }
 }
 
 use A\B\C\{

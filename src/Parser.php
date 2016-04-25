@@ -33,7 +33,7 @@ abstract class Parser {
 
     final function __toString() : string
     {
-        return $this->type;
+        return $this->type . ($this->label !== null ? " as {$this->label}" : '');
     }
 
     final function __debugInfo()

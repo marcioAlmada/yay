@@ -666,6 +666,10 @@ function ls(Parser $parser, Parser $delimiter) : Parser
         throw new InvalidArgumentException(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
+    if ((string) $parser === __FUNCTION__)
+        throw new InvalidArgumentException(
+            'List parser unit must be labeled at ' . __FUNCTION__ . '('. $parser . ', ...)');
+
     return new class(__FUNCTION__, $parser, $delimiter) extends Parser
     {
         protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/

@@ -581,7 +581,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
             $ts,
             ls
             (
-                token(T_STRING)
+                token(T_STRING)->as('letter')
                 ,
                 token(',')
             )
