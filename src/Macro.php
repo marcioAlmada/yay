@@ -176,6 +176,8 @@ class Macro implements Directive {
                                 ,
                                 rtoken('/^T_\w+$/')->as('constant')
                                 ,
+                                rtoken('/^·this$/')->as('this')
+                                ,
                                 word()->as('word')
                             )
                             ->as('parser')
@@ -269,6 +271,7 @@ class Macro implements Directive {
         }
 
         return $pattern;
+
     }
 
     private function compileExpansion(array $expansion) : TokenStream {
@@ -392,6 +395,9 @@ class Macro implements Directive {
     private function compileParserArgs(array $args) : array {
         $compiled = [];
         foreach ($args as $label => $arg) switch ((string) $label) {
+            case 'this':
+                $compiled[] = future($this->pattern);
+                break;
             case 'token':
                 $type = $this->lookupTokenType($arg);
                 $label = $this->lookupCapture($arg);
