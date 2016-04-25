@@ -47,7 +47,7 @@ abstract class Parser {
 
     final function __clone()
     {
-        $this->onCommit = null;
+        $this->onCommit = $this->onTry = null;
     }
 
     function parse(TokenStream $ts) /*: Result|null*/
