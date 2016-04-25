@@ -675,13 +675,11 @@ function ls(Parser $parser, Parser $delimiter) : Parser
         protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/
         {
             $ast = new Ast($this->label);
-            $parser = (clone $parser)->onCommit(function(Ast $result) use ($ast){
-                $ast->push($result);
-            });
+            $midrule = function(Ast $result) use ($ast) { $ast->push($result); };
 
             chain
             (
-                $parser
+                (clone $parser)->onCommit($midrule)
                 ,
                 optional
                 (
@@ -689,10 +687,12 @@ function ls(Parser $parser, Parser $delimiter) : Parser
                     (
                         chain
                         (
-                            $delimiter
+                            (clone $delimiter)
                             ,
-                            $parser
+                            (clone $parser)
+                                ->onCommit($delimiter->label ? function(){} : $midrule)
                         )
+                        ->onCommit($delimiter->label ? $midrule : function(){})
                     )
                 )
             )
