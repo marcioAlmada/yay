@@ -572,14 +572,14 @@ function lookahead(Parser $parser) : Parser
     };
 }
 
-function optional(Parser $parser) : Parser
+function optional(Parser $parser, $default = []) : Parser
 {
-    return new class(__FUNCTION__, $parser) extends Parser
+    return new class(__FUNCTION__, $parser, $default) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) : Ast
+        protected function parser(TokenStream $ts, Parser $parser, $default) : Ast
         {
             $result = $parser->parse($ts);
-            $match = ($result instanceof Ast) ? $result->raw() : [];
+            $match = ($result instanceof Ast) ? $result->raw() : $default;
 
             return (new Ast($parser->label, $match))->as($this->label);
         }
