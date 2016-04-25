@@ -664,7 +664,7 @@ function ls(Parser $parser, Parser $delimiter) : Parser
 {
     if (! $parser->isFallible())
         throw new InvalidArgumentException(
-            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');       
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
     return new class(__FUNCTION__, $parser, $delimiter) extends Parser
     {
