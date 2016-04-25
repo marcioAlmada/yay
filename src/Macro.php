@@ -509,18 +509,31 @@ class Macro implements Directive {
             ,
             consume
             (
-                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
+                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
             )
             ->onCommit(function(Ast $result) use ($cg) {
-                $expansion = $cg->context->{(string) $result->token()};
+                $index = (string) $result->label;
+                $context = $cg->context->{$index};
 
-                if ($expansion instanceof Token) {
-                    $cg->ts->inject(TokenStream::fromSequence($expansion));
+                if ($context === null) {
+                    $this->fail(
+                        self::E_EXPANSION,
+                        $index,
+                        $result->label->line(),
+                        json_encode (
+                            array_keys($cg->context->all()[0]),
+                            self::PRETTY_PRINT
+                        )
+                    );
                 }
-                elseif (is_array($expansion) && \count($expansion)) {
+
+                if ($context instanceof Token) {
+                    $cg->ts->inject(TokenStream::fromSequence($context));
+                }
+                elseif (is_array($context) && \count($context)) {
                     $tokens = [];
                     array_walk_recursive(
-                        $expansion,
+                        $context,
                         function(Token $token) use(&$tokens) {
                             $tokens[] = $token;
                         }
