@@ -21,7 +21,7 @@ describe 'ArrayObject' {
     }
     describe '->count()' {
         it 'should return the number of items' {
-            assert($this->arrayObject->count() === 3, "expected 3");
+            assert($this->arrayObject->count() === 3, 'expected 3');
         }
     }
 }
@@ -32,7 +32,7 @@ describe 'ArrayObject' {
 
 describe('ArrayObject', function () {
     beforeEach(function () {
-        $this->arrayObject = new ArrayObject(array(1, 2, 3));
+        $this->arrayObject = new ArrayObject([1, 2, 3]);
     });
     describe('->count()', function () {
         it('should return the number of items', function () {

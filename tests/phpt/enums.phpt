@@ -41,7 +41,7 @@ macro ·unsafe {
 
             if (isset(self::$store->$field)) return self::$store->$field;
 
-            throw new \Exception("Undefined enum field " . __CLASS__ . "->{$field}.");
+            throw new \Exception('Undefined enum field ' . __CLASS__ . "->{$field}.");
         }
     }
 }
