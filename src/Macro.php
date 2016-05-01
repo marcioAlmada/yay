@@ -21,6 +21,7 @@ class Macro implements Directive {
         E_BAD_EXPANSION = "Bad macro expansion identifier '%s' on line %d.",
         E_PARSER = "Bad macro parser identifier '%s' on line %d.",
         E_EXPANDER = "Bad macro expander '%s' on line %d.",
+        E_EXPANDER_SLICE = "Empty expander slice on '%s()' at line %d.",
         E_LOOKUP = "Redefinition of macro capture identifier '%s' on line %d.",
         E_EXPANSION = "Undefined macro expansion '%s' on line %d with context: %s",
         E_BAD_DOMINANCE = "Bad dominant macro marker '·' offset %d on line %d."
@@ -448,13 +449,13 @@ class Macro implements Directive {
                 )
             )
             ->onCommit(function(Ast $result) use ($cg) {
-                $expander = $this->lookupExpander($result->expander);
-                $subject =
-                    \count($result->args)
-                        ? TokenStream::fromSlice($result->args)
-                        : TokenStream::fromEmpty()
-                ;
-                $expansion = $expander(
+                $expander = $result->expander;
+                if (\count($result->args) === 0)
+                    $this->fail(self::E_EXPANDER_SLICE, (string) $expander, $expander->line());
+
+                $fqexpander = $this->lookupExpander($expander);
+                $subject = TokenStream::fromSlice($result->args);
+                $expansion = $fqexpander(
                     $this->mutate(clone $subject, $cg->context, $cg->directives),
                     [
                         'scope' => $this->cycle->id(),
