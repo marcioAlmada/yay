@@ -38,6 +38,14 @@ function concat(TokenStream $ts) : TokenStream {
 function hygienize(TokenStream $ts, array $context) : TokenStream {
     $ts->reset();
 
+    $cg = (object)[
+        'node' => null,
+        'context' => $context,
+        'ts' => $ts
+    ];
+
+    $saveNode = function() use($cg) { $cg->node = $cg->ts->index(); };
+
     traverse
     (
         // hygiene must skip whatever is passed through the ··unsafe() expander
@@ -45,18 +53,15 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
         ,
         either
         (
-            token(T_VARIABLE)->as('target')
+            token(T_VARIABLE)->onTry($saveNode)->as('target')
             ,
-            chain(identifier()->as('target'), token(':'))
+            chain(identifier()->onTry($saveNode)->as('target'), token(':'))
             ,
-            chain(token(T_GOTO), identifier()->as('target'))
+            chain(token(T_GOTO), identifier()->onTry($saveNode)->as('target'))
         )
-        ->onCommit(function(Ast $result) use ($context) {
-            (function() use($context) {
-                if ((string) $this !== '$this')
-                    $this->value = (string) $this . '·' . $context['scope'];
-            })
-            ->call($result->target);
+        ->onCommit(function(Ast $result) use ($cg) {
+            if (($t = $cg->node->token) && (($value = (string) $t) !== '$this'))
+                $cg->node->token = new Token($t->type(), "{$value}·{$cg->context['scope']}", $t->line());
         })
     )
     ->parse($ts);

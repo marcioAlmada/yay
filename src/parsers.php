@@ -27,6 +27,8 @@ function token($type, $value = null) : Parser
 
         final function parse(TokenStream $ts) /*: Result|null*/
         {
+            if (null !== $this->onTry) ($this->onTry)();
+
             if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
                 $ts->next();
                 $result = new Ast($this->label, $token);

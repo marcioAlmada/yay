@@ -24,7 +24,7 @@ class TokenStream {
         $tokens = [];
         $node = $this->first;
         while ($node !== $this->last) {
-            $tokens[] = clone $node->token;
+            $tokens[] = $node->token;
             $node = $node->next;
         }
 
