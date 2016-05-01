@@ -4,6 +4,10 @@ php:
   - 7.0
   - nightly
 
+matrix:
+  allow_failures:
+    - php: nightly
+
 sudo: false
 
 before_script:
