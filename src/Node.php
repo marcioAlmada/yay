@@ -2,19 +2,11 @@
 
 namespace Yay;
 
-class Node {
+class Node implements Index {
 
-    public
-        $token,
-        $previous,
-        $next
-    ;
+    public $token, $next, $previous;
 
-    function __construct(Token $token) {
-        $this->token = $token;
-    }
+    function __construct(Token $token) { $this->token = $token; }
 
-    function __debugInfo() {
-        return [$this->token];
-    }
+    function __debugInfo() { return [$this->token]; }
 }

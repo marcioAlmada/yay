@@ -8,41 +8,92 @@ namespace Yay;
 class TokenStreamTest extends \PHPUnit_Framework_TestCase
 {
 
-    function testStep() {
-        $ts = TokenStream::fromSource("<?php  :  \n  :: ");
+    function testToString() {
+        $ts = TokenStream::fromSource('<?php A B C D E F G ');
+        $this->assertEquals('<?php A B C D E F G ', (string) $ts);
 
-        $this->assertTrue($ts->step()->is(T_WHITESPACE));
-        $this->assertTrue($ts->step()->is(':'));
-        $this->assertTrue($ts->step()->is(T_WHITESPACE));
-        $this->assertTrue($ts->step()->is(T_DOUBLE_COLON));
-        $this->assertTrue($ts->step()->is(T_WHITESPACE));
-        $this->assertNull($ts->step());
+        $ts = TokenStream::fromSource('');
+        $this->assertEquals('', (string) $ts);
     }
 
-    function testNext() {
-        $ts = TokenStream::fromSource("<?php  : \n :: ");
+    function testIsEmpty() {
+        $ts = TokenStream::fromSource('');
+        $this->assertTrue($ts->isEmpty());
 
-        $this->assertTrue($ts->next()->is(':'));
-        $this->assertTrue($ts->next()->is(T_DOUBLE_COLON));
-        $this->assertNull($ts->next());
+        $ts = TokenStream::fromSource('<?php ');
+        $this->assertFalse($ts->isEmpty());
+    }
+
+    function testStep() {
+        $ts = TokenStream::fromSource("<?php A B   C D \n E \n\n F");
+
+        $this->assertSame('<?php ', (string) $ts->current());
+        $this->assertSame('A', (string) $ts->step());
+        $this->assertSame(' ', (string) $ts->step());
+        $this->assertSame('B', (string) $ts->step());
+        $this->assertSame('   ', (string) $ts->step());
+        $this->assertSame('C', (string) $ts->step());
+        $this->assertSame(' ', (string) $ts->step());
+        $this->assertSame('D', (string) $ts->step());
+        $this->assertSame(" \n ", (string) $ts->step());
+        $this->assertSame('E', (string) $ts->step());
+        $this->assertSame(" \n\n ", (string) $ts->step());
+        $this->assertSame('F', (string) $ts->step());
+        $this->assertSame(null, $ts->step());
+        $this->assertSame(null, $ts->current());
+        $this->assertSame(null, $ts->step());
+        $this->assertSame(null, $ts->current());
+    }
+
+    function testBack() {
+        $ts = TokenStream::fromSource("<?php A B");
+
+        $this->assertSame('<?php ', (string) $ts->current());
+        $this->assertSame('A', (string) $ts->step());
+        $this->assertSame(' ', (string) $ts->step());
+        $this->assertSame('B', (string) $ts->step());
+        $this->assertSame(' ', (string) $ts->back());
+        $this->assertSame('A', (string) $ts->back());
+        $this->assertSame('<?php ', (string) $ts->back());
+    }
+
+
+    function testNext() {
+        $ts = TokenStream::fromSource("<?php 1 2   3 4 \n 5 \n\n 6");
+
+        $this->assertSame('<?php ', (string) $ts->current());
+        $this->assertSame('1', (string) $ts->next());
+        $this->assertSame('2', (string) $ts->next());
+        $this->assertSame('3', (string) $ts->next());
+        $this->assertSame('4', (string) $ts->next());
+        $this->assertSame('5', (string) $ts->next());
+        $this->assertSame('6', (string) $ts->next());
+        $this->assertSame(null, $ts->next());
+        $this->assertSame(null, $ts->current());
+        $this->assertSame(null, $ts->next());
+        $this->assertSame(null, $ts->current());
     }
 
     function testReset() {
         $ts = TokenStream::fromSource("<?php 2 4 6 8");
+
         while($ts->next());
 
         $this->assertNull($ts->current());
-        $this->assertNull($ts->reset());
+
+        $ts->reset();
+
         $this->assertEquals('<?php ', (string) $ts->current());
     }
 
     function providerForTestTrim() {
         return [
-            ['<?php {A B C}', '{A B C}'],
-            ['<?php      {A B C}', '{A B C}'],
-            ['<?php {A B C}     ', '{A B C}'],
-            ["<?php \t\n{A B C}\t\n\t", '{A B C}'],
-            ['<?php ', ''],
+            ['{A B C}', '{A B C}'],
+            ['      {A B C}', '{A B C}'],
+            ['{A B C}     ', '{A B C}'],
+            ['      {A B C}     ', '{A B C}'],
+            ["\t\n\t{A B C}\t\n\t", '{A B C}'],
+            [' ', ''],
         ];
     }
 
@@ -50,7 +101,7 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
      * @dataProvider providerForTestTrim
      */
     function testTrim(string $src, string $expected) {
-        $ts = TokenStream::fromSource($src);
+        $ts = TokenStream::fromSource('<?php ' . $src);
         $ts->shift();
         $ts->trim();
         $this->assertEquals($expected, (string) $ts);
@@ -72,7 +123,7 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         while($ts->next());
         $this->assertNull($ts->current(), 'EOF was not reach.');
         $this->assertEquals($src, (string) $ts);
-        $this->assertNull($ts->current(), 'Index was not preserved.');
+        $this->assertNull($ts->current(), 'Index was not preserved after string conversion.');
     }
 
     function testClone() {
@@ -82,23 +133,45 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $this->assertNotSame($tsa->index(), $tsb->index());
     }
 
+    function testExtract() {
+        $ts = TokenStream::fromSequence(
+            [T_STRING, 'T_VARIABLE·A', 0], [T_WHITESPACE, ' ', 0], [T_STRING, 'T_VARIABLE·B', 0]);
+
+        $ts->extract($ts->index(), $ts->index()->next);
+
+        $this->assertEquals(' T_VARIABLE·B', (string) $ts);
+    }
+
     function testInject() {
-        $ts = TokenStream::fromSource("<?php START END ");
-
-        $ts->inject(TokenStream::fromEmpty());
-        $this->assertEquals('<?php START END ', (string) $ts);
-
-        $ts->step();
+        $ts = TokenStream::fromSource('<?php START END');
+        $ts->next();
         $ts->step();
         $ts->inject(TokenStream::fromSequence(
-            [T_STRING, 'MIDDLE', 0], [T_WHITESPACE, '  ', 0]));
-        $this->assertEquals('<?php START MIDDLE  END ', (string) $ts);
-        $ts->reset();
-
-        $ts = TokenStream::fromEmpty();
+            [T_STRING, 'MIDDLE_B', 0], [T_WHITESPACE, '  ', 0]));
         $ts->inject(TokenStream::fromSequence(
-            [T_OPEN_TAG, '<?php', 0], [T_WHITESPACE, ' ', 0], [T_STRING, 'A', 0]));
-        $this->assertEquals('<?php A', (string) $ts);
+            [T_STRING, 'MIDDLE_A', 0], [T_WHITESPACE, '  ', 0]));
+        $this->assertEquals('<?php START MIDDLE_A  MIDDLE_B  END', (string) $ts);
+
+        $ts = TokenStream::fromSource('');
+        $ts->inject(TokenStream::fromSequence(
+            [T_WHITESPACE, '  ', 0], [T_STRING, 'BAR', 0], [T_WHITESPACE, '  ', 0]));
+        $this->assertEquals('  BAR  ', (string) $ts);
+
+        $ts->inject(TokenStream::fromSequence(
+            [T_WHITESPACE, '  ', 0], [T_STRING, 'FOO', 0], [T_WHITESPACE, '  ', 0]));
+        $this->assertEquals('  FOO    BAR  ', (string) $ts);
+
+        $ts = TokenStream::fromSource('<?php A B');
+        $ts->next();
+        $ts->next();
+        $ts->next();
+        $node = $ts->index();
+        $partial = TokenStream::fromSequence(
+            [T_WHITESPACE, '  ', 0], [T_STRING, 'C', 0], [T_WHITESPACE, '  ', 0]);
+        $index = $partial->index();
+        $ts->inject($partial);
+        $this->assertEquals('<?php A B  C  ', (string) $ts);
+        // $this->assertSame($index, $ts->index());
     }
 
     function testPush() {
@@ -110,17 +183,20 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $ts->push(new Token(T_WHITESPACE, ' '));
         $this->assertEquals('<?php 1 2 3 4 5 ', (string) $ts);
 
-        $ts = TokenStream::fromEmpty();
+        $ts = TokenStream::fromSource('<?php ');
         $ts->push(new Token(T_STRING, 'A'));
         $ts->push(new Token(T_WHITESPACE, ' '));
         $ts->push(new Token(T_STRING, 'B'));
         $ts->push(new Token(T_WHITESPACE, ' '));
-        $this->assertEquals('A B ', (string) $ts);
+        $this->assertEquals('<?php A B ', (string) $ts);
+    }
 
-        $ts->extract($ts->index(), $ts->index()->next->next->next);
-        $this->assertEquals(' ', (string) $ts);
-
-        $ts->push(new Token(T_STRING, 'C'));
-        $this->assertEquals(' C', (string) $ts);
+    function testEach() {
+        $ts = TokenStream::fromSource('<?php 5 5 5 5 5');
+        $sum = 0;
+        $ts->each(function(Token $t) use(&$sum) {
+            if ($t->is(T_LNUMBER)) $sum += (int) (string) $t;
+        });
+        $this->assertEquals(25, $sum);
     }
 }
