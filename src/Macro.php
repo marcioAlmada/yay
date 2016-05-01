@@ -482,20 +482,7 @@ class Macro implements Directive {
                 )
             )
             ->onCommit(function(Ast $result)  use($cg) {
-                $index = (string) $result->label;
-                $context = $cg->context->{$index};
-
-                if ($context === null) {
-                    $this->fail(
-                        self::E_EXPANSION,
-                        $index,
-                        $result->label->line(),
-                        json_encode (
-                            array_keys($cg->context->all()[0]),
-                            self::PRETTY_PRINT
-                        )
-                    );
-                }
+                $context = $this->lookupContext($result->label, $cg->context);
 
                 $expansion = TokenStream::fromSlice($result->expansion);
                 $delimiters = $result->delimiters;
@@ -519,20 +506,7 @@ class Macro implements Directive {
                 rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
             )
             ->onCommit(function(Ast $result) use ($cg) {
-                $index = (string) $result->label;
-                $context = $cg->context->{$index};
-
-                if ($context === null) {
-                    $this->fail(
-                        self::E_EXPANSION,
-                        $index,
-                        $result->label->line(),
-                        json_encode (
-                            array_keys($cg->context->all()[0]),
-                            self::PRETTY_PRINT
-                        )
-                    );
-                }
+                $context = $this->lookupContext($result->label, $cg->context);
 
                 if ($context instanceof Token) {
                     $cg->ts->inject(TokenStream::fromSequence($context));
@@ -634,6 +608,23 @@ class Macro implements Directive {
             $this->fail(self::E_TOKEN_TYPE, $type, $token->line());
 
         return constant($type);
+    }
+
+    private function lookupContext(Token $label, Ast $context) {
+        $index = (string) $label;
+        if (($context = $context->{$index}) === null) {
+            $this->fail(
+                self::E_EXPANSION,
+                $index,
+                $label->line(),
+                json_encode (
+                    array_keys($context->all()[0]),
+                    self::PRETTY_PRINT
+                )
+            );
+        }
+
+        return $context;
     }
 
     private function fail(string $error, ...$args) {
