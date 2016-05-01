@@ -171,7 +171,7 @@ function operator(string $operator) : Parser
 
             while (
                 (mb_strlen($buffer) <= $max) &&
-                ($token = $ts->current()) &&
+                (null !== ($token = $ts->current())) &&
                 (false !== mb_strstr($operator, ($current = (string) $token)))
             ){
                 $ts->step();
@@ -344,7 +344,7 @@ function layer(array $delimiters = LAYER_DELIMITERS) : Parser
             $tokens = [];
 
             while (
-                ($token = $ts->current()) &&
+                (null !== ($token = $ts->current())) &&
                 ($level += ($delimiters[$token->type()] ?? 0))
             ){
                 $tokens[] = $token;
@@ -744,7 +744,7 @@ function identifier() : Parser
     return token(T_STRING);
 }
 
-function word() : Parser
+function label() : Parser
 {
     return rtoken('/^\w+$/');
 }
@@ -778,17 +778,11 @@ function not(Parser $parser) : Parser
     };
 }
 
-function source(string $example) : Parser
+function fromExample(string $example) : Parser
 {
-    return
-        chain(
-            ...array_map(
-                function($t){ return token($t); },
-                array_slice(
-                    token_get_all('<?php' . $example),
-                    1
-                )
-            )
-        )
-    ;
+    $links = [];
+    TokenStream::fromSourceWithoutOpenTags($example)
+        ->each(function(Token $t) use (&$links) { $links[] = token($t); });
+
+    return chain(...$links);
 }

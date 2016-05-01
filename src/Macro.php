@@ -178,7 +178,7 @@ class Macro implements Directive {
                                 ,
                                 rtoken('/^·this$/')->as('this')
                                 ,
-                                word()->as('word')
+                                label()->as('label')
                             )
                             ->as('parser')
                             ,
@@ -403,7 +403,7 @@ class Macro implements Directive {
                 $label = $this->lookupCapture($arg);
                 $compiled[] = token($type)->as($label);
                 break;
-            case 'word':
+            case 'label':
                 $compiled[] = token($arg);
                 break;
             case 'parser':

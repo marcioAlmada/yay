@@ -20,22 +20,19 @@ function stringify(TokenStream $ts) : TokenStream {
 }
 
 function concat(TokenStream $ts) : TokenStream {
-    $buffer = [];
+    $ts->reset();
+    $buffer = '';
     while($t = $ts->current()) {
         $str = (string) $t;
         if (! preg_match('/^\w+$/', $str))
             throw new YayException(
                 "Only valid identifiers are mergeable, '{$t->dump()}' given.");
 
-        $buffer[] = $str;
+        $buffer .= $str;
         $ts->next();
     }
 
-    return TokenStream::fromSequence(
-        new Token(
-            T_STRING, implode('', $buffer)
-        )
-    );
+    return TokenStream::fromSequence(new Token(T_STRING, $buffer));
 }
 
 function hygienize(TokenStream $ts, array $context) : TokenStream {

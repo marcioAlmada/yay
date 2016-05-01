@@ -4,7 +4,7 @@ Test ·concat expander
 <?php
 
 macro {
-    yay\concat( ·word('/^\w+$/')·word )
+    yay\concat( ·label('/^\w+$/')·word )
 } >> {
     ··concat(foo_ ·word _baz)
 }
