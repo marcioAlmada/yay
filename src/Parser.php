@@ -16,7 +16,6 @@ abstract class Parser {
         $label,
         $stack,
         $onCommit,
-        $onTry,
         $errorLevel = Error::DISABLED
     ;
 
@@ -47,13 +46,11 @@ abstract class Parser {
 
     final function __clone()
     {
-        $this->onCommit = $this->onTry = null;
+        $this->onCommit = null;
     }
 
     function parse(TokenStream $ts) /*: Result|null*/
     {
-        if (null !== $this->onTry) ($this->onTry)();
-
         try {
             $index = $ts->index();
             $result = $this->parser($ts, ...$this->stack);
@@ -89,13 +86,6 @@ abstract class Parser {
     final function onCommit(callable $fn) : self
     {
         $this->onCommit = $fn;
-
-        return $this;
-    }
-
-    final function onTry(callable $fn) : self
-    {
-        $this->onTry = $fn;
 
         return $this;
     }

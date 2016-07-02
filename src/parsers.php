@@ -27,8 +27,6 @@ function token($type, $value = null) : Parser
 
         final function parse(TokenStream $ts) /*: Result|null*/
         {
-            if (null !== $this->onTry) ($this->onTry)();
-
             if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
                 $ts->next();
                 $result = new Ast($this->label, $token);
@@ -147,7 +145,7 @@ function always($type, $value = null) : Parser
     {
         protected function parser(TokenStream $ts, Token $token) /*: Result|null*/
         {
-            return new Ast($this->label, [($this->label ?: 0) => clone $token]);
+            return new Ast($this->label, [($this->label ?: 0) => $token]);
         }
 
         function expected() : Expected
@@ -787,4 +785,25 @@ function fromExample(string $example) : Parser
         ->each(function(Token $t) use (&$links) { $links[] = token($t); });
 
     return chain(...$links);
+}
+
+function midrule(callable $midrule, bool $isFallible = true) : Parser
+{
+    return new  class(__FUNCTION__, $midrule, new Expected, $isFallible) extends Parser
+    {
+        function parse(TokenStream $ts) /*: Result|null*/
+        {
+            return $this->stack[0]($ts);
+        }
+
+        function expected() : Expected
+        {
+            return $this->stack[1];
+        }
+
+        function isFallible() : bool
+        {
+            return $this->stack[2];
+        }
+    };
 }

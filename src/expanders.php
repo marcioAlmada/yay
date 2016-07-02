@@ -2,9 +2,9 @@
 
 namespace Yay\DSL\Expanders;
 
-use Yay\{Token, TokenStream, Ast, YayException, Cycle};
+use Yay\{Token, TokenStream, Ast, YayException, Cycle, Parser};
 use function Yay\{
-    token, rtoken, identifier, chain, either, any, parentheses, traverse
+    token, rtoken, identifier, chain, either, any, parentheses, traverse, midrule
 };
 
 function stringify(TokenStream $ts) : TokenStream {
@@ -44,7 +44,13 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
         'ts' => $ts
     ];
 
-    $saveNode = function() use($cg) { $cg->node = $cg->ts->index(); };
+    $saveNode = function(Parser $parser) use($cg) {
+        return midrule(function($ts) use ($cg, $parser) {
+            $cg->node = $ts->index();
+
+            return $parser->parse($ts);
+        });
+    };
 
     traverse
     (
@@ -53,11 +59,11 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
         ,
         either
         (
-            token(T_VARIABLE)->onTry($saveNode)->as('target')
+            $saveNode(token(T_VARIABLE))
             ,
-            chain(identifier()->onTry($saveNode)->as('target'), token(':'))
+            chain($saveNode(identifier()), token(':'))
             ,
-            chain(token(T_GOTO), identifier()->onTry($saveNode)->as('target'))
+            chain(token(T_GOTO), $saveNode(identifier()))
         )
         ->onCommit(function(Ast $result) use ($cg) {
             if (($t = $cg->node->token) && (($value = (string) $t) !== '$this'))

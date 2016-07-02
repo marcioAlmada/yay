@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-use Yay\{ TokenStream, Directives, Macro, Cycle};
+use Yay\{ TokenStream, Ast, Directives, Macro, Cycle};
 
 use function Yay\{
     token, rtoken, any, operator, optional, commit, chain, braces,
-    consume, lookahead, repeat, traverse
+    consume, lookahead, repeat, traverse, midrule
 };
 
 use const Yay\{ CONSUME_DO_TRIM };
