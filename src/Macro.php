@@ -38,7 +38,8 @@ class Macro implements Directive {
         $dominance = 0,
         $constant = true,
         $unsafe = false,
-        $cloaked = false
+        $cloaked = false,
+        $terminating = true
     ;
 
     private
@@ -57,6 +58,10 @@ class Macro implements Directive {
         if (\count($expansion))
             $this->expansion = $this->compileExpansion($expansion);
 
+        $this->unsafe = (bool) ($this->unsafe ^ $this->hasTag('·unsafe'));
+
+        $this->terminating = !$this->hasTag('·recursion');
+
         $this->id = $id++;
         $this->cycle = $cycle;
     }
@@ -67,6 +72,10 @@ class Macro implements Directive {
 
     function specificity() : int {
         return $this->specificity;
+    }
+
+    function pattern() : Parser {
+        return $this->pattern;
     }
 
     function apply(TokenStream $ts, Directives $directives) {
@@ -83,8 +92,7 @@ class Macro implements Directive {
                 $context->inherit($token->context());
             });
 
-            if (! $this->hasTag('·recursion'))
-                if ($context->contains($this->id())) return; // already expanded
+            if ($this->terminating && $context->contains($this->id())) return; // already expanded
 
             $context->add($this->id());
             $ts->unskip(...TokenStream::SKIPPABLE);
@@ -93,7 +101,7 @@ class Macro implements Directive {
 
             $expansion = clone $this->expansion;
 
-            if ($this->unsafe && !$this->hasTag('·unsafe'))
+            if ($this->unsafe)
                 hygienize($expansion, ['scope' => $this->cycle->id(),]);
 
             $expansion = $this->mutate($expansion, $crossover, $directives);

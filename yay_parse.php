@@ -28,6 +28,22 @@ function yay_parse(string $source, Directives $directives = null) : string {
 
     traverse
     (
+        midrule(function(TokenStream $ts) use ($cg) {
+            $t = $ts->current();
+
+            tail_call: {
+                if (null === $t) return;
+
+                if ('macro' === (string) $t) return;
+
+                $cg->directives->apply($ts, $t);
+
+                $t = $ts->next();
+
+                goto tail_call;
+            }
+        })
+        ,
         consume
         (
             chain
@@ -77,16 +93,12 @@ function yay_parse(string $source, Directives $directives = null) : string {
                 $macroAst->{'body expansion'},
                 $cg->cycle
             );
+
             $cg->directives->add($macro);
 
             if ($macro->hasTag('·global'))
                 $cg->globalDirectives[] = $macro;
         })
-        ,
-        any()
-            ->onTry(function() use ($cg) {
-                $cg->directives->apply($cg->ts);
-            })
     )
     ->parse($cg->ts);
 

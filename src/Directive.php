@@ -8,5 +8,7 @@ interface Directive {
 
     function specificity() : int;
 
+    function pattern() : Parser;
+
     function apply(TokenStream $TokenStream, Directives $directives);
 }
