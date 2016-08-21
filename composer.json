@@ -25,7 +25,6 @@
         "files": [
             "yay_parse.php",
             "yay_pretty.php",
-            "yay_compile.php",
             "src/parsers.php",
             "src/expanders.php",
             "bootstrap.php"

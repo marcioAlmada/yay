@@ -778,15 +778,6 @@ function not(Parser $parser) : Parser
     };
 }
 
-function fromExample(string $example) : Parser
-{
-    $links = [];
-    TokenStream::fromSourceWithoutOpenTags($example)
-        ->each(function(Token $t) use (&$links) { $links[] = token($t); });
-
-    return chain(...$links);
-}
-
 function midrule(callable $midrule, bool $isFallible = true) : Parser
 {
     return new  class(__FUNCTION__, $midrule, new Expected, $isFallible) extends Parser
