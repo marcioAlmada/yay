@@ -2,24 +2,16 @@
 
 namespace Yay;
 
-class BlueContext {
-
-    protected
-        /**
-         * Stores a disabling context as [int $id => true]
-         */
-        $context = []
-    ;
-
-    function contains(int $id) : bool {
-        return isset($this->context[$id]);
+class BlueContext extends Map {
+    function add($value) {
+        return $this->map[$value] = true;
     }
 
-    function add(int $id) {
-        $this->context[$id] = true;
+    function contains($value) : bool {
+        return isset($this->map[$value]);
     }
 
     function inherit(self $subject) {
-        foreach (array_keys($subject->context) as $id) $this->add($id);
+        $this->map += $subject->map;
     }
 }

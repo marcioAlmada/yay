@@ -9,7 +9,7 @@ use
 /**
  * Worst class ever. This needs to be replaced by a SyntaxObject or sort of
  */
-class Ast implements Result {
+class Ast implements Result, Context {
 
     protected
         $label = null,
@@ -28,16 +28,19 @@ class Ast implements Result {
         $this->label = $label;
     }
 
-    function __get($path)
-    {
+    function __get($path) {
+        return $this->get($path);
+    }
+
+    function get($path) {
         $ret =
-            \igorw\get_in(
+            $this->getIn(
                 (null !== $this->label ? $this->all() : $this->ast),
                 preg_split('/\s+/', $path)
             )
         ;
 
-        if (null === $ret && $this->parent) $ret = $this->parent->{$path};
+        if (null === $ret && $this->parent) $ret = $this->parent->get($path);
 
         return $ret;
     }
@@ -91,5 +94,35 @@ class Ast implements Result {
         $this->parent = $parent;
 
         return $this;
+    }
+
+    function symbols() : array {
+        return array_keys($this->all()[0]);
+    }
+
+    /**
+     * Stolen from igorw/get-in because YAY can't have a lot of dependencies
+     */
+    private function getIn(array $array, array $keys, $default = null)
+    {
+        if (!$keys) {
+            return $array;
+        }
+
+        // This is a micro-optimization, it is fast for non-nested keys, but fails for null values
+        if (count($keys) === 1 && isset($array[$keys[0]])) {
+            return $array[$keys[0]];
+        }
+
+        $current = $array;
+        foreach ($keys as $key) {
+            if (!is_array($current) || !array_key_exists($key, $current)) {
+                return $default;
+            }
+
+            $current = $current[$key];
+        }
+
+        return $current;
     }
 }

@@ -11,7 +11,9 @@ use
 
 final class StreamWrapper {
     const
-        SCHEME = 'yay'
+        SCHEME = 'yay',
+        STAT_MTIME_NUMERIC_OFFSET = 9,
+        STAT_MTIME_ASSOC_OFFSET = 'mtime'
     ;
 
     protected static
@@ -19,14 +21,7 @@ final class StreamWrapper {
     ;
 
     protected
-        /**
-         * @type SplFileInfo
-         */
-        $fileMeta,
-        /**
-         * @type SplFileObject
-         */
-        $file
+        $resource
     ;
 
     static function register()
@@ -70,49 +65,46 @@ final class StreamWrapper {
         if (STREAM_USE_PATH & $flags && $path[0] !== '/')
             $path = dirname(debug_backtrace()[0]['file']) . '/' . $path;
 
-        $this->fileMeta = new SplFileInfo($path);
+        $fileMeta = new SplFileInfo($path);
+
+        if (! $fileMeta->isReadable()) return false;
 
         $opened_path = $path;
 
-        if (! $this->fileMeta->isReadable()) return false;
+        $source = yay_parse(file_get_contents($fileMeta->getRealPath()));
+        // var_dump($source);
 
-        $this->file = $this->fileMeta->openFile($mode);
+        $this->resource = fopen('php://memory', 'rb+');
+        fwrite($this->resource, $source);
+        rewind($this->resource);
 
         return true;
     }
 
-    function stream_close(){}
-
-    function stream_read($lengh) : string {
-        return
-            ! $this->file->eof()
-                ? yay_parse($this->file->fread($lengh))
-                : ''
-        ;
+    function stream_close() {
+        fclose($this->resource);
     }
 
-    function stream_eof() : bool { return $this->file->eof(); }
+    function stream_read($length) : string {
+        $source =
+            ! feof($this->resource)
+                ? fread($this->resource, $length)
+                : ''
+        ;
+
+        return $source;
+    }
+
+    function stream_eof() : bool { return feof($this->resource); }
 
     function stream_stat() : array
     {
-        return
-            $this->file ? [
-                'dev' => 0,
-                'ino' => 0,
-                'mode' => 'rb',
-                // 'mode' => $this->file->getMode(),
-                'nlink' => 0,
-                'uid' => $this->file->getOwner(),
-                'gid' => $this->file->getGroup(),
-                'rdev' => 0,
-                'size' => $this->file->getSize(),
-                'atime' => $this->file->getATime(),
-                'mtime' => $this->file->getMTime(),
-                'ctime' => $this->file->getCTime(),
-                'blksize' => -1,
-                'blocks' => -1
-            ] : []
-        ;
+        $stat = fstat($this->resource);
+        if ($stat) {
+            $stat[self::STAT_MTIME_ASSOC_OFFSET]++;
+            $stat[self::STAT_MTIME_NUMERIC_OFFSET]++;
+        }
+        return $stat;
     }
 
     function url_stat() { $this->notImplemented(__FUNCTION__); }

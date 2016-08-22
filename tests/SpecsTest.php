@@ -111,8 +111,7 @@ class Test {
                 $this->out = 'PHP ' . $e->getMessage();
                 // $this->out = (string) $e;
             } catch(Exception $e) {
-                $this->out = $e->getMessage();
-                // $this->out = (string) $e;
+                $this->out = (string) $e;
             }
 
             try{

@@ -18,7 +18,6 @@
         "php": "7.*",
         "ext-mbstring": "*",
         "ext-tokenizer": "*",
-        "igorw/get-in": "~1.0",
         "nikic/php-parser": "^2.0"
     },
     "autoload": {

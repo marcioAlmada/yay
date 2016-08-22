@@ -45,14 +45,6 @@ class TokenStream {
         $this->reset();
     }
 
-    function each(callable $callback) {
-        $node = $this->first->next;
-        while ($node !== $this->last) {
-            $callback($node->token);
-            $node = $node->next;
-        }
-    }
-
     function index() /* : Node|null */ { return $this->current; }
 
     function jump(Index $index) /* : void */ { $this->current = $index; }
@@ -93,6 +85,13 @@ class TokenStream {
     function next() /* : Token|null */ {
         $this->step();
         $this->skip(...self::SKIPPABLE);
+
+        return $this->current();
+    }
+
+    function previous() /* : Token|null */ {
+        $this->unskip(...self::SKIPPABLE);
+        $this->back();
 
         return $this->current();
     }

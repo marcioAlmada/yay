@@ -6,9 +6,11 @@ interface Directive {
 
     function id() : int;
 
-    function specificity() : int;
+    function tags() : Map;
 
-    function pattern() : Parser;
+    function pattern() : Pattern;
+
+    function expansion() : Expansion;
 
     function apply(TokenStream $TokenStream, Directives $directives);
 }

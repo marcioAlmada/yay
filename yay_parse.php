@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Yay\{ TokenStream, Ast, Directives, Macro, Cycle};
+use Yay\{ TokenStream, Ast, Directives, Macro, Pattern, Expansion, Cycle, Map };
 
 use function Yay\{
     token, rtoken, any, operator, optional, commit, chain, braces,
@@ -17,9 +17,11 @@ function yay_parse(string $source, Directives $directives = null) : string {
 
     if (null === $globalDirectives) $globalDirectives = new ArrayObject;
 
+    $directives = $directives ?: new Directives;
+
     $cg = (object) [
         'ts' => TokenStream::fromSource($source),
-        'directives' => $directives ?: new Directives,
+        'directives' => $directives,
         'cycle' => new Cycle($source),
         'globalDirectives' => $globalDirectives,
     ];
@@ -28,22 +30,26 @@ function yay_parse(string $source, Directives $directives = null) : string {
 
     traverse
     (
-        midrule(function(TokenStream $ts) use ($cg) {
-            $t = $ts->current();
+        // this midrule is where the preprocessor really does the job!
+        midrule(function(TokenStream $ts) use ($directives) {
+            $token = $ts->current();
 
             tail_call: {
-                if (null === $t) return;
+                if (null === $token) return;
 
-                if ('macro' === (string) $t) return;
+                // skip when something looks like a new macro to be parsed
+                if ('macro' === (string) $token) return;
 
-                $cg->directives->apply($ts, $t);
+                // here we do the 'magic' to match and expand userland macros
+                $directives->apply($ts, $token);
 
-                $t = $ts->next();
+                $token = $ts->next();
 
                 goto tail_call;
             }
         })
         ,
+        // here we parse, compile and allocate new macros
         consume
         (
             chain
@@ -85,19 +91,18 @@ function yay_parse(string $source, Directives $directives = null) : string {
             ,
             CONSUME_DO_TRIM
         )
-        ->onCommit(function($macroAst) use ($cg) {
-            $macro = new Macro(
-                $macroAst->{'declaration'}->line(),
-                $macroAst->{'tags'},
-                $macroAst->{'body pattern'},
-                $macroAst->{'body expansion'},
-                $cg->cycle
-            );
+        ->onCommit(function(Ast $macroAst) use ($cg) {
+            $scope = Map::fromEmpty();
+            $tags = Map::fromValues(array_map('strval', $macroAst->{'tags'}));
+            $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
+            $expansion = new Expansion($macroAst->{'body expansion'}, $tags, $scope);
 
-            $cg->directives->add($macro);
+            $macro = new Macro($tags, $pattern, $expansion, $cg->cycle);
 
-            if ($macro->hasTag('·global'))
-                $cg->globalDirectives[] = $macro;
+            $cg->directives->add($macro); // allocate the userland macro
+
+            // allocate the userland macro globally if it's declared as global
+            if ($macro->tags()->contains('·global')) $cg->globalDirectives[] = $macro;
         })
     )
     ->parse($cg->ts);

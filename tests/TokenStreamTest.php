@@ -190,13 +190,4 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $ts->push(new Token(T_WHITESPACE, ' '));
         $this->assertEquals('<?php A B ', (string) $ts);
     }
-
-    function testEach() {
-        $ts = TokenStream::fromSource('<?php 5 5 5 5 5');
-        $sum = 0;
-        $ts->each(function(Token $t) use(&$sum) {
-            if ($t->is(T_LNUMBER)) $sum += (int) (string) $t;
-        });
-        $this->assertEquals(25, $sum);
-    }
 }
