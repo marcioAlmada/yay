@@ -70,7 +70,11 @@ class Macro implements Directive {
             $context = new BlueContext;
             $this->tokenContextWalkRecursive($crossover->all(), $context);
 
-            if ($this->terminal && $context->contains($this->id())) return; // already expanded
+            if ($this->terminal && $context->contains($this->id())) { // already expanded
+                $ts->back($from);
+
+                return;
+            }
 
             $context->add($this->id());
             $ts->unskip(...TokenStream::SKIPPABLE);
