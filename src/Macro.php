@@ -20,6 +20,7 @@ class Macro implements Directive {
     function __construct(Map $tags, Pattern $pattern, Expansion $expansion, Cycle $cycle) {
         static $id = 0;
 
+        $this->id = $id++;
         $this->tags = $tags;
         $this->pattern = $pattern;
         $this->expansion = $expansion;
@@ -27,8 +28,6 @@ class Macro implements Directive {
 
         $this->terminal = !$this->expansion->isRecursive();
         $this->hasExpansion = !$this->expansion->isEmpty();
-
-        $this->id = $id++;
     }
 
     function id() : int {
@@ -47,18 +46,7 @@ class Macro implements Directive {
         return $this->expansion;
     }
 
-    private function tokenContextWalkRecursive($items, $context){
-        foreach ($items as $item) {
-            if ($item instanceof Token) {
-                $context->inherit($item->context());
-            }
-            else {
-                $this->tokenContextWalkRecursive($item, $context);
-            }
-        }
-    }
-
-    function apply(TokenStream $ts, Directives $directives) {
+    function apply(TokenStream $ts, Directives $directives, BlueContext $blueContext) {
         $from = $ts->index();
 
         $crossover = $this->pattern->match($ts);
@@ -66,28 +54,27 @@ class Macro implements Directive {
         if (null === $crossover || $crossover instanceof Error) return;
 
         if ($this->hasExpansion) {
-            // infer blue context from matched tokens
-            $context = new BlueContext;
-            $this->tokenContextWalkRecursive($crossover->all(), $context);
 
-            if ($this->terminal && $context->contains($this->id())) { // already expanded
+            $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->all(), $blueContext);
+
+            if ($this->terminal && isset($blueMacros[$this->id])) { // already expanded
                 $ts->back($from);
 
                 return;
             }
 
-            $context->add($this->id());
             $ts->unskip(...TokenStream::SKIPPABLE);
             $to = $ts->index();
             $ts->extract($from, $to);
 
-            $expansion = $this->expansion->expand($crossover, $this->cycle, $directives);
-            $this->cycle->next();
+            $expansion = $this->expansion->expand($crossover, $this->cycle, $directives, $blueContext);
 
-            // paint blue context of expasion tokens
+            $blueMacros[$this->id] = true;
+
+            // paint blue context with tokens from expansion and disabled macros
             $node = $expansion->index();
-            while ($node->token) {
-                $node->token->context()->inherit($context);
+            while ($token = $node->token) {
+                $blueContext->addDisabledMacros($token, $blueMacros);
                 $node = $node->next;
             }
 
@@ -99,5 +86,19 @@ class Macro implements Directive {
             $to = $ts->index();
             $ts->extract($from, $to);
         }
+
+        $this->cycle->next();
+    }
+
+    private function getAllBlueMacrosFromCrossover($nodes, BlueContext $blueContext): array {
+        $macros = [];
+
+        foreach ($nodes as $node)
+            if ($node instanceof Token)
+                $macros += $blueContext->getDisabledMacros($node);
+            else
+                $macros += $this->getAllBlueMacrosFromCrossover($node, $blueContext);
+
+        return $macros;
     }
 }

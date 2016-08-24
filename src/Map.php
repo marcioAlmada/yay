@@ -28,6 +28,13 @@ class Map implements Context {
         return $m;
     }
 
+    static function fromKeysAndValues(array $values = []) : self {
+        $m = self::fromEmpty();
+        foreach($values as $key => $value) $m->add($key, $value);
+
+        return $m;
+    }
+
     static function fromEmpty() : self {
         return new self;
     }

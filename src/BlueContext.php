@@ -2,16 +2,20 @@
 
 namespace Yay;
 
-class BlueContext extends Map {
-    function add($value) {
-        return $this->map[$value] = true;
+class BlueContext {
+    private $map = [];
+
+    function addDisabledMacros(Token $token, array $macros) {
+        if (! isset($this->map[$token->id()])) $this->map[$token->id()] = [];
+
+        $this->map[$token->id()] += $macros;
     }
 
-    function contains($value) : bool {
-        return isset($this->map[$value]);
+    function isMacroDisabled(Token $token, Macro $macro): bool {
+        return isset($this->map[$token->id()][$macro->id()]);
     }
 
-    function inherit(self $subject) {
-        $this->map += $subject->map;
+    function getDisabledMacros(Token $token): array {
+        return $this->map[$token->id()] ?? [];
     }
 }

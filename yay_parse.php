@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Yay\{ TokenStream, Ast, Directives, Macro, Pattern, Expansion, Cycle, Map };
+use Yay\{ TokenStream, Ast, Directives, Macro, Pattern, Expansion, Cycle, Map, BlueContext };
 
 use function Yay\{
     token, rtoken, any, operator, optional, commit, chain, braces,
@@ -9,7 +9,7 @@ use function Yay\{
 
 use const Yay\{ CONSUME_DO_TRIM };
 
-function yay_parse(string $source, Directives $directives = null) : string {
+function yay_parse(string $source, Directives $directives = null, BlueContext $blueContext = null) : string {
 
     if ($gc = gc_enabled()) gc_disable(); // important optimization!
 
@@ -18,12 +18,14 @@ function yay_parse(string $source, Directives $directives = null) : string {
     if (null === $globalDirectives) $globalDirectives = new ArrayObject;
 
     $directives = $directives ?: new Directives;
+    $blueContext = $blueContext ?: new BlueContext;
 
     $cg = (object) [
         'ts' => TokenStream::fromSource($source),
         'directives' => $directives,
         'cycle' => new Cycle($source),
         'globalDirectives' => $globalDirectives,
+        'blueContext' => $blueContext,
     ];
 
     foreach($cg->globalDirectives as $d) $cg->directives->add($d);
@@ -31,7 +33,7 @@ function yay_parse(string $source, Directives $directives = null) : string {
     traverse
     (
         // this midrule is where the preprocessor really does the job!
-        midrule(function(TokenStream $ts) use ($directives) {
+        midrule(function(TokenStream $ts) use ($directives, $blueContext) {
             $token = $ts->current();
 
             tail_call: {
@@ -41,7 +43,7 @@ function yay_parse(string $source, Directives $directives = null) : string {
                 if ('macro' === (string) $token) return;
 
                 // here we do the 'magic' to match and expand userland macros
-                $directives->apply($ts, $token);
+                $directives->apply($ts, $token, $blueContext);
 
                 $token = $ts->next();
 

@@ -23,14 +23,14 @@ class Directives {
         krsort($this->directives);
     }
 
-    function apply(TokenStream $ts, Token $t) {
+    function apply(TokenStream $ts, Token $t, BlueContext $blueContext) {
         if (
             isset($this->raytraceLiteral[(string) $t]) ||
             isset($this->raytraceNonliteral[$t->type()])
         ) {
             foreach ($this->directives as $directives) {
                 foreach ($directives as $directive) {
-                    $directive->apply($ts, $this);
+                    $directive->apply($ts, $this, $blueContext);
                 }
             }
         }

@@ -2,7 +2,7 @@
 
 namespace Yay\DSL\Expanders;
 
-use Yay\{Token, TokenStream, Ast, YayException, Cycle, Parser};
+use Yay\{Token, TokenStream, Ast, YayException, Cycle, Parser, Context};
 use function Yay\{
     token, rtoken, identifier, chain, either, any, parentheses, traverse, midrule
 };
@@ -79,8 +79,8 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
 
 function unsafe(TokenStream $ts) : TokenStream { return $ts; }
 
-function expand(TokenStream $ts, array $context) : TokenStream {
-    $ts = TokenStream::fromSource(yay_parse('<?php ' . (string) $ts, $context['directives']));
+function expand(TokenStream $ts, Context $context) : TokenStream {
+    $ts = TokenStream::fromSource(yay_parse('<?php ' . (string) $ts, $context->get('directives'), $context->get('blueContext')));
     $ts->shift();
 
     return $ts;

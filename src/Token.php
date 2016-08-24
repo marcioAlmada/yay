@@ -30,17 +30,24 @@ class Token implements \JsonSerializable {
         $type,
         $value,
         $line,
-        $literal = false,
-        $context
+        $literal = false
+    ;
+
+    private
+        $id
     ;
 
     function __construct($type, string $value = null, int $line = null) {
+        static $id = 0;
+
+        $this->id = $id++;
+
         assert(null === $this->type, "Attempt to modify immutable token.");
 
-        assert(is_int($type)||is_string($type), "Token type must be int or string.");
+        assert(\is_int($type) || \is_string($type), "Token type must be int or string.");
 
-        if (is_string($type)) {
-            if(1 !== mb_strlen($type))
+        if (\is_string($type)) {
+            if(1 !== \mb_strlen($type))
                 throw new YayException("Invalid token type '{$type}'");
 
             $this->literal = true;
@@ -50,12 +57,9 @@ class Token implements \JsonSerializable {
         $this->type = $type;
         $this->value = $value;
         $this->line = $line;
-        $this->context = new BlueContext;
     }
 
-    function __clone() {
-        $this->context = clone $this->context;
-    }
+    private function __clone() {}
 
     function __toString(): string {
         return (string) $this->value;
@@ -72,7 +76,7 @@ class Token implements \JsonSerializable {
     }
 
     function is(/* string|int */ ...$types): bool {
-        return in_array($this->type, $types);
+        return \in_array($this->type, $types);
     }
 
     function contains($value): bool {
@@ -91,7 +95,7 @@ class Token implements \JsonSerializable {
         return
             ($this->literal)
                 ? $this->type
-                : self::TOKENS[$this->type] ?? token_name($this->type)
+                : self::TOKENS[$this->type] ?? \token_name($this->type)
         ;
     }
 
@@ -100,11 +104,11 @@ class Token implements \JsonSerializable {
     }
 
     function line(): int {
-        return $this->line ?: 0;
+        return $this->line;
     }
 
-    function context() : BlueContext {
-        return $this->context;
+    function id(): int {
+        return $this->id;
     }
 
     function jsonSerialize() {

@@ -12,5 +12,5 @@ interface Directive {
 
     function expansion() : Expansion;
 
-    function apply(TokenStream $TokenStream, Directives $directives);
+    function apply(TokenStream $TokenStream, Directives $directives, BlueContext $blueContext);
 }

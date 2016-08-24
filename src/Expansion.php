@@ -43,13 +43,13 @@ class Expansion extends MacroMember {
         return $this->expansion->isEmpty();
     }
 
-    function expand(Ast $crossover, Cycle $cycle, Directives $directives) : TokenStream {
+    function expand(Ast $crossover, Cycle $cycle, Directives $directives, BlueContext $blueContext) : TokenStream {
             $expansion = clone $this->expansion;
 
             if ($this->unsafe)
                 hygienize($expansion, ['scope' => $cycle->id(),]);
 
-            return $this->mutate($expansion, $crossover, $cycle, $directives);
+            return $this->mutate($expansion, $crossover, $cycle, $directives, $blueContext);
     }
 
     private function compile(array $expansion, Map $context) : TokenStream {
@@ -143,7 +143,7 @@ class Expansion extends MacroMember {
         return $cg->ts;
     }
 
-    private function mutate(TokenStream $ts, Ast $context, Cycle $cycle, Directives $directives) : TokenStream {
+    private function mutate(TokenStream $ts, Ast $context, Cycle $cycle, Directives $directives, BlueContext $blueContext) : TokenStream {
 
         if ($this->constant) return $ts;
 
@@ -173,16 +173,15 @@ class Expansion extends MacroMember {
                     if (\count($result->args) === 0)
                         $cg->this->fail(self::E_EMPTY_EXPANDER_SLICE, (string) $expander, $expander->line());
 
-                    $fqexpander = $cg->this->lookupExpander($expander);
-                    $subject = TokenStream::fromSlice($result->args);
-                    $expansion = $fqexpander(
-                        $cg->this->mutate(clone $subject, $cg->context, $cg->cycle, $cg->directives),
-                        [
-                            'scope' => $cg->cycle->id(),
-                            'directives' => $cg->directives
-                        ]
-                    );
-                    $cg->ts->inject($expansion);
+                    $context = Map::fromKeysAndValues([
+                        'scope' => $cg->cycle->id(),
+                        'directives' => $cg->directives,
+                        'blueContext' => $cg->blueContext
+                    ]);
+                    $expansion = TokenStream::fromSlice($result->args);
+                    $mutation = $cg->this->mutate(clone $expansion, $cg->context, $cg->cycle, $cg->directives, $cg->blueContext);
+                    $mutation = $cg->this->lookupExpander($expander)($mutation, $context);
+                    $cg->ts->inject($mutation);
                 })
                 ,
                 consume
@@ -217,7 +216,8 @@ class Expansion extends MacroMember {
                             clone $expansion,
                             (new Ast(null, $subContext))->withParent($cg->context),
                             $cg->cycle,
-                            $cg->directives
+                            $cg->directives,
+                            $cg->blueContext
                         );
                         if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
@@ -256,6 +256,7 @@ class Expansion extends MacroMember {
             'directives' => $directives,
             'cycle' => $cycle,
             'this' => $this,
+            'blueContext' => $blueContext
         ];
 
         $states->push($cg);
