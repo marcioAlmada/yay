@@ -21,20 +21,27 @@ class TokenStream {
     private function __construct() {}
 
     function __toString() : string {
-        $tokens = [];
-        $node = $this->first;
-        while ($node !== $this->last) {
-            $tokens[] = $node->token;
-            $node = $node->next;
-        }
+        // use a 'friend' class for Token and get all token values in a string
+        return (new class extends Token {
+            function __construct() {}
+            function toSource(NodeStart $node) : string {
+                $str = '';
+                $node = $node->next;
 
-        return implode('', $tokens);
+                while ($node instanceof Node) {
+                    $str .= $node->token->value;
+                    $node = $node->next;
+                }
+
+                return $str;
+            }
+        })->toSource($this->first);
     }
 
     function __clone() {
         $tokens = [];
         $node = $this->first->next;
-        while ($node !== $this->last) {
+        while ($node instanceof Node) {
             $tokens[] = $node->token;
             $node = $node->next;
         }

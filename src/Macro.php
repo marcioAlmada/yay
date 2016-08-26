@@ -73,8 +73,8 @@ class Macro implements Directive {
 
             // paint blue context with tokens from expansion and disabled macros
             $node = $expansion->index();
-            while ($token = $node->token) {
-                $blueContext->addDisabledMacros($token, $blueMacros);
+            while ($node instanceof Node) {
+                $blueContext->addDisabledMacros($node->token, $blueMacros);
                 $node = $node->next;
             }
 
