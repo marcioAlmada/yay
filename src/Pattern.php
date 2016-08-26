@@ -76,6 +76,16 @@ class Pattern extends MacroMember {
                                 )
                                 ->as('parser')
                                 ,
+                                chain
+                                (
+                                    token(T_FUNCTION)
+                                    ,
+                                    parentheses()->as('args')
+                                    ,
+                                    braces()->as('body')
+                                )
+                                ->as('function')
+                                ,
                                 string()->as('string')
                                 ,
                                 rtoken('/^T_\w+·\w+$/')->as('token')
@@ -263,6 +273,11 @@ class Pattern extends MacroMember {
                 break;
             case 'constant': // T_*
                 $compiled[] = $this->lookupTokenType($arg);
+                break;
+            case 'function': // function(...){...}
+                $arglist = implode('', $arg['args']);
+                $body = implode('', $arg['body']);
+                $compiled[] = eval("return function({$arglist}){ {$body} };");
                 break;
             default:
                 $compiled = array_merge(
