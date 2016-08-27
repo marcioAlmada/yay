@@ -58,7 +58,7 @@ class Macro implements Directive {
             $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->all(), $blueContext);
 
             if ($this->terminal && isset($blueMacros[$this->id])) { // already expanded
-                $ts->back($from);
+                $ts->jump($from);
 
                 return;
             }
