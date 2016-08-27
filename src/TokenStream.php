@@ -207,10 +207,6 @@ class TokenStream {
         return $ts;
     }
 
-    private function notImplemented(string $method){
-        throw new \Exception("{$method} not implemented.");
-    }
-
     private static function link($a, $b) {
         $a->next =  $b;
         $b->previous = $a;
