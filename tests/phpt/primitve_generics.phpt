@@ -5,76 +5,76 @@ Proof of concept inlined generics
 
 macro ·unsafe {
 
-    /** generic queue macro */
-    Queue < ·ns()·name >
+    /** generic stack class macro */
+    Stack < ·ns()·type >
 
 } >> {
 
     class {
-        private $queue = [];
+        private $stack = [];
 
-        function push(·name $item) {
-            $this->queue[] = $item;
+        function push(·type $item) {
+            $this->stack[] = $item;
         }
 
-        function pop() : ·name {
-            return end($this->queue);
+        function pop() : ·type {
+            return end($this->stack);
         }
     }
 }
 
-new Queue
+new Stack
     <
     stdclass
 >;
 
-$queue = new Queue<stdclass>;
+$stack = new Stack<stdclass>;
 
-$queue->push(new stdclass);
-$queue->push(new ArrayObject);
+$stack->push(new stdclass);
+$stack->push(new ArrayObject);
 
-$queue = new Queue<\Some\Full\Qualified\ClassName>;
+$stack = new Stack<\Some\Full\Qualified\ClassName>;
 
 ?>
 --EXPECTF--
 <?php
 
 new class {
-        private $queue = [];
+        private $stack = [];
 
         function push(stdclass $item) {
-            $this->queue[] = $item;
+            $this->stack[] = $item;
         }
 
         function pop() : stdclass {
-            return end($this->queue);
+            return end($this->stack);
         }
     };
 
-$queue = new class {
-        private $queue = [];
+$stack = new class {
+        private $stack = [];
 
         function push(stdclass $item) {
-            $this->queue[] = $item;
+            $this->stack[] = $item;
         }
 
         function pop() : stdclass {
-            return end($this->queue);
+            return end($this->stack);
         }
     };
 
-$queue->push(new stdclass);
-$queue->push(new ArrayObject);
+$stack->push(new stdclass);
+$stack->push(new ArrayObject);
 
-$queue = new class {
-        private $queue = [];
+$stack = new class {
+        private $stack = [];
 
         function push(\Some\Full\Qualified\ClassName $item) {
-            $this->queue[] = $item;
+            $this->stack[] = $item;
         }
 
         function pop() : \Some\Full\Qualified\ClassName {
-            return end($this->queue);
+            return end($this->stack);
         }
     };
 
