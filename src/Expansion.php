@@ -31,7 +31,7 @@ class Expansion extends MacroMember {
 
     function __construct(array $expansion, Map $tags, Map $scope) {
         $this->expansion = $this->compile($expansion, $scope);
-        $this->unsafe = (bool) ($this->unsafe ^ $tags->contains('·unsafe'));
+        if ($tags->contains('·unsafe')) $this->unsafe = false;
         $this->recursive = $tags->contains('·recursion');
     }
 
@@ -62,6 +62,24 @@ class Expansion extends MacroMember {
 
         traverse
         (
+            either
+            (
+                token(T_VARIABLE)
+                ,
+                chain(identifier(), token(':'))
+                ,
+                chain(token(T_GOTO), identifier())
+            )
+            ->onCommit(function() {
+                $this->unsafe = true;
+            })
+        )
+        ->parse($cg->ts);
+
+        $cg->ts->reset();
+
+        traverse
+        (
             consume
             (
                 chain
@@ -86,16 +104,6 @@ class Expansion extends MacroMember {
             })
             ,
             token(Token::CLOAKED)
-            ,
-            either
-            (
-                token(T_VARIABLE)
-                ,
-                chain(identifier(), token(':'))
-                ,
-                chain(token(T_GOTO), identifier())
-            )
-            ->onCommit(function() { $this->unsafe = true; })
             ,
             chain
             (
