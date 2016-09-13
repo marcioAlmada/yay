@@ -32,7 +32,7 @@ macro ·global ·unsafe {
         {
             public function __construct(\ReflectionClass $context)
             {
-                ··unsafe($fields) = [];
+                $fields = [];
                 ·annotation_arguments ··· {
                     $this->T_STRING·field = $fields[··stringify(T_STRING·field)] = ·value;
                 }
