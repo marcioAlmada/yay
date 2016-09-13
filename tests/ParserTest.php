@@ -590,6 +590,41 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    function providerForTestLsWithTrailingDelimiter() {
+        return [
+            [
+                '<?php a, b, c, *',
+                "T_STRING(a), T_STRING(b), T_STRING(c)"
+            ],
+            [
+                '<?php a , b , c , *',
+                "T_STRING(a), T_STRING(b), T_STRING(c)"
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider providerForTestLsWithTrailingDelimiter
+     */
+    function testLsWithTrailingDelimiter(string $src, string $expected) {
+        $ts = TokenStream::fromSource($src);
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+
+        $this->parseSuccess(
+            $ts,
+            lst
+            (
+                token(T_STRING)->as('letter')
+                ,
+                token(',')
+            )
+            ,
+            $expected
+        );
+
+        $this->assertEquals('*', (string) $ts->current());
+    }
+
     function testConsume() {
         $ts = TokenStream::fromSource('<?php A  {X} B {X} C    {x} ');
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");

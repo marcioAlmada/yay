@@ -713,6 +713,35 @@ function ls(Parser $parser, Parser $delimiter) : Parser
     };
 }
 
+function lst(Parser $parser, Parser $delimiter) : Parser
+{
+
+    $list = ls($parser, $delimiter);
+
+    return new class(__FUNCTION__, $list, $delimiter) extends Parser
+    {
+        protected function parser(TokenStream $ts, Parser $list, Parser $delimiter) /*: Result|null*/
+        {
+            $result = $list->as($this->label)->parse($ts);
+
+            if ($result instanceof Ast)
+                optional($delimiter)->parse($ts); // matches a possible trailing delimiter
+
+            return $result;
+        }
+
+        function expected() : Expected
+        {
+            return $this->stack[0]->expected();
+        }
+
+        function isFallible() : bool
+        {
+            return $this->stack[0]->isFallible();
+        }
+    };
+}
+
 function future(&$parser) : Parser
 {
     $delayed = function() use(&$parser) : Parser { return clone $parser; };
