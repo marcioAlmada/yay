@@ -4,7 +4,7 @@ namespace Yay\DSL\Expanders;
 
 use Yay\{Token, TokenStream, Ast, YayException, Cycle, Parser, Context};
 use function Yay\{
-    token, rtoken, identifier, chain, either, any, parentheses, traverse, midrule
+    token, rtoken, identifier, chain, either, any, parentheses, braces, traverse, midrule
 };
 
 function stringify(TokenStream $ts) : TokenStream {
@@ -55,7 +55,7 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
     traverse
     (
         // hygiene must skip whatever is passed through the ··unsafe() expander
-        chain(token(T_STRING, '··unsafe'), parentheses())
+        chain(token(T_STRING, '··unsafe'), either(parentheses(), braces()))
         ,
         either
         (

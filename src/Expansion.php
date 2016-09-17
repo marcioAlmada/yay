@@ -109,7 +109,7 @@ class Expansion extends MacroMember {
             (
                 rtoken('/^··\w+$/')->as('expander')
                 ,
-                parentheses()->as('args')
+                either(parentheses(), braces())->as('args')
             )
             ->onCommit(function(){
                 $this->constant = false;
@@ -171,7 +171,7 @@ class Expansion extends MacroMember {
                     (
                         rtoken('/^··\w+$/')->as('expander')
                         ,
-                        parentheses()->as('args')
+                        either(parentheses(), braces())->as('args')
                     )
                 )
                 ->onCommit(function(Ast $result) use ($states) {
