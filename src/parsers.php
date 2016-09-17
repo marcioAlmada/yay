@@ -807,6 +807,54 @@ function not(Parser $parser) : Parser
     };
 }
 
+function closure() : Parser
+{
+    return
+        chain
+        (
+            token(T_FUNCTION)->as('declaration'),
+            token('('),
+            layer()->as('arg_list'),
+            token(')'),
+            optional
+            (
+                chain
+                (
+                    token(T_USE)
+                    ,
+                    token('(')
+                    ,
+                    ls
+                    (
+                        either
+                        (
+                            chain(token('&'), token(T_VARIABLE)),
+                            token(T_VARIABLE)
+                        ),
+                        token(',')
+                    )
+                    ->as('var_list'),
+                    token(')')
+                )
+                ->as('use_list_decl')
+            ),
+            optional
+            (
+                chain
+                (
+                    token(':')
+                    ,
+                    ns()->as('return_type')
+                )
+                ->as('return_type_decl')
+            ),
+            token('{'),
+            layer()->as('body'),
+            token('}')
+        )
+    ;
+}
+
 function midrule(callable $midrule, bool $isFallible = true) : Parser
 {
     return new  class(__FUNCTION__, $midrule, new Expected, $isFallible) extends Parser
