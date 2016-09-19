@@ -68,12 +68,13 @@ function rtoken(string $regexp) : Parser
                 return new Ast($this->label, $token);
             }
 
-            return $this->error($ts);
+            if ($this->errorLevel === Error::ENABLED)
+                return new Error(new Expected(new Token(T_STRING, "matching '{$regexp}'")), $ts->current(), $ts->last());
         }
 
         function expected() : Expected
         {
-            return new Expected(new Token(Token::MATCH, $this->stack[0]));
+            return new Expected(new Token(T_STRING));
         }
 
         function isFallible() : bool

@@ -121,7 +121,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseError(
             $ts,
             rtoken('/^T_\w+$/'),
-            "Unexpected T_STRING(T_) on line 1, expected MATCH(/^T_\w+$/)."
+            "Unexpected T_STRING(T_) on line 1, expected T_STRING(matching '/^T_\w+$/')."
         );
     }
 
