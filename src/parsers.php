@@ -328,10 +328,10 @@ const LAYER_DELIMITERS = [
     T_CURLY_OPEN => 1,
     T_DOLLAR_OPEN_CURLY_BRACES => 1,
     '}' => -1,
-    '[' => 1,
-    ']' => -1,
-    '(' => 1,
-    ')' => -1,
+    '[' => 2,
+    ']' => -2,
+    '(' => 3,
+    ')' => -3,
 ];
 
 function layer(array $delimiters = LAYER_DELIMITERS) : Parser
@@ -341,15 +341,42 @@ function layer(array $delimiters = LAYER_DELIMITERS) : Parser
         function parser(TokenStream $ts, array $delimiters) /*: Result|null*/
         {
             $level = 1;
+            $stack = [];
             $tokens = [];
 
-            while (
-                (null !== ($token = $ts->current())) &&
-                ($level += ($delimiters[$token->type()] ?? 0))
-            ){
-                $tokens[] = $token;
-                $ts->step();
+            $current = $ts->index();
+            while (true) {
+                if ((null === ($token = $current->token))) break;
+
+                $delimiter = $token->type();
+                $factor = $delimiters[$delimiter] ?? 0;
+
+                if ($factor > 0) {
+                    $level++;
+                    $stack[] = $delimiter;
+                }
+                else if ($factor < 0) {
+                    $level--;
+                    if ($pair = array_pop($stack)) {
+                        if (($factor + $delimiters[$pair])!== 0) {
+                            $ts->jump($current);
+
+                            // reverse enginner delimiters to get the expected closing pair
+                            $expected = array_search(-$delimiters[$pair], $delimiters);
+
+                            return $this->error($ts, new Expected(new Token($expected)));
+                        }
+                    }
+                }
+
+                if ($level > 0) {
+                    $tokens[] = $token;
+                    $current = $current->next;
+                    continue;
+                }
+                break;
             }
+            $ts->jump($current);
 
             return new Ast($this->label, $tokens);
         }
