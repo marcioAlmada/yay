@@ -104,10 +104,10 @@ abstract class Parser {
         return $this;
     }
 
-    final protected function error(TokenStream $ts) /*: Error|null*/
+    final protected function error(TokenStream $ts, Expected $expected = null) /*: Error|null*/
     {
         if ($this->errorLevel === Error::ENABLED)
-            return new Error($this->expected(), $ts->current(), $ts->last());
+            return new Error($expected ?: $this->expected(), $ts->current(), $ts->last());
     }
 
 }
