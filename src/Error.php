@@ -61,20 +61,7 @@ class Error implements Result {
 
         $messages = [];
         foreach ($errors as $prefix => $expected) {
-            $messages[] = $prefix . sprintf(
-                self::EXPECTED,
-                implode(
-                    ' or ',
-                    array_unique(
-                        array_map(
-                            function(Token $t) {
-                                return $t->dump();
-                            },
-                            $expected->all()
-                        )
-                    )
-                )
-            );
+            $messages[] = $prefix . sprintf(self::EXPECTED, (string) $expected);
         }
 
         return implode(PHP_EOL, $messages);

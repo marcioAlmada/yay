@@ -208,6 +208,32 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, optional(token(T_STRING, 'baz')), "");
     }
 
+    function testNot() {
+        $ts = TokenStream::fromSource("<?php foo bar null ");
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+        $this->parseSuccess($ts, repeat(chain(not(token(T_STRING, 'null')), token(T_STRING))), "T_STRING(foo), T_STRING(bar)");
+
+        $ts = TokenStream::fromSource("<?php foo bar null baz");
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+        $this->parseSuccess($ts, repeat(chain(not(token(T_STRING, 'null')), token(T_STRING))), "T_STRING(foo), T_STRING(bar)");
+
+        $ts = TokenStream::fromSource("<?php null foo bar");
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+        $this->parseError(
+            $ts,
+            repeat(chain(not(token(T_STRING, 'null')), token(T_STRING))),
+            "Unexpected T_STRING(null) on line 1, expected not T_STRING(null)."
+        );
+
+        $ts = TokenStream::fromSource("<?php null foo bar");
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+        $this->parseError(
+            $ts,
+            repeat(chain(not(either(token(T_STRING, 'null'), token(T_STRING, 'true'), token(T_STRING, 'false'))), token(T_STRING))),
+            "Unexpected T_STRING(null) on line 1, expected not T_STRING(null) or not T_STRING(true) or not T_STRING(false)."
+        );
+    }
+
     function testRepeat() {
         $ts = TokenStream::fromSource("<?php foo bar baz 1 2 3 @ ");
 

@@ -798,7 +798,7 @@ function not(Parser $parser) : Parser
 
         function expected() : Expected
         {
-            return new Expected;
+            return $this->stack[0]->expected()->negate();
         }
 
         function isFallible() : bool
