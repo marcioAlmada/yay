@@ -13,7 +13,7 @@ sudo: false
 before_script:
   - composer self-update
   - composer require satooshi/php-coveralls:dev-master --no-update --dev
-  - composer install --dev --prefer-source
+  - composer install --prefer-source
 
 script:
   - php vendor/bin/phpunit
