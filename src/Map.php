@@ -2,7 +2,7 @@
 
 namespace Yay;
 
-class Map implements Context {
+class Map implements Context, \Countable {
     protected $map = [];
 
     function get($key) {
@@ -13,12 +13,20 @@ class Map implements Context {
         return $this->map[$key] = $value;
     }
 
+    function remove($key) {
+        unset($this->map[$key]);
+    }
+
     function contains($key) : bool {
         return isset($this->map[$key]);
     }
 
     function symbols() : array {
         return array_keys($this->map);
+    }
+
+    function count() : int {
+        return count($this->map);
     }
 
     static function fromValues(array $values = []) : self {

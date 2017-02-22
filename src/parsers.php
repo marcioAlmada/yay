@@ -21,6 +21,7 @@ function token($type, $value = null) : Parser
         {
             $this->type = $type;
             $this->token = $token;
+            $this->stack = $token;
             $this->expected = new Expected($token);
         }
 
@@ -263,6 +264,40 @@ function repeat(Parser $parser) : Parser
                 (null !== $ts->current()) &&
                 (($partial = $parser->parse($ts)) instanceof Ast)
             ){
+                $ast->push($partial);
+            }
+
+            return $ast->isEmpty() ? ($partial ?? $this->error($ts)) : $ast;
+        }
+
+        function expected() : Expected
+        {
+            return $this->stack[0]->expected();
+        }
+
+        function isFallible() : bool
+        {
+            return $this->stack[0]->isFallible();
+        }
+    };
+}
+
+function set(Parser $parser) : Parser
+{
+    if (! $parser->isFallible())
+        throw new InvalidArgumentException(
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
+
+    return new class(__FUNCTION__, $parser) extends Parser
+    {
+        protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
+        {
+            $ast = new Ast($this->label);
+
+            while(
+                (null !== $ts->current()) &&
+                (($partial = $parser->parse($ts)) instanceof Ast)
+            ){
                 $ast->append($partial);
             }
 
@@ -283,7 +318,7 @@ function repeat(Parser $parser) : Parser
 
 function between(Parser $a, Parser $b, Parser $c): Parser
 {
-    return new class(__FUNCTION__, $a, commit($b), commit($c)) extends Parser
+    return new class(__FUNCTION__, $a, $b, $c) extends Parser
     {
         protected function parser(TokenStream $ts, Parser $a, Parser $b, Parser $c) /*: Result|null*/
         {
@@ -399,9 +434,9 @@ function braces(): Parser
         (
             token('{')
             ,
-            layer()
+            commit(layer())
             ,
-            token('}')
+            commit(token('}'))
         )
     ;
 }
@@ -413,9 +448,9 @@ function brackets(): Parser
         (
             token('[')
             ,
-            layer()
+            commit(layer())
             ,
-            token(']')
+            commit(token(']'))
         )
     ;
 }
@@ -426,9 +461,9 @@ function parentheses(): Parser
         (
             token('(')
             ,
-            layer()
+            commit(layer())
             ,
-            token(')')
+            commit(token(')'))
         )
     ;
 }
@@ -503,7 +538,13 @@ function either(Parser ...$routes) : Parser
             $errors = [];
             foreach ($routes as $route) {
                 if (($result = $route->parse($ts)) instanceof Ast) {
-                    return $result->as($this->label);
+                    if ($this->label && $route->label) {
+                        $ret = new Ast($this->label);
+                        $ret->append($result);
+                        return $ret;
+                    }
+                    else
+                        return $result->as($this->label);
                 }
                 if ($this->errorLevel === Error::ENABLED) {
                     if ($errors) end($errors)->with($result);
@@ -781,7 +822,13 @@ function future(&$parser) : Parser
     {
         protected function parser(TokenStream $ts, callable $delayed) /*: Result|null*/
         {
-            $result = $delayed()->parse($ts);
+            $parser = $delayed();
+
+            if ($this->errorLevel === Error::ENABLED)
+                $parser->withErrorLevel($this->errorLevel);
+
+            $result = $parser->parse($ts);
+
             if ($result instanceof Ast) $result->as($this->label);
 
             return $result;

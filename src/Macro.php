@@ -17,7 +17,7 @@ class Macro implements Directive {
 
     protected static $_id = 0;
 
-    function __construct(Map $tags, Pattern $pattern, Expansion $expansion) {
+    function __construct(Map $tags, PatternInterface $pattern, Expansion $expansion) {
         $this->id = (__CLASS__)::$_id++;
         $this->tags = $tags;
         $this->pattern = $pattern;

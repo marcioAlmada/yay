@@ -130,10 +130,14 @@ class Ast implements Result, Context {
         return !\count($this->ast) || null === $this->ast;
     }
 
-    function as(/*string|null*/ $label = null) : self {
-        if (null !== $label && null === $this->label) $this->label = $label;
+    function as(string $label = null) : self {
+        if (null !== $label) $this->label = $label;
 
         return $this;
+    }
+
+    function label() {
+        return $this->label;
     }
 
     function withParent(self $parent) : self {

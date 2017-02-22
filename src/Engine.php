@@ -105,7 +105,14 @@ final class Engine {
                 ->onCommit(function(Ast $macroAst) {
                     $scope = Map::fromEmpty();
                     $tags = Map::fromValues(array_map('strval', $macroAst->{'tags'}));
-                    $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
+
+                    if ($tags->contains('·grammar')) {
+                        $pattern = new GrammarPattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
+                    }
+                    else {
+                        $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
+                    }
+
                     $expansion = new Expansion($macroAst->{'body expansion'}, $tags, $scope);
                     $macro = new Macro($tags, $pattern, $expansion);
 
