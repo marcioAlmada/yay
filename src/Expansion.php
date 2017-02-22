@@ -7,14 +7,6 @@ use function Yay\DSL\Expanders\{ hygienize };
 class Expansion extends MacroMember {
 
     const
-        PRETTY_PRINT =
-                JSON_PRETTY_PRINT
-            |   JSON_BIGINT_AS_STRING
-            |   JSON_UNESCAPED_UNICODE
-            |   JSON_UNESCAPED_SLASHES
-    ;
-
-    const
         E_BAD_EXPANSION = "Bad macro expansion identifier '%s' on line %d.",
         E_BAD_EXPANDER = "Bad macro expander '%s' on line %d.",
         E_EMPTY_EXPANDER_SLICE = "Empty expander slice on '%s()' at line %d.",

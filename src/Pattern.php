@@ -2,7 +2,7 @@
 
 namespace Yay;
 
-class Pattern extends MacroMember {
+class Pattern extends MacroMember implements PatternInterface {
 
     const
         E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
@@ -95,8 +95,15 @@ class Pattern extends MacroMember {
                                 rtoken('/^·this$/')->as('this')
                                 ,
                                 label()->as('label')
+                                ,
+                                between
+                                (
+                                    token(T_CONSTANT_ENCAPSED_STRING, "''"),
+                                    any(),
+                                    token(T_CONSTANT_ENCAPSED_STRING, "''")
+                                )
+                                ->as('literal')
                             )
-                            ->as('parser')
                             ,
                             token(',')
                         )
@@ -207,7 +214,7 @@ class Pattern extends MacroMember {
             });
     }
 
-    private function lookupTokenType(Token $token) : int {
+    protected function lookupTokenType(Token $token) : int {
         $type = explode('·', (string) $token)[0];
         if (! defined($type))
             $this->fail(self::E_BAD_TOKEN_TYPE, $type, $token->line());
@@ -215,7 +222,7 @@ class Pattern extends MacroMember {
         return constant($type);
     }
 
-    protected function lookupCapture(Token $token) : string {
+    private function lookupCapture(Token $token) : string {
         $id = (string) $token;
 
         if ($id === '·_') return '';

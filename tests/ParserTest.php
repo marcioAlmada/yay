@@ -426,11 +426,11 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseHalt(
             $ts,
-            between(
+            commit(between(
                 chain(token('{'), token('{')),
                 chain(token(T_STRING), token(T_STRING)),
                 chain(token('}'), token('}'))
-            ),
+            )),
             "Unexpected '~' on line 1, expected T_STRING()."
         );
     }
@@ -450,11 +450,11 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseHalt(
             $ts,
-            between(
+            commit(between(
                 chain(token('{'), token('{')),
                 repeat(token(T_STRING)),
                 chain(token('}'), token('}'))
-            ),
+            )),
             $msg
         );
     }
@@ -464,11 +464,11 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseHalt(
             $ts,
-            between(
+            commit(between(
                 chain(token('{'), token('{')),
                 optional(token(T_STRING)),
                 chain(token('}'), token('}'))
-            ),
+            )),
             "Unexpected '~' on line 1, expected '}'."
         );
     }
@@ -478,11 +478,11 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseHalt(
             $ts,
-            between(
+            commit(between(
                 chain(token('{'), token('{')),
                 chain(token(T_STRING), token(T_STRING)),
                 chain(token('}'), token('}'))
-            ),
+            )),
             "Unexpected '}' on line 1, expected T_STRING()."
         );
     }
@@ -895,7 +895,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                             (
                                 either
                                 (
-                                    repeat
+                                    set
                                     (
                                         either
                                         (
@@ -926,8 +926,6 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                             ,
                             token(';')
                         )
-                        ,
-                        token('}')
                     )
                 )
                 ->as('methods')
