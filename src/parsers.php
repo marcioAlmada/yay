@@ -74,7 +74,7 @@ function rtoken(string $regexp) : Parser
 
         function expected() : Expected
         {
-            return new Expected(new Token(T_STRING));
+            return new Expected(new Token(T_STRING), new Token(T_VARIABLE));
         }
 
         function isFallible() : bool
