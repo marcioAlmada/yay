@@ -4,7 +4,7 @@ namespace Yay;
 
 class NodeEnd implements Index {
 
-    public $token, $previous;
+    public $token, $previous, $skippable = false;
 
     private $next;
 

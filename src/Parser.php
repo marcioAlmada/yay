@@ -70,9 +70,9 @@ abstract class Parser {
         return $result;
     }
 
-    final function as(/*string|null*/ $label) : self
+    final function as($label) : self
     {
-        if (null !== $label) {
+        if ('' !== (string) $label) {
             if(false !== strpos($label, ' '))
                 throw new InvalidArgumentException(
                     "Parser label cannot contain spaces, '{$label}' given.");
@@ -94,10 +94,13 @@ abstract class Parser {
     {
         if ($this->errorLevel !== $errorLevel) {
             $this->errorLevel = $errorLevel;
-            foreach ($this->stack as $substack) {
-                if ($substack instanceof self) {
-                    $substack->{__FUNCTION__}($this->errorLevel);
-                }
+
+            if ($this->stack) {
+                array_walk_recursive($this->stack, function($substack){
+                    if ($substack instanceof self) {
+                        $substack->withErrorLevel($this->errorLevel);
+                    }
+                });
             }
         }
 

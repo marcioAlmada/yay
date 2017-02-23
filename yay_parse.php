@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-use Yay\{ TokenStream, Ast, Directives, Macro, Pattern, Expansion, Cycle, Map, BlueContext };
+use Yay\{ TokenStream, Ast, Directives, Macro, Pattern, Expansion, Cycle, Map, BlueContext, YayException };
 
 use function Yay\{
     token, rtoken, any, operator, optional, commit, chain, braces,
@@ -11,6 +11,8 @@ use const Yay\{ CONSUME_DO_TRIM };
 
 function yay_parse(string $source, Directives $directives = null, BlueContext $blueContext = null) : string {
 
+    // tideways_enable(TIDEWAYS_FLAGS_NO_SPANS);
+
     if ($gc = gc_enabled()) gc_disable(); // important optimization!
 
     static $globalDirectives = null;
@@ -20,6 +22,8 @@ function yay_parse(string $source, Directives $directives = null, BlueContext $b
     $directives = $directives ?: new Directives;
     $blueContext = $blueContext ?: new BlueContext;
 
+    foreach($globalDirectives as $d) $directives->add($d);
+
     $cg = (object) [
         'ts' => TokenStream::fromSource($source),
         'directives' => $directives,
@@ -28,27 +32,11 @@ function yay_parse(string $source, Directives $directives = null, BlueContext $b
         'blueContext' => $blueContext,
     ];
 
-    foreach($cg->globalDirectives as $d) $cg->directives->add($d);
-
     traverse
     (
         // this midrule is where the preprocessor really does the job!
-        midrule(function(TokenStream $ts) use ($directives, $blueContext) {
-            $token = $ts->current();
-
-            tail_call: {
-                if (null === $token) return;
-
-                // skip when something looks like a new macro to be parsed
-                if ('macro' === (string) $token) return;
-
-                // here we do the 'magic' to match and expand userland macros
-                $directives->apply($ts, $token, $blueContext);
-
-                $token = $ts->next();
-
-                goto tail_call;
-            }
+        midrule(function(TokenStream $ts) use ($cg) {
+            $cg->directives->apply($ts, $cg->blueContext);
         })
         ,
         // here we parse, compile and allocate new macros

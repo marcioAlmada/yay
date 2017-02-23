@@ -8,10 +8,6 @@ use
 
 class TokenStream {
 
-    const
-        SKIPPABLE = [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT]
-    ;
-
     protected
         $first,
         $current,
@@ -39,68 +35,99 @@ class TokenStream {
     }
 
     function __clone() {
-        $tokens = [];
-        $node = $this->first->next;
-        while ($node instanceof Node) {
-            $tokens[] = $node->token;
-            $node = $node->next;
+        $first = new NodeStart;
+        $last = new NodeEnd;
+
+        $first->next = $last;
+        $last->previous = $first;
+
+        $current = $first;
+        $old = $this->first->next;
+        while ($old instanceof Node) {
+            $node = new Node($old->token);
+            $current->next = $node;
+            $node->previous = $current;
+            $current = $node;
+            $old = $old->next;
         }
 
-        $ts = self::fromSlice($tokens);
-        $this->first = $ts->first;
-        $this->last = $ts->last;
-        $this->reset();
+        $current->next = $last;
+        $last->previous = $current;
+
+        $this->first = $first;
+        $this->last = $last;
+        $this->current = $this->first->next;
     }
 
     function index() /* : Node|null */ { return $this->current; }
 
-    function jump(Index $index) /* : void */ { $this->current = $index; }
+    function jump($index) /* : void */ {
+        assert($index instanceof Index);
 
-    function reset() /* : void */ { $this->jump($this->first->next); }
+        if ($index instanceof NodeStart)
+            $this->current = $this->first->next;
+        else
+            $this->current = $index;
+    }
+
+    function reset() /* : void */ {
+        $this->current = $this->first->next;
+    }
 
     function current() /* : Token|null */ {
-        if ($this->current instanceof NodeStart) $this->reset();
-
         return $this->current->token;
     }
 
     function step() /* : Token|null */ {
-        if (!($this->current instanceof NodeEnd)) $this->current = $this->current->next;
+        $this->current = $this->current->next;
 
-        return $this->current();
+        return $this->current->token;
     }
 
     function back() /* : Token|null */ {
-        if (!($this->current instanceof NodeStart)) $this->current = $this->current->previous;
+        $this->current = $this->current->previous;
 
-        return $this->current();
+        return $this->current->token;
     }
 
-    function skip(int ...$types) /* : Token|null */ {
-        while (null !== ($t = $this->current()) && $t->is(...$types)) $this->step();
+    function skip() /* : Token|null */ {
+        while ($this->current->skippable) {
+            $this->current = $this->current->next;
+        }
 
-        return $this->current();
+        return $this->current->token;
     }
 
-    function unskip(int ...$types) /* : Token|null */ {
-        while (null !== ($t = $this->back()) && $t->is(...$types));
-        $this->step();
+    function unskip() /* : Token|null */ {
+        $this->current = $this->current->previous;
 
-        return $this->current();
+        while ($this->current->skippable) {
+            $this->current = $this->current->previous;
+        }
+
+        $this->current = $this->current->next;
+
+        return $this->current->token;
     }
 
     function next() /* : Token|null */ {
-        $this->step();
-        $this->skip(...self::SKIPPABLE);
+        $this->current = $this->current->next;
 
-        return $this->current();
+        while ($this->current->skippable) {
+            $this->current = $this->current->next;
+        }
+
+        return $this->current->token;
     }
 
     function previous() /* : Token|null */ {
-        $this->unskip(...self::SKIPPABLE);
-        $this->back();
+        $this->current = $this->current->previous;
 
-        return $this->current();
+        while ($this->current->skippable) {
+            $this->current = $this->current->previous;
+        }
+
+        return $this->current->token;
     }
 
     function last() : Token {
@@ -112,9 +139,15 @@ class TokenStream {
     }
 
     function trim() {
-        while (null !== ($t = $this->first->next->token) && $t->is(T_WHITESPACE)) $this->shift();
-        while (null !== ($t = $this->last->previous->token) && $t->is(T_WHITESPACE)) $this->pop();
-        $this->reset();
+        while (null !== ($t = $this->first->next->token) && $t->is(T_WHITESPACE)) {
+            $this->first->next = $this->first->next->next;
+            $this->first->next->previous = $this->first;
+        }
+        while (null !== ($t = $this->last->previous->token) && $t->is(T_WHITESPACE)) {
+            $this->last->previous = $this->last->previous->previous;
+            $this->last->previous->next = $this->last;
+        }
+        $this->current = $this->first->next;
     }
 
     function shift() {
@@ -127,36 +160,52 @@ class TokenStream {
         $this->last->previous->next = $this->last;
     }
 
-    function extract(Index $from, Index $to) {
+    function extract($from, $to) {
+        assert($from instanceof Index);
+        assert($to instanceof Index);
+
         assert($from !== $to);
         assert(! $this->isEmpty());
 
         $from = $from->previous;
-        self::link($from, $to);
-        $this->jump($from);
+        $from->next = $to;
+        $to->previous = $from;
+
+        $this->current = $from;
     }
 
-    function inject(self $ts) {
-        if ($ts->isEmpty()) return;
+    function inject($ts) {
+        assert($ts instanceof self);
 
-        if ($this->current instanceof NodeEnd) $this->jump($this->last->previous);
+        if (($ts->first->next instanceof NodeEnd)
+                && ($ts->last->previous instanceof NodeStart)) return;
 
-        $a = $this->isEmpty() ? $this->first : $this->current;
+        if ($this->current instanceof NodeEnd) $this->current = $this->last->previous;
+
+        $a = $this->current;
         $b = $ts->first->next;
         $e = $ts->last->previous;
-        $f = $this->isEmpty() ? $this->last : $this->current->next;
+        $f = $this->current->next;
 
-        self::link($a, $b);
-        self::link($e, $f);
+        $a->next = $b;
+        $b->previous = $a;
+
+        $e->next = $f;
+        $f->previous = $e;
     }
 
-    function push(Token $token) {
+    function push($token) {
+        assert($token instanceof Token);
+
         $a = $this->last->previous;
         $b = new Node($token);
         $c = $this->last;
 
-        self::link($a, $b);
-        self::link($b, $c);
+        $a->next = $b;
+        $b->previous = $a;
+
+        $b->next = $c;
+        $c->previous = $b;
     }
 
     function isEmpty() : bool {
@@ -166,49 +215,82 @@ class TokenStream {
         ;
     }
 
-
     static function fromSourceWithoutOpenTag(string $source) : self {
         $ts = self::fromSource('<?php ' . $source);
-        $ts->shift();
+        $ts->first->next = $ts->first->next->next;
+        $ts->first->next->previous = $ts->first;
 
         return $ts;
     }
 
     static function fromSource(string $source) : self {
-        $line = 0;
-        $tokens = token_get_all($source);
+        $tokens = \token_get_all($source);
 
-        foreach ($tokens as $i => $token) // normalize line numbers
-            if (is_array($token))
-                $line = $token[2];
-            else
-                $tokens[$i] = [$token, $token, $line];
-
-        return self::fromSequence(...$tokens);
-    }
-
-    static function fromSequence(...$tokens) : self {
-        foreach ($tokens as $i => $t)
-            $tokens[$i] = ($t instanceof Token) ? $t : new Token(...$t);
-
-        return self::fromSlice($tokens);
-    }
-
-    static function fromSlice(array $tokens) : self {
         $ts = new self;
-        $ts->first = new NodeStart;
-        $ts->last = new NodeEnd;
-        self::link($ts->first, $ts->last);
+        $first = new NodeStart;
+        $last = new NodeEnd;
 
-        foreach ($tokens as $token) $ts->push($token);
+        $first->next = $last;
+        $last->previous = $first;
 
-        $ts->reset();
+        $line = 0;
+        $current = $first;
+        foreach ($tokens as $t){
+            if (\is_array($t)) {
+                $line = $t[2];
+                $token = new Token(...$t);
+            }
+            else {
+                $token = new Token($t, $t, $line);
+            }
+
+            $node = new Node($token);
+            $current->next = $node;
+            $node->previous = $current;
+
+            $current = $node;
+        }
+
+        $current->next = $last;
+        $last->previous = $current;
+
+        $ts->first = $first;
+        $ts->last = $last;
+
+        $ts->current = $ts->first->next;
 
         return $ts;
     }
 
-    private static function link($a, $b) {
-        $a->next =  $b;
-        $b->previous = $a;
+    static function fromSlice(array $tokens) : self {
+        $ts = new self;
+        $first = new NodeStart;
+        $last = new NodeEnd;
+
+        $first->next = $last;
+        $last->previous = $first;
+
+        $current = $first;
+        foreach ($tokens as $token){
+            $node = new Node($token);
+            $current->next = $node;
+            $node->previous = $current;
+
+            $current = $node;
+        }
+
+        $current->next = $last;
+        $last->previous = $current;
+
+        $ts->first = $first;
+        $ts->last = $last;
+
+        $ts->current = $ts->first->next;
+
+        return $ts;
+    }
+
+    static function fromSequence(Token ...$tokens) : self {
+        return self::fromSlice($tokens);
     }
 }

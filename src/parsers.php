@@ -20,7 +20,6 @@ function token($type, $value = null) : Parser
         function __construct($type, Token $token)
         {
             $this->type = $type;
-            $this->stack = [$token];
             $this->token = $token;
             $this->expected = new Expected($token);
         }
@@ -62,7 +61,7 @@ function rtoken(string $regexp) : Parser
         {
             $token = $ts->current();
 
-            if (null !== $token && 1 === preg_match($regexp, (string) $token)) {
+            if (null !== $token && 1 === preg_match($regexp, $token->value())) {
                 $ts->next();
 
                 return new Ast($this->label, $token);
@@ -172,11 +171,11 @@ function operator(string $operator) : Parser
             while (
                 (mb_strlen($buffer) <= $max) &&
                 (null !== ($token = $ts->current())) &&
-                (false !== mb_strstr($operator, ($current = (string) $token)))
+                (false !== mb_strstr($operator, ($current = $token->value())))
             ){
                 $ts->step();
                 if(($buffer .= $current) === $operator) {
-                    $ts->skip(...TokenStream::SKIPPABLE);
+                    $ts->skip();
                     return new Ast($this->label, new Token(Token::OPERATOR, $buffer));
                 }
             }
@@ -228,7 +227,7 @@ function traverse(Parser ...$parsers) : Parser
 
     return new class(__FUNCTION__, $parser) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
+        protected function parser(TokenStream $ts, Parser $parser) : Ast
         {
             while ($parser->parse($ts) instanceof Ast);
 
@@ -260,7 +259,7 @@ function repeat(Parser $parser) : Parser
             $ast = new Ast($this->label);
 
             while(
-                ($current = $ts->current()) &&
+                (null !== $ts->current()) &&
                 (($partial = $parser->parse($ts)) instanceof Ast)
             ){
                 $ast->append($partial);
@@ -550,8 +549,12 @@ function consume(Parser $parser, int $trim = CONSUME_NO_TRIM) : Parser
             $from = $ts->index();
             $ast = $parser->parse($ts);
             if ($ast instanceof Ast) {
-                $ts->unskip(...TokenStream::SKIPPABLE);
-                if ($trim & CONSUME_DO_TRIM) $ts->skip(T_WHITESPACE);
+                $ts->unskip();
+                if ($trim & CONSUME_DO_TRIM) {
+                    while (null !== ($token = $ts->current()) && $token->is(T_WHITESPACE)) {
+                        $ts->step();
+                    }
+                }
                 $to = $ts->index();
                 $ts->extract($from, $to);
 

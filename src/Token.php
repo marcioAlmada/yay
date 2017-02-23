@@ -4,6 +4,12 @@ namespace Yay;
 
 class Token implements \JsonSerializable {
 
+    const SKIPPABLE = [
+        T_WHITESPACE => true,
+        T_COMMENT => true,
+        T_DOC_COMMENT => true,
+    ];
+
     /**
      * pseudo token types
      */
@@ -30,38 +36,36 @@ class Token implements \JsonSerializable {
         $type,
         $value,
         $line,
-        $literal = false
+        $skippable = false
     ;
 
     private
         $id
     ;
 
-    function __construct($type, string $value = null, int $line = null) {
-        static $id = 0;
+    protected static $_id = 0;
 
-        $this->id = $id++;
+    function __construct($type, $value = null, $line = null) {
 
         assert(null === $this->type, "Attempt to modify immutable token.");
 
-        assert(\is_int($type) || \is_string($type), "Token type must be int or string.");
+        $this->id = (__CLASS__)::$_id++;
 
         if (\is_string($type)) {
-            if(1 !== \mb_strlen($type))
-                throw new YayException("Invalid token type '{$type}'");
-
-            $this->literal = true;
-            $value = $type;
+            $this->value = $type;
+        }
+        else {
+            $this->skippable = isset((__CLASS__)::SKIPPABLE[$type]);
+            $this->value = $value;
         }
 
         $this->type = $type;
-        $this->value = $value;
         $this->line = $line;
+
+        assert($this->check());
     }
 
-    private function __clone() {}
-
-    function __toString(): string {
+    function __toString() {
         return (string) $this->value;
     }
 
@@ -72,30 +76,29 @@ class Token implements \JsonSerializable {
     function dump(): string {
         $name = $this->name();
 
-        return $this->literal ? "'{$name}'" : "{$name}({$this->value})";
+        return $this->type === $this->value ? "'{$name}'" : "{$name}({$this->value})";
     }
 
-    function is(/* string|int */ ...$types): bool {
-        return \in_array($this->type, $types);
+    function is($type) {
+        return $this->type === $type;
     }
 
-    function contains($value): bool {
-        return $value === null ?: $this->value === $value;
-    }
-
-    function equals(self $token): bool {
+    function equals(self $token) {
         return
-            // inlined $this->is()
             ($this->type === $token->type &&
-                // inlined $this->contains()
-                ($token->value === null ?: $this->value === $token->value));
+                ($this->value === $token->value ?:
+                    ($token->value === null ?: $this->value === null)));
+    }
+
+    function isSkippable() {
+        return $this->skippable;
     }
 
     function name(): string {
         return
-            ($this->literal)
+            ($this->type === $this->value)
                 ? $this->type
-                : self::TOKENS[$this->type] ?? \token_name($this->type)
+                : (__CLASS__)::TOKENS[$this->type] ?? \token_name($this->type)
         ;
     }
 
@@ -103,15 +106,29 @@ class Token implements \JsonSerializable {
         return $this->type;
     }
 
-    function line(): int {
+    function value() {
+        return $this->value;
+    }
+
+    function line() {
         return $this->line;
     }
 
-    function id(): int {
+    function id() {
         return $this->id;
     }
 
     function jsonSerialize() {
-        return $this->__toString();
+        return (string) $this;
+    }
+
+    private function check() {
+        assert(\is_int($this->id));
+        assert(\is_bool($this->skippable));
+        assert(\is_int($this->type) || (\is_string($this->type) && \strlen($this->type) === 1), "Token type must be int or string[0].");
+        assert(\is_string($this->value) || (\is_null($this->value)), "Token value must be string or null.");
+        assert(\is_int($this->line) || (\is_null($this->line)), "Token line must be int or null.");
+
+        return true;
     }
 }

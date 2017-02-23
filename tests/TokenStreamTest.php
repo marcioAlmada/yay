@@ -41,8 +41,6 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('F', (string) $ts->step());
         $this->assertSame(null, $ts->step());
         $this->assertSame(null, $ts->current());
-        $this->assertSame(null, $ts->step());
-        $this->assertSame(null, $ts->current());
     }
 
     function testBack() {
@@ -55,6 +53,8 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(' ', (string) $ts->back());
         $this->assertSame('A', (string) $ts->back());
         $this->assertSame('<?php ', (string) $ts->back());
+        $this->assertSame(null, $ts->back());
+        $this->assertSame(null, $ts->current());
     }
 
 
@@ -68,8 +68,6 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('4', (string) $ts->next());
         $this->assertSame('5', (string) $ts->next());
         $this->assertSame('6', (string) $ts->next());
-        $this->assertSame(null, $ts->next());
-        $this->assertSame(null, $ts->current());
         $this->assertSame(null, $ts->next());
         $this->assertSame(null, $ts->current());
     }
@@ -129,13 +127,12 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
     function testClone() {
         $tsa = TokenStream::fromSource('<?php START END');
         $tsb = clone $tsa;
-        $tsb->reset();
         $this->assertNotSame($tsa->index(), $tsb->index());
     }
 
     function testExtract() {
         $ts = TokenStream::fromSequence(
-            [T_STRING, 'T_VARIABLE·A', 0], [T_WHITESPACE, ' ', 0], [T_STRING, 'T_VARIABLE·B', 0]);
+            new Token(T_STRING, 'T_VARIABLE·A', 0), new Token(T_WHITESPACE, ' ', 0), new Token(T_STRING, 'T_VARIABLE·B', 0));
 
         $ts->extract($ts->index(), $ts->index()->next);
 
@@ -147,18 +144,18 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $ts->next();
         $ts->step();
         $ts->inject(TokenStream::fromSequence(
-            [T_STRING, 'MIDDLE_B', 0], [T_WHITESPACE, '  ', 0]));
+            new Token(T_STRING, 'MIDDLE_B', 0), new Token(T_WHITESPACE, '  ', 0)));
         $ts->inject(TokenStream::fromSequence(
-            [T_STRING, 'MIDDLE_A', 0], [T_WHITESPACE, '  ', 0]));
+            new Token(T_STRING, 'MIDDLE_A', 0),new Token( T_WHITESPACE, '  ', 0)));
         $this->assertEquals('<?php START MIDDLE_A  MIDDLE_B  END', (string) $ts);
 
         $ts = TokenStream::fromSource('');
         $ts->inject(TokenStream::fromSequence(
-            [T_WHITESPACE, '  ', 0], [T_STRING, 'BAR', 0], [T_WHITESPACE, '  ', 0]));
+            new Token(T_WHITESPACE, '  ', 0), new Token(T_STRING, 'BAR', 0), new Token(T_WHITESPACE, '  ', 0)));
         $this->assertEquals('  BAR  ', (string) $ts);
 
         $ts->inject(TokenStream::fromSequence(
-            [T_WHITESPACE, '  ', 0], [T_STRING, 'FOO', 0], [T_WHITESPACE, '  ', 0]));
+            new Token(T_WHITESPACE, '  ', 0), new Token(T_STRING, 'FOO', 0), new Token(T_WHITESPACE, '  ', 0)));
         $this->assertEquals('  FOO    BAR  ', (string) $ts);
 
         $ts = TokenStream::fromSource('<?php A B');
@@ -167,7 +164,7 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
         $ts->next();
         $node = $ts->index();
         $partial = TokenStream::fromSequence(
-            [T_WHITESPACE, '  ', 0], [T_STRING, 'C', 0], [T_WHITESPACE, '  ', 0]);
+            new Token(T_WHITESPACE, '  ', 0), new Token(T_STRING, 'C', 0), new Token(T_WHITESPACE, '  ', 0));
         $index = $partial->index();
         $ts->inject($partial);
         $this->assertEquals('<?php A B  C  ', (string) $ts);

@@ -35,12 +35,12 @@ function concat(TokenStream $ts) : TokenStream {
     return TokenStream::fromSequence(new Token(T_STRING, $buffer));
 }
 
-function hygienize(TokenStream $ts, array $context) : TokenStream {
+function hygienize(TokenStream $ts, Context $context) : TokenStream {
     $ts->reset();
 
     $cg = (object)[
         'node' => null,
-        'context' => $context,
+        'scope' => $context->get('scope'),
         'ts' => $ts
     ];
 
@@ -67,7 +67,9 @@ function hygienize(TokenStream $ts, array $context) : TokenStream {
         )
         ->onCommit(function(Ast $result) use ($cg) {
             if (($t = $cg->node->token) && (($value = (string) $t) !== '$this'))
-                $cg->node->token = new Token($t->type(), "{$value}·{$cg->context['scope']}", $t->line());
+                $cg->node->token = new Token($t->type(), "{$value}·{$cg->scope}", $t->line());
+
+            $cg->node = null;
         })
     )
     ->parse($ts);

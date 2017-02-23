@@ -17,10 +17,10 @@ class Macro implements Directive {
         $id
     ;
 
-    function __construct(Map $tags, Pattern $pattern, Expansion $expansion, Cycle $cycle) {
-        static $id = 0;
+    protected static $_id = 0;
 
-        $this->id = $id++;
+    function __construct(Map $tags, Pattern $pattern, Expansion $expansion, Cycle $cycle) {
+        $this->id = (__CLASS__)::$_id++;
         $this->tags = $tags;
         $this->pattern = $pattern;
         $this->expansion = $expansion;
@@ -63,7 +63,7 @@ class Macro implements Directive {
                 return;
             }
 
-            $ts->unskip(...TokenStream::SKIPPABLE);
+            $ts->unskip();
             $to = $ts->index();
             $ts->extract($from, $to);
 
@@ -81,8 +81,10 @@ class Macro implements Directive {
             $ts->inject($expansion);
         }
         else {
-            $ts->unskip(...TokenStream::SKIPPABLE);
-            $ts->skip(T_WHITESPACE);
+            $ts->unskip();
+            while (null !== ($token = $ts->current()) && $token->is(T_WHITESPACE)) {
+                $ts->step();
+            }
             $to = $ts->index();
             $ts->extract($from, $to);
         }

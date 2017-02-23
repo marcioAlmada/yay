@@ -35,7 +35,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $current = $ts->current();
         $result = $parser->onCommit(
             function($commit) use($parser) {
-                $this->fail("Unexpected commit on {$parser->type()}().");
+                $this->fail("Unexpected commit on {$parser}().");
             }
         )
         ->withErrorLevel(Error::ENABLED)

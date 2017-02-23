@@ -5,17 +5,18 @@ namespace Yay;
 class BlueContext {
     private $map = [];
 
-    function addDisabledMacros(Token $token, array $macros) {
-        if (! isset($this->map[$token->id()])) $this->map[$token->id()] = [];
+    function addDisabledMacros($token, $macros) {
+        assert($token instanceof Token);
+        assert(\is_array($macros));
 
-        $this->map[$token->id()] += $macros;
+        foreach ($macros as $id => $_) $this->map[$token->id()][$id] = true;
     }
 
-    function isMacroDisabled(Token $token, Macro $macro): bool {
-        return isset($this->map[$token->id()][$macro->id()]);
-    }
+    function getDisabledMacros($token) {
+        assert($token instanceof Token);
 
-    function getDisabledMacros(Token $token): array {
-        return $this->map[$token->id()] ?? [];
+        if (isset($this->map[$token->id()])) return $this->map[$token->id()];
+
+        return [];
     }
 }
