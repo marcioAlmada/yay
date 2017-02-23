@@ -157,11 +157,11 @@ class Pattern extends MacroMember {
         )
         ->parse($cg->ts);
 
-        // check if macro dominance '·' is last token
-        if ($this->dominance === \count($cg->parsers))
-            $this->fail(self::E_BAD_DOMINANCE, $this->dominance, $cg->ts->last()->line());
-
         $this->specificity = \count($cg->parsers);
+
+        // check if macro dominance '·' is last token
+        if ($this->dominance === $this->specificity)
+            $this->fail(self::E_BAD_DOMINANCE, $this->dominance, $cg->ts->last()->line());
 
         if ($this->specificity > 1) {
             if (0 === $this->dominance) {
@@ -216,10 +216,10 @@ class Pattern extends MacroMember {
         return constant($type);
     }
 
-    protected function lookupCapture(Token $token) /*: string|null*/ {
+    protected function lookupCapture(Token $token) : string {
         $id = (string) $token;
 
-        if ($id === '·_') return null;
+        if ($id === '·_') return '';
 
         if ($this->scope->contains($id))
             $this->fail(self::E_IDENTIFIER_REDEFINITION, $id, $token->line());
@@ -275,9 +275,7 @@ class Pattern extends MacroMember {
                 $compiled[] = $this->lookupTokenType($arg);
                 break;
             case 'function': // function(...){...}
-                $arglist = implode('', $arg['args']);
-                $body = implode('', $arg['body']);
-                $compiled[] = eval("return function({$arglist}){ {$body} };");
+                $compiled[] = $this->compileAnonymousFunctionArg($arg);
                 break;
             default:
                 $compiled = array_merge(
@@ -285,5 +283,17 @@ class Pattern extends MacroMember {
         }
 
         return $compiled;
+    }
+
+    private function compileAnonymousFunctionArg(array $arg) : \Closure {
+        $arglist = implode('', $arg['args']);
+        $body = implode('', $arg['body']);
+        $source = "<?php\nreturn static function({$arglist}){\n{$body}\n};";
+        $file = sys_get_temp_dir() . '/yay-function-' . sha1($source);
+
+        if (!is_readable($file))
+            file_put_contents($file, $source);
+
+        return include $file;
     }
 }

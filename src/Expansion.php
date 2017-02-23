@@ -47,7 +47,9 @@ class Expansion extends MacroMember {
             $expansion = clone $this->expansion;
 
             if ($this->unsafe)
-                hygienize($expansion, ['scope' => $cycle->id(),]);
+                hygienize($expansion,  Map::fromKeysAndValues(['scope' => $cycle->id(),]));
+
+            if ($this->constant) return $expansion;
 
             return $this->mutate($expansion, $crossover, $cycle, $directives, $blueContext);
     }
@@ -156,8 +158,6 @@ class Expansion extends MacroMember {
 
     private function mutate(TokenStream $ts, Ast $context, Cycle $cycle, Directives $directives, BlueContext $blueContext) : TokenStream {
 
-        if ($this->constant) return $ts;
-
         static $states, $parser;
 
         $states = $states ?? new Stack;
@@ -167,6 +167,23 @@ class Expansion extends MacroMember {
             traverse
             (
                 token(Token::CLOAKED)
+                ,
+                rtoken('/^T_\w+·\w+$/')->as('label')->onCommit(function(Ast $result) use ($states) {
+                    $cg = $states->current();
+                    $ts = $cg->ts;
+
+                    $token = $cg->this->lookupContext($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
+
+                    $ts->previous();
+                    $node = $ts->index();
+
+                    if ($token instanceof Token)
+                        $node->token = $token;
+                    else
+                        $ts->extract($node, $node->next);
+
+                    $ts->next();
+                })
                 ,
                 consume
                 (
@@ -190,7 +207,7 @@ class Expansion extends MacroMember {
                         'blueContext' => $cg->blueContext
                     ]);
                     $expansion = TokenStream::fromSlice($result->args);
-                    $mutation = $cg->this->mutate(clone $expansion, $cg->context, $cg->cycle, $cg->directives, $cg->blueContext);
+                    $mutation = $cg->this->mutate($expansion, $cg->context, $cg->cycle, $cg->directives, $cg->blueContext);
                     $mutation = $cg->this->lookupExpander($expander)($mutation, $context);
                     $cg->ts->inject($mutation);
                 })
@@ -223,15 +240,15 @@ class Expansion extends MacroMember {
 
                     if ($context === null) return;
 
-                    $expansion = TokenStream::fromSlice($result->expansion);
                     $delimiters = $result->delimiters;
 
                     // normalize single context
                     if (array_values($context) !== $context) $context = [$context];
 
                     foreach (array_reverse($context) as $i => $subContext) {
+                        $expansion = TokenStream::fromSlice($result->expansion);
                         $mutation = $cg->this->mutate(
-                            clone $expansion,
+                            $expansion,
                             (new Ast(null, $subContext))->withParent($cg->context),
                             $cg->cycle,
                             $cg->directives,
@@ -244,7 +261,7 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                    rtoken('/^·\w+|···\w+$/')->as('label')
                 )
                 ->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
@@ -254,7 +271,7 @@ class Expansion extends MacroMember {
                     if ($context instanceof Token) {
                         $cg->ts->inject(TokenStream::fromSequence($context));
                     }
-                    elseif (is_array($context) && \count($context)) {
+                    elseif (\is_array($context) && \count($context)) {
                         $tokens = [];
                         array_walk_recursive(
                             $context,
@@ -307,7 +324,6 @@ class Expansion extends MacroMember {
 
         return $cg->ts;
     }
-
 
     private function lookupExpander(Token $token) : string {
         $identifier = (string) $token;

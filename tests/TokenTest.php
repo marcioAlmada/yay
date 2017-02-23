@@ -14,22 +14,27 @@ class TokenTest extends \PHPUnit_Framework_TestCase {
                 false
             ],[
                 [T_STRING, '""'],
-                [':'], false],
-            [
+                [':'],
+                false
+            ],[
                 [T_STRING, '"any"'],
                 [T_STRING],
                 true
             ],[
                 [T_STRING, "·"],
                 [T_STRING, '·'],
-                true],
-            [
+                true
+            ],[
                 [T_STRING, "·"],
                 [T_STRING],
                 true
             ],[
                 [T_FUNCTION, 'function'],
                 [T_FUNCTION],
+                true
+            ],[
+                [T_FUNCTION],
+                [T_FUNCTION, 'function'],
                 true
             ],
         ];
@@ -53,34 +58,14 @@ class TokenTest extends \PHPUnit_Framework_TestCase {
     function testIs() {
         $token = new Token('$');
         $this->assertTrue($token->is('$'));
-        $this->assertTrue($token->is('$', ':', '!'));
-        $this->assertTrue($token->is('!', '?', ':', '$'));
-        $this->assertFalse($token->is('!', '?', ':'));
-        $this->assertFalse($token->is('$!'));
+        $this->assertFalse($token->is('!'));
 
         $token = new Token(T_STRING);
-        $this->assertFalse($token->is(T_OPEN_TAG, T_YIELD));
+        $this->assertFalse($token->is(T_OPEN_TAG));
         $this->assertTrue($token->is(T_STRING));
 
         $token = new Token(T_STRING, '"value"', null);
-
-        $this->assertFalse($token->is(T_OPEN_TAG, T_YIELD));
-        $this->assertTrue($token->is(T_CLOSE_TAG, T_STRING));
+        $this->assertFalse($token->is(T_OPEN_TAG));
+        $this->assertTrue($token->is(T_STRING));
     }
-
-    function testContains() {
-        $token = new Token('$');
-        $this->assertTrue($token->contains('$'));
-        $this->assertFalse($token->contains('!'));
-
-        $token = new Token(T_STRING);
-        $this->assertTrue($token->contains(null));
-        $this->assertFalse($token->contains(''));
-
-        $token = new Token(T_STRING, '"yep"', null);
-        $this->assertTrue($token->contains(null));
-        $this->assertFalse($token->contains('"nope"'));
-        $this->assertTrue($token->contains('"yep"'));
-    }
-
 }
