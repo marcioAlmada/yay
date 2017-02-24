@@ -1,6 +1,8 @@
 #!/usr/bin/env php
 <?php declare(strict_types=1);
 
+use PhpParser\{ParserFactory, PrettyPrinter};
+
 $autoloads = [
     __DIR__ . '/../../../autoload.php',
     __DIR__ . '/../vendor/autoload.php',
@@ -28,7 +30,12 @@ try {
     if ($source === false)
         throw new InvalidArgumentException("File '{$file}' not found'.");
 
-    file_put_contents('php://stdout', yay_pretty($source));
+    $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+    $prettyPrinter = new PrettyPrinter\Standard;
+    $stmts = $parser->parse($source);
+    $output = $prettyPrinter->prettyPrintFile($stmts);
+
+    file_put_contents('php://stdout', $output);
 }
 catch (Exception $e) {
     file_put_contents('php://stderr', $e . PHP_EOL);

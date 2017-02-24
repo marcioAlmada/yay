@@ -12,7 +12,9 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase {
         ABSOLUTE_FIXTURES_DIR = __DIR__ . '/' . self::FIXTURES_DIR
     ;
 
-    function setUp() { StreamWrapper::register(); }
+    function setUp() {
+        StreamWrapper::register(new Engine);
+    }
 
     function syntaxErrorProvider() {
 

@@ -22,11 +22,8 @@
     },
     "autoload": {
         "files": [
-            "yay_parse.php",
-            "yay_pretty.php",
             "src/parsers.php",
-            "src/expanders.php",
-            "bootstrap.php"
+            "src/expanders.php"
         ],
         "psr-4": {
             "Yay\\": "src/"

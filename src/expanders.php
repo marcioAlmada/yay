@@ -2,7 +2,7 @@
 
 namespace Yay\DSL\Expanders;
 
-use Yay\{Token, TokenStream, Ast, YayException, Cycle, Parser, Context};
+use Yay\{Engine, Token, TokenStream, Ast, YayException, Cycle, Parser, Context};
 use function Yay\{
     token, rtoken, identifier, chain, either, any, parentheses, braces, traverse, midrule
 };
@@ -35,12 +35,12 @@ function concat(TokenStream $ts) : TokenStream {
     return TokenStream::fromSequence(new Token(T_STRING, $buffer));
 }
 
-function hygienize(TokenStream $ts, Context $context) : TokenStream {
+function hygienize(TokenStream $ts, Engine $engine) : TokenStream {
     $ts->reset();
 
     $cg = (object)[
         'node' => null,
-        'scope' => $context->get('scope'),
+        'scope' => $engine->cycle()->id(),
         'ts' => $ts
     ];
 
@@ -81,9 +81,11 @@ function hygienize(TokenStream $ts, Context $context) : TokenStream {
 
 function unsafe(TokenStream $ts) : TokenStream { return $ts; }
 
-function expand(TokenStream $ts, Context $context) : TokenStream {
-    $ts = TokenStream::fromSource(yay_parse('<?php ' . (string) $ts, $context->get('directives'), $context->get('blueContext')));
-    $ts->shift();
+function expand(TokenStream $ts, Engine $engine) : TokenStream {
+
+    // var_dump($engine);
+
+    $ts = TokenStream::fromSource($engine->expand((string) $ts, '', Engine::GC_ENGINE_DISABLED));
 
     return $ts;
 }
