@@ -7,7 +7,6 @@ class Macro implements Directive {
     protected
         $pattern,
         $expansion,
-        $cycle,
         $tags,
         $terminal = true,
         $hasExpansion = true
@@ -19,12 +18,11 @@ class Macro implements Directive {
 
     protected static $_id = 0;
 
-    function __construct(Map $tags, Pattern $pattern, Expansion $expansion, Cycle $cycle) {
+    function __construct(Map $tags, Pattern $pattern, Expansion $expansion) {
         $this->id = (__CLASS__)::$_id++;
         $this->tags = $tags;
         $this->pattern = $pattern;
         $this->expansion = $expansion;
-        $this->cycle = $cycle;
 
         $this->terminal = !$this->expansion->isRecursive();
         $this->hasExpansion = !$this->expansion->isEmpty();
@@ -46,7 +44,8 @@ class Macro implements Directive {
         return $this->expansion;
     }
 
-    function apply(TokenStream $ts, Directives $directives, BlueContext $blueContext) {
+    function apply(TokenStream $ts, Engine $engine) {
+
         $from = $ts->index();
 
         $crossover = $this->pattern->match($ts);
@@ -55,6 +54,7 @@ class Macro implements Directive {
 
         if ($this->hasExpansion) {
 
+            $blueContext = $engine->blueContext();
             $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->all(), $blueContext);
 
             if ($this->terminal && isset($blueMacros[$this->id])) { // already expanded
@@ -67,7 +67,7 @@ class Macro implements Directive {
             $to = $ts->index();
             $ts->extract($from, $to);
 
-            $expansion = $this->expansion->expand($crossover, $this->cycle, $directives, $blueContext);
+            $expansion = $this->expansion->expand($crossover, $engine);
 
             $blueMacros[$this->id] = true;
 
@@ -89,18 +89,18 @@ class Macro implements Directive {
             $ts->extract($from, $to);
         }
 
-        $this->cycle->next();
+        $engine->cycle()->next();
     }
 
-    private function getAllBlueMacrosFromCrossover($nodes, BlueContext $blueContext): array {
-        $macros = [];
+    private function getAllBlueMacrosFromCrossover($node, BlueContext $blueContext): array {
+        if ($node instanceof Token)
+            return $blueContext->getDisabledMacros($node);
+        else if(is_array($node)) {
+            $macros = [];
+            foreach ($node as $n)
+                $macros += $this->getAllBlueMacrosFromCrossover($n, $blueContext);
 
-        foreach ($nodes as $node)
-            if ($node instanceof Token)
-                $macros += $blueContext->getDisabledMacros($node);
-            else
-                $macros += $this->getAllBlueMacrosFromCrossover($node, $blueContext);
-
-        return $macros;
+            return $macros;
+        }
     }
 }

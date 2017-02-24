@@ -17,14 +17,15 @@ final class StreamWrapper {
     ;
 
     protected static
-        $registered = false
+        $registered = false,
+        $engine
     ;
 
     protected
         $resource
     ;
 
-    static function register()
+    static function register(Engine $engine)
     {
         if (true === self::$registered) return;
 
@@ -34,6 +35,7 @@ final class StreamWrapper {
                 self::SCHEME . ' protocol.'
             );
 
+        self::$engine = $engine;
         self::$registered = true;
     }
 
@@ -55,6 +57,7 @@ final class StreamWrapper {
                 ' protocol.'
             );
 
+        self::$engine = null;
         self::$registered = false;
     }
 
@@ -71,8 +74,7 @@ final class StreamWrapper {
 
         $opened_path = $path;
 
-        $source = yay_parse(file_get_contents($fileMeta->getRealPath()));
-        // var_dump($source);
+        $source = self::$engine->expand(file_get_contents($fileMeta->getRealPath()), $fileMeta->getRealPath());
 
         $this->resource = fopen('php://memory', 'rb+');
         fwrite($this->resource, $source);

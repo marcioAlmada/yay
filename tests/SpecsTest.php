@@ -10,6 +10,8 @@ use
     PHPUnit_Framework_Assert as Assert
 ;
 
+use PhpParser\{ ParserFactory, PrettyPrinter };
+
 /**
  * @group large
  */
@@ -71,6 +73,7 @@ class Test {
 
 
     protected
+        $engine,
         $status,
         $name,
         $source,
@@ -87,7 +90,8 @@ class Test {
         $this->file_expect = preg_replace('/\.phpt$/', '.exp', $this->file);
         $this->file_diff = preg_replace('/\.phpt$/', '.diff', $this->file);
         $this->file_out = preg_replace('/\.phpt$/', '.out', $this->file);
-        // $this->file_php = preg_replace('/\.phpt$/', '.php', $this->file);
+
+        $this->engine = new Engine;
     }
 
     function run() {
@@ -101,9 +105,14 @@ class Test {
             list($this->name, $this->source, $this->expected) = $sections;
 
             try {
-                $this->out = yay_parse($this->source);
-                if (false !== strpos($this->name, '--pretty-print'))
-                    $this->out = yay_pretty($this->out) . PHP_EOL . PHP_EOL . '?>';
+                $this->out = $this->engine->expand($this->source, $this->file);
+
+                if (false !== strpos($this->name, '--pretty-print')) {
+                    $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+                    $prettyPrinter = new PrettyPrinter\Standard;
+                    $stmts = $parser->parse($this->out);
+                    $this->out = $prettyPrinter->prettyPrintFile($stmts) . PHP_EOL . PHP_EOL . '?>';
+                }
             } catch(YayParseError $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;
