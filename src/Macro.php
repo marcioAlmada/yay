@@ -8,8 +8,7 @@ class Macro implements Directive {
         $pattern,
         $expansion,
         $tags,
-        $terminal = true,
-        $hasExpansion = true
+        $isTerminal
     ;
 
     private
@@ -24,8 +23,7 @@ class Macro implements Directive {
         $this->pattern = $pattern;
         $this->expansion = $expansion;
 
-        $this->terminal = !$this->expansion->isRecursive();
-        $this->hasExpansion = !$this->expansion->isEmpty();
+        $this->isTerminal = !$this->expansion->isRecursive();
     }
 
     function id() : int {
@@ -50,14 +48,12 @@ class Macro implements Directive {
 
         $crossover = $this->pattern->match($ts);
 
-        if (null === $crossover || $crossover instanceof Error) return;
-
-        if ($this->hasExpansion) {
+        if ($crossover instanceof Ast ) {
 
             $blueContext = $engine->blueContext();
             $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->all(), $blueContext);
 
-            if ($this->terminal && isset($blueMacros[$this->id])) { // already expanded
+            if ($this->isTerminal && isset($blueMacros[$this->id])) { // already expanded
                 $ts->jump($from);
 
                 return;
@@ -79,17 +75,9 @@ class Macro implements Directive {
             }
 
             $ts->inject($expansion);
-        }
-        else {
-            $ts->unskip();
-            while (null !== ($token = $ts->current()) && $token->is(T_WHITESPACE)) {
-                $ts->step();
-            }
-            $to = $ts->index();
-            $ts->extract($from, $to);
-        }
 
-        $engine->cycle()->next();
+            $engine->cycle()->next();
+        }
     }
 
     private function getAllBlueMacrosFromCrossover($node, BlueContext $blueContext): array {

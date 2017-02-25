@@ -17,4 +17,10 @@ macro { @ T_STRING·label ; } >> { };
 --EXPECTF--
 <?php
 
+
+
+
+
+
+
 ?>

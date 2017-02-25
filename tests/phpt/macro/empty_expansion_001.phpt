@@ -27,7 +27,7 @@ HTML here, this should be preserved: @ "debug" public
 test();
 
 class X {
-    function test(){}
+     function test(){}
 }
 
 ?>
