@@ -98,7 +98,8 @@ class Expansion extends MacroMember {
                     TokenStream::fromSequence(
                         new Token(
                             Token::CLOAKED,
-                            implode('', $result->cloaked)
+                            implode('', $result->cloaked),
+                            $result->cloaked[0]->line()
                         )
                     )
                 );

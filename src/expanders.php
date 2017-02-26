@@ -13,7 +13,7 @@ function stringify(TokenStream $ts) : TokenStream {
     return
         TokenStream::fromSequence(
             new Token(
-                T_CONSTANT_ENCAPSED_STRING, "'{$str}'"
+                T_CONSTANT_ENCAPSED_STRING, "'{$str}'", $ts->first()->line()
             )
         )
     ;
@@ -34,6 +34,7 @@ function unvar(TokenStream $ts) : TokenStream {
 function concat(TokenStream $ts) : TokenStream {
     $ts->reset();
     $buffer = '';
+    $line  = $ts->current()->line();
     while($t = $ts->current()) {
         $str = (string) $t;
         if (! preg_match('/^\w+$/', $str))
@@ -44,7 +45,7 @@ function concat(TokenStream $ts) : TokenStream {
         $ts->next();
     }
 
-    return TokenStream::fromSequence(new Token(T_STRING, $buffer));
+    return TokenStream::fromSequence(new Token(T_STRING, $buffer, $line));
 }
 
 function hygienize(TokenStream $ts, Engine $engine) : TokenStream {
