@@ -81,12 +81,12 @@ namespace App;
 class Sprocket
 {
     private $type {
-        get :string {
-            return $this->type;
-        }
-
         set(string $value) {
             $this->type = $value;
+        }
+
+        get :string {
+            return $this->type;
         }
 
         unset {
