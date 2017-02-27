@@ -115,8 +115,7 @@ class Pattern extends MacroMember {
                 )
             )
             ->onCommit(function(Ast $result) use($cg) {
-                $cg->parsers[] = $this->compileParser(
-                    $result->type, $result->args, $result->label);
+                $cg->parsers[] = $this->compileParser($result);
             })
             ,
             // handles {···layer}
@@ -239,40 +238,41 @@ class Pattern extends MacroMember {
         return $parser;
     }
 
-    private function compileParser(Token $type, array $args, Token $label = null) : Parser
-    {
-        $parser = $this->lookupParser($type);
-        $args = $this->compileParserArgs($args);
+    protected function compileParser(Ast $ast) : Parser {
+        $parser = $this->lookupParser($ast->{'* type'}->token());
+        $args = $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
-        if ($label)
+        if ($label = $ast->{'label'})
             $parser->as($this->lookupCapture($label));
 
         return $parser;
     }
 
-    private function compileParserArgs(array $args) : array {
+    protected function compileParserArgs(Ast $args) : array {
         $compiled = [];
-        foreach ($args as $label => $arg) switch ((string) $label) {
+
+        foreach ($args->list() as $arg) switch ((string) $arg->label()) {
             case 'this':
                 $compiled[] = future($this->pattern);
                 break;
             case 'token':
-                $type = $this->lookupTokenType($arg);
-                $label = $this->lookupCapture($arg);
+                $token = $arg->token();
+                $type = $this->lookupTokenType($token);
+                $label = $this->lookupCapture($token);
                 $compiled[] = token($type)->as($label);
                 break;
             case 'label':
-                $compiled[] = token($arg);
+            case 'literal':
+                $compiled[] = token($arg->token());
                 break;
             case 'parser':
-                $compiled[] = $this->compileParser(
-                    $arg['type'], $arg['args'], $arg['label']);
+                $compiled[] = $this->compileParser($arg);
                 break;
             case 'string':
-                $compiled[] = trim((string) $arg, '"\'');
+                $compiled[] = trim((string) $arg->token(), '"\'');
                 break;
             case 'constant': // T_*
-                $compiled[] = $this->lookupTokenType($arg);
+                $compiled[] = $this->lookupTokenType($arg->token());
                 break;
             case 'function': // function(...){...}
                 $compiled[] = $this->compileAnonymousFunctionArg($arg);

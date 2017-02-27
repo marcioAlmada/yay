@@ -51,7 +51,7 @@ class Macro implements Directive {
         if ($crossover instanceof Ast ) {
 
             $blueContext = $engine->blueContext();
-            $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->all(), $blueContext);
+            $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->unwrap(), $blueContext);
 
             if ($this->isTerminal && isset($blueMacros[$this->id])) { // already expanded
                 $ts->jump($from);
