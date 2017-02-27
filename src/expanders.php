@@ -19,6 +19,18 @@ function stringify(TokenStream $ts) : TokenStream {
     ;
 }
 
+function unvar(TokenStream $ts) : TokenStream {
+    $str = preg_replace('/^\$+/', '', (string) $ts);
+
+    return
+        TokenStream::fromSequence(
+            new Token(
+                T_CONSTANT_ENCAPSED_STRING, $str
+            )
+        )
+    ;
+}
+
 function concat(TokenStream $ts) : TokenStream {
     $ts->reset();
     $buffer = '';

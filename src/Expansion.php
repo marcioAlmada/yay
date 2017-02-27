@@ -114,6 +114,8 @@ class Expansion extends MacroMember {
             (
                 rtoken('/^·\w+|···\w+$/')->as('label')
                 ,
+                optional(token('?'))->as('optional')
+                ,
                 operator('···')
                 ,
                 optional
@@ -124,7 +126,8 @@ class Expansion extends MacroMember {
                 braces()->as('expansion')
             )
             ->onCommit(function(Ast $result) use($cg) {
-                $this->lookupContext($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
+                if (null !== $result->optional)
+                    $this->lookupContext($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
                 $this->constant = false;
             })
             ,
@@ -204,6 +207,8 @@ class Expansion extends MacroMember {
                     (
                         rtoken('/^·\w+|···\w+$/')->as('label')
                         ,
+                        optional(token('?'))->as('optional')
+                        ,
                         operator('···')
                         ,
                         optional
@@ -217,7 +222,12 @@ class Expansion extends MacroMember {
                 ->onCommit(function(Ast $result)  use($states) {
                     $cg = $states->current();
 
-                    $context = $cg->this->lookupContext($result->{'label'}, $cg->context, self::E_UNDEFINED_EXPANSION);
+                    if (null !== $result->optional)
+                        $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+                    else
+                        $context = $cg->this->lookupContext($result->{'label'}, $cg->context, self::E_UNDEFINED_EXPANSION);
+
+                    if ($context === null) return;
 
                     $delimiters = $result->{'delimiters'};
 
@@ -325,5 +335,11 @@ class Expansion extends MacroMember {
         }
 
         return $result;
+    }
+
+    private function lookupContextOptional(Token $token, Context $context) /*: Token | []Token*/ {
+        $symbol = (string) $token;
+
+        return $context->get($symbol);
     }
 }
