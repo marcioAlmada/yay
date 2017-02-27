@@ -3,7 +3,9 @@
 namespace Yay;
 
 use
-    InvalidArgumentException
+    InvalidArgumentException,
+    ArrayIterator,
+    TypeError
 ;
 
 /**
@@ -22,7 +24,7 @@ class Ast implements Result, Context {
 
     function __construct(string $label = null, $ast = []) {
         if ($ast instanceof self)
-            throw new InvalidArgumentException('Unmerged AST.');
+            throw new TypeError('Unmerged AST.');
 
         $this->ast = $ast;
         $this->label = $label;
@@ -32,33 +34,77 @@ class Ast implements Result, Context {
         return $this->get($path);
     }
 
-    function get($path) {
-        $ret =
-            $this->getIn(
-                (null !== $this->label ? $this->all() : $this->ast),
-                preg_split('/\s+/', $path)
-            )
-        ;
+    function get($strPath) {
+        $ret = null;
+        $path = preg_split('/\s+/', $strPath);
 
-        if (null === $ret && $this->parent) $ret = $this->parent->get($path);
+        if ($wrap = ('*' === $path[0])) {
+            array_shift($path);
+        }
+
+        try {
+            $ret = $this->getIn($this->ast, $path);
+
+            if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
+
+            if ($wrap) {
+                $label = end($path) ?: null;
+                $ret = new self($label, $ret);
+            }
+        }
+        catch(TypeError $e) {
+            if ($wrap) {
+                throw new \Yay\YayException("Could not access (Ast)->{'" . implode(' ', $path) . "'}.");
+            }
+        }
 
         return $ret;
     }
 
-    function raw() {
+    function unwrap() {
         return $this->ast;
     }
 
-    function token() : Token {
-        return $this->ast;
+    function token() {
+        if ($this->ast instanceof Token) return $this->ast;
+
+        $this->failCasting(Token::class);
     }
 
-    function array() : array {
-        return $this->ast;
+    function null() {
+        if (\is_null($this->ast)) return $this->ast;
+
+        $this->failCasting('null');
     }
 
-    function all() {
-        return [($this->label ?? 0) => $this->ast];
+    function bool() {
+        if (\is_bool($this->ast)) return $this->ast;
+
+        $this->failCasting('boolean');
+    }
+
+    function string() {
+        if (\is_string($this->ast)) return $this->ast;
+
+        $this->failCasting('string');
+    }
+
+
+    function array() {
+        if (\is_array($this->ast)) return $this->ast;
+
+        $this->failCasting('array');
+    }
+
+    function list() {
+        $array = $this->array();
+
+        reset($array);
+
+        $isAssociative = \count(array_filter(array_keys($array), 'is_string')) > 0;
+
+        foreach ($array as $label => $value)
+            yield new Ast(($isAssociative ? $label : null), $value);
     }
 
     function append(self $ast) : self {
@@ -81,7 +127,7 @@ class Ast implements Result, Context {
     }
 
     function isEmpty() : bool {
-        return ! count($this->ast);
+        return !\count($this->ast) || null === $this->ast;
     }
 
     function as(/*string|null*/ $label = null) : self {
@@ -97,7 +143,7 @@ class Ast implements Result, Context {
     }
 
     function symbols() : array {
-        return array_keys($this->all()[0]);
+        return \is_array($this->ast) ? \array_keys($this->ast) : [];
     }
 
     /**
@@ -110,13 +156,13 @@ class Ast implements Result, Context {
         }
 
         // This is a micro-optimization, it is fast for non-nested keys, but fails for null values
-        if (count($keys) === 1 && isset($array[$keys[0]])) {
+        if (\count($keys) === 1 && isset($array[$keys[0]])) {
             return $array[$keys[0]];
         }
 
         $current = $array;
         foreach ($keys as $key) {
-            if (!is_array($current) || !array_key_exists($key, $current)) {
+            if (!\is_array($current) || !\array_key_exists($key, $current)) {
                 return $default;
             }
 
@@ -124,5 +170,9 @@ class Ast implements Result, Context {
         }
 
         return $current;
+    }
+
+    private function failCasting(string $type) {
+        throw new YayException(sprintf("Ast cannot be casted to '%s'", $type));
     }
 }

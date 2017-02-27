@@ -609,7 +609,7 @@ function optional(Parser $parser, $default = []) : Parser
         protected function parser(TokenStream $ts, Parser $parser, $default) : Ast
         {
             $result = $parser->parse($ts);
-            $match = ($result instanceof Ast) ? $result->raw() : $default;
+            $match = ($result instanceof Ast) ? $result->unwrap() : $default;
 
             return (new Ast($parser->label, $match))->as($this->label);
         }

@@ -59,7 +59,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->assertTrue($commited, "Missing commit on {$parser}().");
 
         $buffer = [];
-        $astArray = $ast->all();
+        $astArray = [$ast->unwrap()];
         array_walk_recursive($astArray, function(Token $token) use (&$buffer){
             $buffer[] = $token->dump();
         });
