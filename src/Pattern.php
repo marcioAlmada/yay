@@ -292,7 +292,15 @@ class Pattern extends MacroMember implements PatternInterface {
         return $compiled;
     }
 
-    private function compileAnonymousFunctionArg(array $arg) : \Closure {
+    private function compileAnonymousFunctionArg($arg) : \Closure {
+        if ($arg instanceof Ast) {
+            $arg = $arg->unwrap();
+        }
+
+        if (!is_array($arg)) {
+            throw new InvalidArgumentException('$arg should be an array or instance of Yay\Ast');
+        }
+
         $arglist = implode('', $arg['args']);
         $body = implode('', $arg['body']);
         $source = "<?php\nreturn static function({$arglist}){\n{$body}\n};";
