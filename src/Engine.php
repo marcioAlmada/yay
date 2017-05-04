@@ -117,6 +117,8 @@ final class Engine {
                     $macro = new Macro($tags, $pattern, $expansion);
 
                     $this->registerDirective($macro);
+
+                    if ($macro->tags()->contains('·global')) $this->globalDirectives[] = $macro;
                 })
             )
         ;
@@ -137,8 +139,6 @@ final class Engine {
                 krsort($this->typeHitMap[$expected->type()]);
             }
         }
-
-        if ($directive->tags()->contains('·global')) $this->globalDirectives[] = $directive;
     }
 
     function blueContext() : BlueContext {
