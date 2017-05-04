@@ -127,7 +127,7 @@ class Ast implements Result, Context {
     }
 
     function isEmpty() : bool {
-        return !\count($this->ast) || null === $this->ast;
+        return null === $this->ast || 0 === \count($this->ast);
     }
 
     function as(string $label = null) : self {
