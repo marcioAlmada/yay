@@ -96,8 +96,6 @@ function unsafe(TokenStream $ts) : TokenStream { return $ts; }
 
 function expand(TokenStream $ts, Engine $engine) : TokenStream {
 
-    // var_dump($engine);
-
     $ts = TokenStream::fromSource($engine->expand((string) $ts, '', Engine::GC_ENGINE_DISABLED));
 
     return $ts;
