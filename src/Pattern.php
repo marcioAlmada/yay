@@ -235,9 +235,12 @@ class Pattern extends MacroMember implements PatternInterface {
         return $identifier;
     }
 
-    private function lookupParser(Token $token) : string {
+    private function lookupParser(Token $token) : callable {
         $identifier = (string) $token;
         $parser = '\Yay\\' . explode('·', $identifier)[1];
+
+        if ($identifier === '·_')
+            return function(){ return midrule(function(){ return new Ast; }); };
 
         if (! function_exists($parser))
             $this->fail(self::E_BAD_PARSER_NAME, $identifier, $token->line());
