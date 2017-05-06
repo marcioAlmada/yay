@@ -52,9 +52,9 @@ class Pattern extends MacroMember implements PatternInterface {
             rtoken('/^(T_\w+)·(\w+)$/')
                 ->onCommit(function(Ast $result) use($cg) {
                     $token = $result->token();
-                    $id = $this->lookupCapture($token);
+                    $identifier = $this->lookupCapture($token);
                     $type = $this->lookupTokenType($token);
-                    $cg->parsers[] = token($type)->as($id);
+                    $cg->parsers[] = token($type)->as($identifier);
                 })
             ,
             (
@@ -137,8 +137,8 @@ class Pattern extends MacroMember implements PatternInterface {
             // handles  non delimited ···layer
             rtoken('/^···(\w+)$/')
                 ->onCommit(function(Ast $result) use($cg) {
-                    $id = $this->lookupCapture($result->token());
-                    $cg->parsers[] = layer()->as($id);
+                    $identifier = $this->lookupCapture($result->token());
+                    $cg->parsers[] = layer()->as($identifier);
                 })
             ,
             token(T_STRING, '·')
@@ -209,8 +209,8 @@ class Pattern extends MacroMember implements PatternInterface {
                 )
             )
             ->onCommit(function(Ast $result) use($parser, $cg) {
-                $id = $this->lookupCapture($result->label);
-                $cg->parsers[] = (clone $parser)->as($id);
+                $identifier = $this->lookupCapture($result->label);
+                $cg->parsers[] = (clone $parser)->as($identifier);
             });
     }
 
@@ -223,16 +223,16 @@ class Pattern extends MacroMember implements PatternInterface {
     }
 
     private function lookupCapture(Token $token) : string {
-        $id = (string) $token;
+        $identifier = (string) $token;
 
-        if ($id === '·_') return '';
+        if ($identifier === '·_') return '';
 
-        if ($this->scope->contains($id))
-            $this->fail(self::E_IDENTIFIER_REDEFINITION, $id, $token->line());
+        if ($this->scope->contains($identifier))
+            $this->fail(self::E_IDENTIFIER_REDEFINITION, $identifier, $token->line());
 
-        $this->scope->add($id);
+        $this->scope->add($identifier);
 
-        return $id;
+        return $identifier;
     }
 
     private function lookupParser(Token $token) : string {
