@@ -131,6 +131,20 @@ class Expansion extends MacroMember {
                 $this->constant = false;
             })
             ,
+            chain
+            (
+                rtoken('/^·\w+|···\w+$/')->as('label')
+                ,
+                token('?')
+                ,
+                operator('·')
+                ,
+                braces()->as('expansion')
+            )
+            ->onCommit(function(Ast $result) {
+                $this->constant = false;
+            })
+            ,
             rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
                 ->onCommit(function(Ast $result) use($cg) {
                     $this->lookupContext($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
@@ -244,6 +258,39 @@ class Expansion extends MacroMember {
                         if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
                     }
+                })
+                ,
+                consume
+                (
+                    chain
+                    (
+                        rtoken('/^·\w+|···\w+$/')->as('label')
+                        ,
+                        token('?')
+                        ,
+                        operator('·')
+                        ,
+                        braces()->as('expansion')
+                    )
+                )
+                ->onCommit(function(Ast $result)  use($states) {
+                    $cg = $states->current();
+
+                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+
+                    if ($context === null) return;
+
+                    if (is_array($context) && 0 === \count($context)) return;
+
+                    $expansion = TokenStream::fromSlice($result->{'expansion'});
+
+                    $mutation = $cg->this->mutate(
+                        $expansion,
+                        (new Ast(null, $context))->withParent($cg->context),
+                        $cg->engine
+                    );
+
+                    $cg->ts->inject($mutation);
                 })
                 ,
                 consume
