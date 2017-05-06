@@ -89,6 +89,21 @@ final class Engine {
                                 ,
                                 operator('>>')
                                 ,
+                                optional
+                                (
+                                    chain
+                                    (
+                                        token(T_FUNCTION)
+                                        ,
+                                        parentheses()->as('args')
+                                        ,
+                                        braces()->as('body')
+                                        ,
+                                        operator('>>')
+                                    )
+                                )
+                                ->as('compiler')
+                                ,
                                 braces()->as('expansion')
                             )
                         )
@@ -113,8 +128,9 @@ final class Engine {
                         $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
                     }
 
+                    $compilerPass = new CompilerPass($macroAst->{'body compiler'});
                     $expansion = new Expansion($macroAst->{'body expansion'}, $tags, $scope);
-                    $macro = new Macro($tags, $pattern, $expansion);
+                    $macro = new Macro($tags, $pattern, $compilerPass, $expansion);
 
                     $this->registerDirective($macro);
 

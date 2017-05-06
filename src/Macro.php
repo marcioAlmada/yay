@@ -7,6 +7,7 @@ class Macro implements Directive {
     protected
         $pattern,
         $expansion,
+        $compilerPass,
         $tags,
         $isTerminal
     ;
@@ -17,10 +18,11 @@ class Macro implements Directive {
 
     protected static $_id = 0;
 
-    function __construct(Map $tags, PatternInterface $pattern, Expansion $expansion) {
+    function __construct(Map $tags, PatternInterface $pattern, CompilerPass $compilerPass = null, Expansion $expansion) {
         $this->id = (__CLASS__)::$_id++;
         $this->tags = $tags;
         $this->pattern = $pattern;
+        $this->compilerPass = $compilerPass;
         $this->expansion = $expansion;
 
         $this->isTerminal = !$this->expansion->isRecursive();
@@ -49,6 +51,8 @@ class Macro implements Directive {
         $crossover = $this->pattern->match($ts);
 
         if ($crossover instanceof Ast ) {
+
+            $this->compilerPass->apply($crossover);
 
             $blueContext = $engine->blueContext();
             $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->unwrap(), $blueContext);
