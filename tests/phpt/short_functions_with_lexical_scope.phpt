@@ -41,12 +41,19 @@ macro ·recursion {
 
     $ast->append($scope);
 } >> {
-  [
-      ·scope ?·{ ·scope ···(, ) { ·var = ·var ?? null}, }
-      'short_closure' => function (·args ···(, ){ ·arg ···{·type ·arg_name}}) ·scope ?·{ use(·scope ···(, ) { ·var }) } ·return_type {
-              return ···body;
-      }
-  ]['short_closure']
+  ·scope ?·{
+      [
+          ·scope ···(, ) { ·var = ·var ?? null},
+          'short_closure' => function (·args ···(, ){ ·arg ···{·type ·arg_name}}) use(·scope ···(, ) { ·var }) ·return_type {
+                  return ···body;
+          }
+      ]['short_closure']
+  }
+  ·scope !· {
+    function (·args ···(, ){ ·arg ···{·type ·arg_name}}) ·return_type {
+          return ···body;
+    }
+  }
 }
 
 $y = 100;
@@ -79,9 +86,9 @@ var_dump($result);
 //
 $y = 100;
 //
-$result = array_map(['short_closure' => function (int $x) : int {
+$result = array_map(function (int $x) : int {
     return $x * 2;
-}]['short_closure'], range(1, 10));
+}, range(1, 10));
 //
 var_dump($result);
 

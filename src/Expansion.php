@@ -116,7 +116,7 @@ class Expansion extends MacroMember {
                 ,
                 optional(token('?'))->as('optional')
                 ,
-                operator('···')
+                token(T_STRING, '···')
                 ,
                 optional
                 (
@@ -137,7 +137,21 @@ class Expansion extends MacroMember {
                 ,
                 token('?')
                 ,
-                operator('·')
+                token(T_STRING, '·')
+                ,
+                braces()->as('expansion')
+            )
+            ->onCommit(function(Ast $result) {
+                $this->constant = false;
+            })
+            ,
+            chain
+            (
+                rtoken('/^·\w+|···\w+$/')->as('label')
+                ,
+                token('!')
+                ,
+                token(T_STRING, '·')
                 ,
                 braces()->as('expansion')
             )
@@ -223,7 +237,7 @@ class Expansion extends MacroMember {
                         ,
                         optional(token('?'))->as('optional')
                         ,
-                        operator('···')
+                        token(T_STRING, '···')
                         ,
                         optional
                         (
@@ -268,7 +282,7 @@ class Expansion extends MacroMember {
                         ,
                         token('?')
                         ,
-                        operator('·')
+                        token(T_STRING, '·')
                         ,
                         braces()->as('expansion')
                     )
@@ -278,9 +292,38 @@ class Expansion extends MacroMember {
 
                     $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
 
-                    if ($context === null) return;
+                    if (! $context) return;
 
-                    if (is_array($context) && 0 === \count($context)) return;
+                    $expansion = TokenStream::fromSlice($result->{'expansion'});
+
+                    $mutation = $cg->this->mutate(
+                        $expansion,
+                        (new Ast(null, $context))->withParent($cg->context),
+                        $cg->engine
+                    );
+
+                    $cg->ts->inject($mutation);
+                })
+                ,
+                consume
+                (
+                    chain
+                    (
+                        rtoken('/^·\w+|···\w+$/')->as('label')
+                        ,
+                        token('!')
+                        ,
+                        token(T_STRING, '·')
+                        ,
+                        braces()->as('expansion')
+                    )
+                )
+                ->onCommit(function(Ast $result)  use($states) {
+                    $cg = $states->current();
+
+                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+
+                    if ($context) return;
 
                     $expansion = TokenStream::fromSlice($result->{'expansion'});
 
