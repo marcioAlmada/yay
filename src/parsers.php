@@ -646,6 +646,9 @@ function lookahead(Parser $parser) : Parser
 
 function optional(Parser $parser, $default = []) : Parser
 {
+    if ($default instanceof Parser)
+        throw new InvalidArgumentException("optional() default value must not be <Parser>");
+
     return new class(__FUNCTION__, $parser, $default) extends Parser
     {
         protected function parser(TokenStream $ts, Parser $parser, $default) : Ast
