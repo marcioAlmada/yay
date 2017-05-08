@@ -7,7 +7,7 @@ macro {
     T_VARIABLE·A(T_VARIABLE·B)
     ·_()·debug
 }
->> function(\Yay\Ast $ast, \Yay\TokenStream $ts, \Yay\Node $start, \Yay\Node $end){
+>> function(\Yay\Ast $ast, \Yay\TokenStream $ts, \Yay\Index $start, \Yay\Index    $end){
     ob_start();
     var_dump($ast, $ts, $start, $end);
     $result = PHP_EOL . ob_get_clean();
