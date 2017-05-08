@@ -19,9 +19,9 @@ class CompilerPass extends MacroMember {
         $arglist = implode('', $arg['args']);
         $body = implode('', $arg['body']);
         $source = <<<PHP
-        <?php return static function({$arglist}) {
-            {$body}
-        };
+<?php return static function({$arglist}) {
+    {$body}
+};
 PHP;
         $file = sys_get_temp_dir() . '/yay-function-' . sha1($source);
 
