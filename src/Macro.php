@@ -51,8 +51,10 @@ class Macro implements Directive {
         $crossover = $this->pattern->match($ts);
 
         if ($crossover instanceof Ast ) {
+            $ts->unskip();
+            $to = $ts->index();
 
-            $this->compilerPass->apply($crossover);
+            $this->compilerPass->apply($crossover, $ts, $from, $to->previous);
 
             $blueContext = $engine->blueContext();
             $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->unwrap(), $blueContext);
@@ -63,8 +65,6 @@ class Macro implements Directive {
                 return;
             }
 
-            $ts->unskip();
-            $to = $ts->index();
             $ts->extract($from, $to);
 
             $expansion = $this->expansion->expand($crossover, $engine);
