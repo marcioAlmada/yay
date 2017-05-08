@@ -11,6 +11,7 @@ matrix:
 sudo: false
 
 before_script:
+  - phpenv config-rm xdebug.ini
   - composer self-update
   - composer require satooshi/php-coveralls:dev-master --no-update --dev
   - composer install --prefer-source
