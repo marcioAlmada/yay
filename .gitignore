@@ -1,7 +1,7 @@
-composer.lock
 tmp/
 build/
 vendor/
+.idea/
 tests/phpt/*.diff
 tests/phpt/*.out
 tests/phpt/*.php
