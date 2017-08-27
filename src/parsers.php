@@ -6,6 +6,82 @@ use
     InvalidArgumentException
 ;
 
+function variable(): Parser
+{
+    return rtoken('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/');
+}
+
+function phpOperator(): Parser
+{
+    return either(
+        token('='),                    // =        
+        token('+'),                    // +        
+        token('-'),                    // -        
+        token('*'),                    // *        
+        token('/'),                    // /        
+        token('%'),                    // %        
+        token('^'),                    // ^        
+        token('|'),                    // |        
+        token('&'),                    // &        
+        token(T_POW),                  // **        
+        token(T_SR),                   // >>        
+        token(T_SL),                   // <<        
+        token(T_PLUS_EQUAL),           // +=   
+        token(T_MINUS_EQUAL),          // -=    
+        token(T_MUL_EQUAL),            // *=
+        token(T_POW_EQUAL),            // **=
+        token(T_DIV_EQUAL),            // /=
+        token(T_CONCAT_EQUAL),         // .=
+        token(T_MOD_EQUAL),            // %=
+        token(T_AND_EQUAL),            // &=
+        token(T_OR_EQUAL),             // |=
+        token(T_XOR_EQUAL),            // ^=
+        token(T_SL_EQUAL),             // <<=
+        token(T_SR_EQUAL),             // >>=
+        token(T_IS_EQUAL),             // ==
+        token(T_IS_IDENTICAL),         // ===
+        token(T_IS_GREATER_OR_EQUAL),  // >=
+        token(T_IS_NOT_EQUAL),         // != or <>
+        token(T_IS_NOT_IDENTICAL),     // !==
+        token(T_IS_SMALLER_OR_EQUAL),  // <=
+        token(T_IS_EQUAL),             // ==
+        token(T_SPACESHIP)             // <=>
+    );
+}
+
+function expr(): Parser
+{
+    $expr = new class(__FUNCTION__) extends Parser
+    {
+        function parser(TokenStream $ts, ...$stack)
+        {
+            return expr()->parse($ts);
+        }
+
+        function expected() : Expected
+        {
+            return new Expected();
+        }
+
+        function isFallible() : bool
+        {
+            return true;
+        }
+    };
+
+    return either(
+        token(T_LNUMBER)->as('expr'),
+        chain(token(T_LIST), token('('), layer()->as('array_pair_list'), token(')'), operator('='), $expr)->as('expr'),
+        chain(token('['), layer()->as('array_pair_list'), token(']'))->as('expr'),
+        chain(variable(), phpOperator(), $expr)->as('expr'),
+        chain(variable(), operator('='), token('&'), variable())->as('expr'),
+        chain(token(T_CLONE), $expr)->as('expr'),
+        chain(variable()->as('var'), chain(token(T_INSTANCEOF)->as('instanceof'), ns()->as('fqcn')))->as('expr'),
+        chain(token('('), $expr, token(')')),
+        variable()->as('expr')
+    );
+}
+
 function token($type, $value = null) : Parser
 {
     $token = $type instanceof Token ? $type : new Token($type, $value);
