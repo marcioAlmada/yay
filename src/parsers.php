@@ -8,7 +8,7 @@ use
 
 function variable(): Parser
 {
-    return rtoken('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/');
+    return rtoken('/\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/');
 }
 
 function phpOperator(): Parser
