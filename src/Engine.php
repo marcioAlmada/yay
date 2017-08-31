@@ -12,7 +12,8 @@ final class Engine {
     private
         $blueContext,
         $cycle,
-        $parser
+        $parser,
+        $filename = ''
     ;
 
     private
@@ -161,28 +162,36 @@ final class Engine {
         return $this->blueContext;
     }
 
-
     function cycle() : Cycle {
         return $this->cycle;
     }
 
+    function currentFileName() : string {
+        return $this->filename;
+    }
+
     function expand(string $source, string $filename = '', int $gc = self::GC_ENGINE_ENABLED) : string {
+
+        $this->filename = $filename;
 
         foreach ($this->globalDirectives as $d) $this->registerDirective($d);
 
-        $ts = TokenStream::{$filename ? 'fromSource' : 'FromSourceWithoutOpenTag'}($source);
+        $ts = TokenStream::{$filename && self::GC_ENGINE_ENABLED === $gc ? 'fromSource' : 'FromSourceWithoutOpenTag'}($source);
 
         $this->parser->parse($ts);
         $expansion = (string) $ts;
 
         if (self::GC_ENGINE_ENABLED === $gc) {
             // almost everything is local per file so state must be destroyed after expansion
-            // unless the flag ::GC_ENGINE_DISABLED forces a recycle during nested expansions
+            // unless the flag ::GC_ENGINE_ENABLED forces a recycle during nested expansions
             // global directives are allocated again later to give impression of persistence
+            // ::GC_ENGINE_DISABLED indicates the current pass is an internal Engine recursion
             $this->cycle = new Cycle;
             $this->literalHitMap= $this->typeHitMap = [];
             $this->blueContext = new BlueContext;
         }
+
+        $this->filename = '';
 
         return $expansion;
     }
