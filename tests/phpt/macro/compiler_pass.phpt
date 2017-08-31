@@ -7,9 +7,9 @@ macro {
     T_VARIABLE·A(T_VARIABLE·B)
     ·_()·debug
 }
->> function(\Yay\Ast $ast, \Yay\TokenStream $ts, \Yay\Index $start, \Yay\Index    $end){
+>> function(\Yay\Ast $ast, \Yay\TokenStream $ts, \Yay\Index $start, \Yay\Index $end, \Yay\Engine $engine){
     ob_start();
-    var_dump($ast, $ts, $start, $end);
+    var_dump($ast, $ts, $start, $end, get_class($engine));
     $result = PHP_EOL . ob_get_clean();
 
     $ast->append(new \Yay\Ast('·debug', new \Yay\Token(T_CONSTANT_ENCAPSED_STRING, $result)));
@@ -87,6 +87,7 @@ object(Yay\\Node)#%s (1) {
     string(3) "\')\'"
   }
 }
+string(10) "Yay\\Engine"
 ';
 
 ?>

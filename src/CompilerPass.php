@@ -11,8 +11,8 @@ class CompilerPass extends MacroMember {
         if ($ast) $this->callback = $this->compileAnonymousFunction($ast);
     }
 
-    function apply(Ast $ast, TokenStream $ts, Index $startNode, Index $endNode) {
-        if ($this->callback) ($this->callback)($ast, $ts, $startNode, $endNode);
+    function apply(Ast $ast, TokenStream $ts, Index $startNode, Index $endNode, Engine $engine) {
+        if ($this->callback) ($this->callback)($ast, $ts, $startNode, $endNode, $engine);
     }
 
     private function compileAnonymousFunction(array $arg) : \Closure {
