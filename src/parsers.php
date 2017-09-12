@@ -76,7 +76,7 @@ function expr(): Parser
         chain(variable(), phpOperator(), $expr)->as('expr'),
         chain(variable(), operator('='), token('&'), variable())->as('expr'),
         chain(token(T_CLONE), $expr)->as('expr'),
-        chain(variable()->as('var'), chain(token(T_INSTANCEOF)->as('instanceof'), ns()->as('fqcn')))->as('expr'),
+        chain(chain(variable(), indentation())->as('left'), chain(token(T_INSTANCEOF)->as('operator'), chain(indentation(), ns())->as('right')))->as('expr'),
         chain(token('('), $expr, token(')')),
         variable()->as('expr')
     );

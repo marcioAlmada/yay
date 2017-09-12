@@ -11,14 +11,14 @@ expression {
 }
 }
 
-$a instanceof \Some\Large\FQCN
+$a   instanceof \Some\Large\FQCN
 
 ?>
 --EXPECTF--
 <?php
 
 expression {
-    $ainstanceof\Some\Large\FQCN
+    $a   instanceof \Some\Large\FQCN
 }
 
 ?>
