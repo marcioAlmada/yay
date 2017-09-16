@@ -71,13 +71,29 @@ function expr(): Parser
 
     return either(
         token(T_LNUMBER)->as('expr'),
-        chain(token(T_LIST), token('('), layer()->as('array_pair_list'), token(')'), operator('='), $expr)->as('expr'),
+        chain(
+            chain(token(T_LIST), token('('), layer()->as('array_pair_list'), token(')'))->as('left'),
+            operator('=')->as('operator'),
+            $expr->as('right')
+        )->as('expr'),
         chain(token('['), layer()->as('array_pair_list'), token(']'))->as('expr'),
-        chain(variable(), phpOperator(), $expr)->as('expr'),
-        chain(variable(), operator('='), token('&'), variable())->as('expr'),
+        chain(
+            variable()->as('left'),
+            phpOperator()->as('operator'),
+            $expr->as('right')
+        )->as('expr'),
+        chain(
+            variable()->as('left'),
+            operator('=')->as('operator'),
+            chain(token('&'), variable())->as('right')
+        )->as('expr'),
         chain(token(T_CLONE), $expr)->as('expr'),
-        chain(chain(variable(), indentation())->as('left'), chain(token(T_INSTANCEOF)->as('operator'), chain(indentation(), ns())->as('right')))->as('expr'),
-        chain(token('('), $expr, token(')')),
+        chain(
+            chain(variable(), indentation())->as('left'),
+            token(T_INSTANCEOF)->as('operator'),
+            chain(indentation(), ns())->as('right')
+        )->as('expr'),
+        chain(token('('), $expr, token(')'))->as('expr'),
         variable()->as('expr')
     );
 }
