@@ -71,6 +71,7 @@ function expr(): Parser
 
     return either(
         token(T_LNUMBER)->as('expr'),
+        token(T_DNUMBER)->as('expr'),
         chain(
             chain(token(T_LIST), token('('), layer()->as('array_pair_list'), token(')'))->as('left'),
             operator('=')->as('operator'),
