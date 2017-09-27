@@ -102,6 +102,34 @@ class Expansion extends MacroMember {
             ,
             chain
             (
+                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                ,
+                token('?')
+                ,
+                token(T_STRING, '·')
+                ,
+                braces()->as('expansion')
+            )
+            ->onCommit(function(Ast $result) {
+                $this->constant = false;
+            })
+            ,
+            chain
+            (
+                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                ,
+                token('!')
+                ,
+                token(T_STRING, '·')
+                ,
+                braces()->as('expansion')
+            )
+            ->onCommit(function(Ast $result) {
+                $this->constant = false;
+            })
+            ,
+            chain
+            (
                 rtoken('/^··\w+$/')->as('expander')
                 ,
                 either(parentheses(), braces())->as('args')
@@ -126,36 +154,8 @@ class Expansion extends MacroMember {
                 braces()->as('expansion')
             )
             ->onCommit(function(Ast $result) use($cg) {
-                if (null !== $result->optional)
+                if (! $result->optional)
                     $this->lookupContext($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
-                $this->constant = false;
-            })
-            ,
-            chain
-            (
-                rtoken('/^·\w+|···\w+$/')->as('label')
-                ,
-                token('?')
-                ,
-                token(T_STRING, '·')
-                ,
-                braces()->as('expansion')
-            )
-            ->onCommit(function(Ast $result) {
-                $this->constant = false;
-            })
-            ,
-            chain
-            (
-                rtoken('/^·\w+|···\w+$/')->as('label')
-                ,
-                token('!')
-                ,
-                token(T_STRING, '·')
-                ,
-                braces()->as('expansion')
-            )
-            ->onCommit(function(Ast $result) {
                 $this->constant = false;
             })
             ,
@@ -188,6 +188,68 @@ class Expansion extends MacroMember {
             traverse
             (
                 token(Token::CLOAKED)
+                ,
+                consume
+                (
+                    chain
+                    (
+                        rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                        ,
+                        token('?')
+                        ,
+                        token(T_STRING, '·')
+                        ,
+                        braces()->as('expansion')
+                    )
+                )
+                ->onCommit(function(Ast $result)  use($states) {
+                    $cg = $states->current();
+
+                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+
+                    if (! $context) return;
+
+                    $expansion = TokenStream::fromSlice($result->{'expansion'});
+
+                    $mutation = $cg->this->mutate(
+                        $expansion,
+                        $cg->context,
+                        $cg->engine
+                    );
+
+                    $cg->ts->inject($mutation);
+                })
+                ,
+                consume
+                (
+                    chain
+                    (
+                        rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                        ,
+                        token('!')
+                        ,
+                        token(T_STRING, '·')
+                        ,
+                        braces()->as('expansion')
+                    )
+                )
+                ->onCommit(function(Ast $result)  use($states) {
+                    $cg = $states->current();
+
+                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+
+                    if ($context) return;
+
+                    $expansion = TokenStream::fromSlice($result->{'expansion'});
+
+                    $mutation = $cg->this->mutate(
+                        $expansion,
+                        $cg->context,
+                        $cg->engine
+                    );
+
+                    $cg->ts->inject($mutation);
+                })
                 ,
                 rtoken('/^T_\w+·\w+$/')->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
@@ -250,7 +312,7 @@ class Expansion extends MacroMember {
                 ->onCommit(function(Ast $result)  use($states) {
                     $cg = $states->current();
 
-                    if (null !== $result->optional)
+                    if ($result->optional)
                         $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
                     else
                         $context = $cg->this->lookupContext($result->{'label'}, $cg->context, self::E_UNDEFINED_EXPANSION);
@@ -272,68 +334,6 @@ class Expansion extends MacroMember {
                         if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
                     }
-                })
-                ,
-                consume
-                (
-                    chain
-                    (
-                        rtoken('/^·\w+|···\w+$/')->as('label')
-                        ,
-                        token('?')
-                        ,
-                        token(T_STRING, '·')
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($states) {
-                    $cg = $states->current();
-
-                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
-
-                    if (! $context) return;
-
-                    $expansion = TokenStream::fromSlice($result->{'expansion'});
-
-                    $mutation = $cg->this->mutate(
-                        $expansion,
-                        (new Ast(null, $context))->withParent($cg->context),
-                        $cg->engine
-                    );
-
-                    $cg->ts->inject($mutation);
-                })
-                ,
-                consume
-                (
-                    chain
-                    (
-                        rtoken('/^·\w+|···\w+$/')->as('label')
-                        ,
-                        token('!')
-                        ,
-                        token(T_STRING, '·')
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($states) {
-                    $cg = $states->current();
-
-                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
-
-                    if ($context) return;
-
-                    $expansion = TokenStream::fromSlice($result->{'expansion'});
-
-                    $mutation = $cg->this->mutate(
-                        $expansion,
-                        (new Ast(null, $context))->withParent($cg->context),
-                        $cg->engine
-                    );
-
-                    $cg->ts->inject($mutation);
                 })
                 ,
                 consume
