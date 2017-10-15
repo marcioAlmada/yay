@@ -219,6 +219,7 @@ class TokenStream {
         $ts = self::fromSource('<?php ' . $source);
         $ts->first->next = $ts->first->next->next;
         $ts->first->next->previous = $ts->first;
+        $ts->reset();
 
         return $ts;
     }
