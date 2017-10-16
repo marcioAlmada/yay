@@ -57,6 +57,7 @@ class AstTest extends \PHPUnit_Framework_TestCase {
             ['* some string', 'string', 'foo'],
             ['* some array', 'array', ['foo', 'bar']],
             ['* some token', 'token', new Token(';')],
+            ['* some tokens', 'tokens', []],
         ];
     }
 
@@ -70,7 +71,8 @@ class AstTest extends \PHPUnit_Framework_TestCase {
                 'boolean' => true,
                 'string' => 'foo',
                 'array' => ['foo', 'bar'],
-                'token' => new Token(';')
+                'token' => new Token(';'),
+                'tokens' => ['deep' => ['inside' => []]],
             ]
         ]);
 
@@ -78,5 +80,28 @@ class AstTest extends \PHPUnit_Framework_TestCase {
             $this->assertEquals((string) $expected, (string) $ast->{$path}->$castMethod());
         else
             $this->assertEquals($expected, $ast->{$path}->$castMethod());
+    }
+
+    function testAstFlattenning() {
+        $ast = new Ast(null, [
+            'deep' => [
+                'token' => $token1 = new Token(T_STRING, 'foo'),
+                'deeper' => [
+                    'token' => $token2 = new Token(T_STRING, 'bar'),
+                ],
+            ]
+        ]);
+
+        $this->assertEquals([$token1, $token2], $ast->tokens());
+
+        $flattened = $ast->flatten();
+
+        $this->assertInstanceOf(Ast::class, $flattened);
+
+        $this->assertEquals([$token1, $token2], $flattened->tokens());
+
+        $this->assertEquals([$token1, $token2], $flattened->unwrap());
+
+        $this->assertEquals([$token1, $token2], $flattened->array());
     }
 }

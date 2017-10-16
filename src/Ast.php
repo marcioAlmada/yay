@@ -71,6 +71,14 @@ class Ast implements Result, Context {
         $this->failCasting(Token::class);
     }
 
+    function tokens() {
+        $tokens = [];
+        $exposed = $this->array();
+        array_walk_recursive($exposed, function($t) use(&$tokens){ if($t instanceof Token) $tokens[] = $t; });
+
+        return $tokens;
+    }
+
     function null() {
         if (\is_null($this->ast)) return $this->ast;
 
@@ -104,7 +112,11 @@ class Ast implements Result, Context {
         $isAssociative = \count(array_filter(array_keys($array), 'is_string')) > 0;
 
         foreach ($array as $label => $value)
-            yield new Ast(($isAssociative ? $label : null), $value);
+            yield new self(($isAssociative ? $label : null), $value);
+    }
+
+    function flatten() : self {
+        return new self($this->label, $this->tokens());
     }
 
     function append(self $ast) : self {
