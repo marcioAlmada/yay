@@ -94,6 +94,16 @@ function hygienize(TokenStream $ts, Engine $engine) : TokenStream {
 
 function unsafe(TokenStream $ts) : TokenStream { return $ts; }
 
+function whitespace(TokenStream $ts) : TokenStream {
+    return
+        TokenStream::fromSequence(
+            new Token(
+                T_WHITESPACE, str_repeat(PHP_EOL, substr_count((string) $ts, PHP_EOL) + 1), $ts->first()->line()
+            )
+        )
+    ;
+}
+
 function expand(TokenStream $ts, Engine $engine) : TokenStream {
 
     $ts = TokenStream::fromSource($engine->expand((string) $ts, $engine->currentFileName(), Engine::GC_ENGINE_DISABLED));
