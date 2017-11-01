@@ -28,14 +28,20 @@ macro ·recursion {
     ·_()·scope // dummy label signaling that ·scope exists, it's added dynamically through the compiler pass
 
 } >> function($ast) {
-
     $defined = [];
     foreach ($ast->{'·args'} as $node) $defined[(string) $node['·arg']['·arg_name']] = true;
 
+    $scoped = [];
     $scope = new \Yay\Ast('·scope');
     foreach ($ast->{'···body'} as $token) {
-        if ($token->is(T_VARIABLE) && false === isset($defined[(string) $token])) {
+        if (
+            $token->is(T_VARIABLE) &&
+            ('$this' !== (string) $token) &&
+            false === isset($defined[(string) $token]) &&
+            false === isset($scoped[(string) $token])
+        ){
             $scope->push(new \Yay\Ast('·var', $token));
+            $scoped[(string) $token] = true;
         }
     }
 
