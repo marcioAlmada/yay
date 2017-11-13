@@ -19,6 +19,7 @@ function token($type, $value = null) : Parser
 
         function __construct($type, Token $token)
         {
+            parent::{__FUNCTION__}($type, $token);
             $this->type = $type;
             $this->token = $token;
             $this->stack = $token;
@@ -27,16 +28,29 @@ function token($type, $value = null) : Parser
 
         final function parse(TokenStream $ts) /*: Result|null*/
         {
-            if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
-                $ts->next();
-                $result = new Ast($this->label, $token);
-                if (null !== $this->onCommit) ($this->onCommit)($result);
+            try {
+                self::$tracer->push($this);
 
-                return $result;
+                self::$tracer->trace($ts->index(), 'attempt');
+
+                if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
+                    self::$tracer->trace($ts->index(), 'production', (string) $token);
+
+                    $ts->next();
+                    $result = new Ast($this->label, $token);
+                    if (null !== $this->onCommit) ($this->onCommit)($result);
+
+                    return $result;
+                }
+
+                self::$tracer->trace($ts->index(), 'error');
+
+                if ($this->errorLevel === Error::ENABLED)
+                    return new Error($this->expected, $token, $ts->last());
             }
-
-            if ($this->errorLevel === Error::ENABLED)
-                return new Error($this->expected, $token, $ts->last());
+            finally {
+                self::$tracer->pop($this);
+            }
         }
 
         function expected() : Expected
@@ -161,7 +175,7 @@ function always($type, $value = null) : Parser
     };
 }
 
-function operator(string $operator) : Parser
+function buffer(string $operator) : Parser
 {
     return new class(__FUNCTION__, trim($operator)) extends Parser
     {
@@ -178,7 +192,7 @@ function operator(string $operator) : Parser
                 $ts->step();
                 if(($buffer .= $current) === $operator) {
                     $ts->skip();
-                    return new Ast($this->label, new Token(Token::OPERATOR, $buffer));
+                    return new Ast($this->label, new Token(Token::BUFFER, $buffer));
                 }
             }
 
@@ -187,7 +201,7 @@ function operator(string $operator) : Parser
 
         function expected() : Expected
         {
-            return new Expected(new Token(Token::OPERATOR, $this->stack[0]));
+            return new Expected(new Token(Token::BUFFER, $this->stack[0]));
         }
 
         function isFallible() : bool
@@ -224,14 +238,11 @@ function operator(string $operator) : Parser
  */
 function traverse(Parser ...$parsers) : Parser
 {
-    $parsers[] = any();
-    $parser = either(...$parsers);
-
-    return new class(__FUNCTION__, $parser) extends Parser
+    return new class(__FUNCTION__, either(...$parsers), any()) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) : Ast
+        protected function parser(TokenStream $ts, Parser $parser, Parser $any) : Ast
         {
-            while ($parser->parse($ts) instanceof Ast);
+            while ($parser->parse($ts) instanceof Ast || $any->parse($ts) instanceof Ast);
 
             return new Ast($this->label);
         }
@@ -244,6 +255,11 @@ function traverse(Parser ...$parsers) : Parser
         function isFallible() : bool
         {
             return $this->stack[0]->isFallible();
+        }
+
+        function optimize() : Parser
+        {
+            return $this;
         }
     };
 }
@@ -472,13 +488,15 @@ function chain(Parser ...$links) : Parser
 {
     return new class(__FUNCTION__, ...$links) extends Parser
     {
+        private $noSpacesBetweenLinks = false;
+
         protected function parser(TokenStream $ts, Parser ...$links) /*: Result|null*/
         {
             $asts = [];
             $ast = new Ast($this->label);
 
             foreach ($links as $i => $link) {
-                if (($result = $link->parse($ts)) instanceof Ast) {
+                if (($result = $link->parse($ts)) instanceof Ast && ! $this->skipped($i, $ts)) {
                     $asts[$i] = $result;
                     $ast->append($result);
                 }
@@ -517,6 +535,18 @@ function chain(Parser ...$links) : Parser
                 if ($substack->isFallible()) return true;
 
             return false;
+        }
+
+        function noSpacesBetweenLinks() : self
+        {
+            $clone = clone $this;
+            $clone->noSpacesBetweenLinks = true;
+            return $clone;
+        }
+
+        private function skipped($link, $ts) : bool
+        {
+            return $this->noSpacesBetweenLinks && $i > 0 && $ts->index()->previous->token->isSkippable();
         }
     };
 }
@@ -573,6 +603,71 @@ function either(Parser ...$routes) : Parser
                 if (! $substack->isFallible()) return false;
 
             return true;
+        }
+
+        /**
+         * Optimizes either() parser stack from O(n²) to O(n) lookup table,
+         * specially effective when grammars with direct recursion are difficult to avoid.
+         *
+         * The parser produces the exact same results with or without the optimization, except for
+         * noticeable performance improvements on very long either() try lists.
+         */
+        function optimize() : Parser
+        {
+            parent::optimize();
+
+            $jumptable = [];
+            $parsers = $this->stack;
+
+            foreach ($parsers as $parser)
+                if (count($parser->expected()->all()))
+                    foreach ($parser->expected()->all() as $prefixToken)
+                        $jumptable[$prefixToken->type()][] = $parser->optimize();
+                else
+                    throw new \Exception("Cannot optimize {$this} parser stack at {$parser}");
+
+            foreach ($jumptable as $prefix => $possibleRoutes) {   
+                if (count($possibleRoutes) > 1) $jumptable[$prefix] = either(...$possibleRoutes);
+                else $jumptable[$prefix] = $possibleRoutes[0];
+            }
+
+            return (new class ('*' . $this->type, $jumptable, $this) extends Parser {
+
+                function parser($ts, array $jumptable, Parser $wrapped) {
+                    if (null !== ($token = $ts->current()) && ($parser = $jumptable[$token->type()] ?? null)) {
+                        if (($result = $parser->parse($ts)) instanceof Ast)
+                            if ($this->label && $result->label())
+                                $result = (new Ast($this->label))->append($result);
+                            else
+                                $result->as($this->label);
+
+                        return $result;
+                    }
+
+                    return $wrapped->error($ts);
+                }
+
+                function expected() : Expected
+                {
+                    return $this->stack[1]->expected();
+                }
+
+                function isFallible() : bool
+                {
+                    return $this->stack[1]->isFallible();
+                }
+
+                /**
+                 * Disables further optimizations on already optimized parsers, preventing infinite
+                 * recursion during the optimization cycle
+                 */
+                function optimize() : Parser
+                {
+                    return $this;
+                }
+
+            })
+            ->as($this->label);
         }
     };
 }
@@ -735,8 +830,24 @@ function ns() : Parser
     ;
 }
 
-function ls(Parser $parser, Parser $delimiter) : Parser
+const
+    LS_KEEP_DELIMITER = 0x1,
+    LS_DISCARD_DELIMITER = 0x0
+;
+
+function ls(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
 {
+    return ·lsInternal($parser, $delimiter, $flags, function($ts, $index, $item){
+        if (! ($item instanceof Ast)) $ts->jump($index);
+    });
+}
+
+function lst(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
+{
+    return ·lsInternal($parser, $delimiter, $flags, function(){});
+}
+
+function ·lsInternal(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER, \Closure $callback) {
     if (! $parser->isFallible())
         throw new InvalidArgumentException(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
@@ -745,33 +856,35 @@ function ls(Parser $parser, Parser $delimiter) : Parser
         throw new InvalidArgumentException(
             'List parser unit must be labeled at ' . __FUNCTION__ . '('. $parser . ', ...)');
 
-    return new class(__FUNCTION__, $parser, $delimiter) extends Parser
+    return new class(__FUNCTION__, $parser, $delimiter, $flags, $callback) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/
+        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiterParser, int $flags, $callback) /*: Result|null*/
         {
             $ast = new Ast($this->label);
-            $midrule = function(Ast $result) use ($ast) { $ast->push($result); };
+            $stack = [];
+            if (($item = $parser->parse($ts)) instanceof Ast) {
+                $stack[] = [$item, null];
+                while (
+                    ($index = $ts->index()) &&
+                    ($delimiter = $delimiterParser->parse($ts)) instanceof Ast &&
+                    ($item = $parser->parse($ts)) instanceof Ast
+                ) {
+                    $stack[count($stack)-1][1] = $delimiter;
+                    $stack[] = [$item, null];
+                }
 
-            chain
-            (
-                (clone $parser)->onCommit($midrule)
-                ,
-                optional
-                (
-                    repeat
-                    (
-                        chain
-                        (
-                            (clone $delimiter)
-                            ,
-                            (clone $parser)
-                                ->onCommit($delimiter->label ? function(){} : $midrule)
-                        )
-                        ->onCommit($delimiter->label ? $midrule : function(){})
-                    )
-                )
-            )
-            ->parse($ts);
+                $callback($ts, $index, $item);
+
+                while($tuple = array_shift($stack)) {
+                    if (($flags & LS_DISCARD_DELIMITER) === $flags) {
+                        $ast->push($tuple[0]);
+                    }
+                    else {
+                        $ast->push(new Ast(null, ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
+                    }
+                }
+
+            }
 
             return $ast->isEmpty() ? $this->error($ts) : $ast;
         }
@@ -788,36 +901,7 @@ function ls(Parser $parser, Parser $delimiter) : Parser
     };
 }
 
-function lst(Parser $parser, Parser $delimiter) : Parser
-{
-
-    $list = ls($parser, $delimiter);
-
-    return new class(__FUNCTION__, $list, $delimiter) extends Parser
-    {
-        protected function parser(TokenStream $ts, Parser $list, Parser $delimiter) /*: Result|null*/
-        {
-            $result = $list->as($this->label)->parse($ts);
-
-            if ($result instanceof Ast)
-                optional($delimiter)->parse($ts); // matches a possible trailing delimiter
-
-            return $result;
-        }
-
-        function expected() : Expected
-        {
-            return $this->stack[0]->expected();
-        }
-
-        function isFallible() : bool
-        {
-            return $this->stack[0]->isFallible();
-        }
-    };
-}
-
-function future(&$parser) : Parser
+function pointer(&$parser) : Parser
 {
     $delayed = function() use(&$parser) : Parser { return clone $parser; };
 
@@ -839,12 +923,33 @@ function future(&$parser) : Parser
 
         function expected() : Expected
         {
+            $this->preventCircularPointerDereference();
+
             return $this->stack[0]()->expected();
         }
 
         function isFallible() : bool
         {
             return true;
+        }
+
+        function optimize() : Parser
+        {
+            $this->preventCircularPointerDereference();
+
+            $parser = $this->stack[0]();
+            $parser->type = '*' . $parser->type;
+
+            if ($this->errorLevel === Error::ENABLED)
+                $parser->withErrorLevel($this->errorLevel);
+
+            return $parser->optimize();
+        }
+
+        private function preventCircularPointerDereference()
+        {
+            if (pointer::class === $this->type && $this->stack[0] === $this->stack[0]()->stack[0])
+                throw new \Exception("Circular pointer dereference at {$this}.");
         }
     };
 }
@@ -936,13 +1041,17 @@ function closure() : Parser
     ;
 }
 
-function midrule(callable $midrule, bool $isFallible = true) : Parser
+function midrule(callable $midrule, bool $isFallible = true, Expected $expected = null) : Parser
 {
-    return new  class(__FUNCTION__, $midrule, new Expected, $isFallible) extends Parser
+    return new  class(__FUNCTION__, $midrule, $expected ?: new Expected, $isFallible) extends Parser
     {
-        function parse(TokenStream $ts) /*: Result|null*/
+        function parser(TokenStream $ts) /*: Result|null*/
         {
-            return $this->stack[0]($ts);
+            $result = $this->stack[0]($ts);
+
+            if ($result instanceof Ast) $result->as($this->label);
+
+            return $result;
         }
 
         function expected() : Expected
@@ -955,4 +1064,13 @@ function midrule(callable $midrule, bool $isFallible = true) : Parser
             return $this->stack[2];
         }
     };
+}
+
+function expression(string $namespace = '') : Parser
+{
+    static $repository = [];
+
+    $namespace = md5(__NAMESPACE__);
+
+    return $repository[$namespace] ?? $repository[$namespace] = new ExpressionParser;
 }

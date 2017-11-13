@@ -19,12 +19,15 @@ class Ast implements Result, Context {
     ;
 
     private
-        $parent
+        $parent,
+        $meta
     ;
 
     function __construct(string $label = null, $ast = []) {
-        if ($ast instanceof self)
-            throw new TypeError('Unmerged AST.');
+        if ($ast instanceof self) {
+            // $ast = $ast->unwrap();
+            throw new InvalidArgumentException('Unmerged AST.');
+        }
 
         $this->ast = $ast;
         $this->label = $label;
@@ -73,8 +76,18 @@ class Ast implements Result, Context {
 
     function tokens() {
         $tokens = [];
-        $exposed = $this->array();
-        array_walk_recursive($exposed, function($t) use(&$tokens){ if($t instanceof Token) $tokens[] = $t; });
+        $exposed = [];
+
+        if (\is_array($this->ast)) $exposed = $this->ast;
+        else $exposed = [$this->ast];
+
+        array_walk_recursive(
+            $exposed,
+            function($i) use(&$tokens){
+                if($i instanceof Token) $tokens[] = $i;
+                elseif ($i instanceof self) $tokens = array_merge($tokens, $i->tokens()); 
+            }
+        );
 
         return $tokens;
     }
@@ -142,7 +155,7 @@ class Ast implements Result, Context {
         return null === $this->ast || 0 === \count($this->ast);
     }
 
-    function as(string $label = null) : self {
+    function as(string $label = null) : Result {
         if (null !== $label) $this->label = $label;
 
         return $this;
@@ -157,6 +170,17 @@ class Ast implements Result, Context {
 
         return $this;
     }
+
+    function withMeta(Map $meta) : Result {
+        $this->meta = $meta;
+
+        return $this;
+    }
+
+    function meta() : Map {
+        return $this->meta ?: Map::fromEmpty();
+    }
+
 
     function symbols() : array {
         return \is_array($this->ast) ? \array_keys($this->ast) : [];

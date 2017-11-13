@@ -2,4 +2,9 @@
 
 namespace Yay;
 
-interface Result {}
+interface Result {
+	function as(string $label = null) : self;
+	function withMeta(Map $meta) : self;
+	function meta() : Map;
+}
+

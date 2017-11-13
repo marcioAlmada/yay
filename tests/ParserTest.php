@@ -7,6 +7,16 @@ namespace Yay;
  */
 class ParserTest extends \PHPUnit_Framework_TestCase {
 
+    function setUp()
+    {
+        if ((bool) getenv('TEST_TRACE')) Parser::setTracer(new \Yay\ParserTracer\CliParserTracer);
+    }
+
+    function tearDown()
+    {
+        Parser::setTracer(new \Yay\ParserTracer\NullParserTracer);
+    }
+
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
         $this->setExpectedException(
             Halt::class,
@@ -58,13 +68,9 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertTrue($commited, "Missing commit on {$parser}().");
 
-        $buffer = [];
-        $astArray = [$ast->unwrap()];
-        array_walk_recursive($astArray, function(Token $token) use (&$buffer){
-            $buffer[] = $token->dump();
-        });
+        $tokens = array_map(function(token $t) { return $t->dump(); }, $ast->tokens());
 
-        $this->assertEquals($expected, implode(', ', $buffer));
+        $this->assertEquals($expected, implode(', ', $tokens));
 
         return $ast;
     }
@@ -147,7 +153,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
-    function testOperator() {
+    function testBuffer() {
         $ts = TokenStream::fromSource('<?php $a <~> $b');
 
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
@@ -155,10 +161,10 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
             $ts,
             chain(
                 token(T_VARIABLE),
-                operator('<~>'),
+                buffer('<~>'),
                 token(T_VARIABLE)
             ),
-            'T_VARIABLE($a), OPERATOR(<~>), T_VARIABLE($b)'
+            'T_VARIABLE($a), BUFFER(<~>), T_VARIABLE($b)'
         );
 
         $ts = TokenStream::fromSource('<?php \n');
@@ -166,30 +172,30 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseSuccess(
             $ts,
-            operator('\n'),
-            'OPERATOR(\n)'
+            buffer('\n'),
+            'BUFFER(\n)'
         );
     }
 
-    function testOperatorError() {
+    function testBufferError() {
         $ts = TokenStream::fromSource('<?php < ~>');
 
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseError(
             $ts,
-            operator('<~>'),
-            "Unexpected T_WHITESPACE( ) on line 1, expected OPERATOR(<~>)."
+            buffer('<~>'),
+            "Unexpected T_WHITESPACE( ) on line 1, expected BUFFER(<~>)."
         );
     }
 
-    function testOperatorOnEnd() {
+    function testBufferOnEnd() {
         $ts = TokenStream::fromSource('<?php <~>');
 
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseSuccess(
             $ts,
-            operator('<~>'),
-            'OPERATOR(<~>)'
+            buffer('<~>'),
+            'BUFFER(<~>)'
         );
     }
 
@@ -583,15 +589,23 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         return [
             [
                 '<?php a, b, c ',
-                "T_STRING(a), T_STRING(b), T_STRING(c)"
+                "T_STRING(a), T_STRING(b), T_STRING(c)",
+                ''
             ],
             [
                 '<?php a ,b ,c ',
-                "T_STRING(a), T_STRING(b), T_STRING(c)"
+                "T_STRING(a), T_STRING(b), T_STRING(c)",
+                ''
             ],
             [
                 '<?php a , b , c , ',
-                "T_STRING(a), T_STRING(b), T_STRING(c)"
+                "T_STRING(a), T_STRING(b), T_STRING(c)",
+                ','
+            ],
+            [
+                '<?php a , b , c , *',
+                "T_STRING(a), T_STRING(b), T_STRING(c)",
+                ','
             ],
         ];
     }
@@ -599,7 +613,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider providerForTestLs
      */
-    function testLs(string $src, string $expected) {
+    function testLs(string $src, string $expected, string $end) {
         $ts = TokenStream::fromSource($src);
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
 
@@ -614,6 +628,8 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
             ,
             $expected
         );
+
+        $this->assertEquals($end, (string) $ts->current());
     }
 
     function providerForTestLsWithTrailingDelimiter() {
@@ -650,6 +666,60 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals('*', (string) $ts->current());
     }
+
+    function providerForTestLsWithTrailingDelimiterKeepingTheDelimiter() {
+        return [
+            [
+                '<?php a, b, c',
+                "T_STRING(a), ',', T_STRING(b), ',', T_STRING(c)",
+                ''
+            ],
+            [
+                '<?php a, b, c,',
+                "T_STRING(a), ',', T_STRING(b), ',', T_STRING(c), ','",
+                ''
+            ],
+            [
+                '<?php a, b, c, *',
+                "T_STRING(a), ',', T_STRING(b), ',', T_STRING(c), ','",
+                '*'
+            ],
+            [
+                '<?php a , b , c , *',
+                "T_STRING(a), ',', T_STRING(b), ',', T_STRING(c), ','",
+                '*'
+            ],
+            [
+                '<?php a , b , c , *,',
+                "T_STRING(a), ',', T_STRING(b), ',', T_STRING(c), ','",
+                '*'
+            ],
+        ];
+    }
+
+    // /**
+    //  * @dataProvider providerForTestLsWithTrailingDelimiterKeepingTheDelimiter
+    //  */
+    // function testLsWithTrailingDelimiterKeepingTheDelimiter(string $src, string $expected, string $end) {
+    //     $ts = TokenStream::fromSource($src);
+    //     $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+
+    //     $this->parseSuccess(
+    //         $ts,
+    //         lst
+    //         (
+    //             token(T_STRING)->as('letter')
+    //             ,
+    //             token(',')
+    //             ,
+    //             LS_KEEP_DELIMITER
+    //         )
+    //         ,
+    //         $expected
+    //     );
+
+    //     $this->assertEquals($end, (string) $ts->current());
+    // }
 
     function testConsume() {
         $ts = TokenStream::fromSource('<?php A  {X} B {X} C    {x} ');

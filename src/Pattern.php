@@ -26,6 +26,10 @@ class Pattern extends MacroMember implements PatternInterface {
 
         $this->scope = $scope;
         $this->pattern = $this->compile($pattern);
+
+        // var_dump($this->pattern);
+
+        if ($tags->contains('·optimize')) $this->pattern = $this->pattern->optimize();
     }
 
     function match(TokenStream $ts) {
@@ -70,7 +74,7 @@ class Pattern extends MacroMember implements PatternInterface {
                         (
                             either
                             (
-                                future
+                                pointer
                                 (
                                     $parser // recursion !!!
                                 )
@@ -252,7 +256,7 @@ class Pattern extends MacroMember implements PatternInterface {
         $parser = $this->lookupParser($ast->{'* type'}->token());
         $args = $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
-        if ($label = $ast->{'label'})
+        if (($label = $ast->{'label'}) && $ast->{'* type'}->token() != '·_')
             $parser->as($this->lookupCapture($label));
 
         return $parser;
@@ -263,7 +267,7 @@ class Pattern extends MacroMember implements PatternInterface {
 
         foreach ($args->list() as $arg) switch ((string) $arg->label()) {
             case 'this':
-                $compiled[] = future($this->pattern);
+                $compiled[] = pointer($this->pattern);
                 break;
             case 'token':
                 $token = $arg->token();

@@ -34,6 +34,25 @@ class TokenStream {
         })->toSource($this->first);
     }
 
+    function debug() : string {
+        return (new class extends Token {
+            function __construct() {}
+            function toSource(NodeStart $node, Index $current) : string {
+                $str = '';
+                $node = $node->next;
+
+                while ($node instanceof Node) {
+                    if ($node === $current) $str .= "\033[1;37;40m";
+                    $str .= $node->token->value;
+                    if ($node === $current) $str .= "\033[0m";
+                    $node = $node->next;
+                }
+
+                return $str;
+            }
+        })->toSource($this->first, $this->current);
+    }
+
     function __clone() {
         $first = new NodeStart;
         $last = new NodeEnd;

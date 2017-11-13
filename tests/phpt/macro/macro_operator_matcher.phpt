@@ -4,7 +4,7 @@ Test ·operator
 <?php
 
 macro {
-    T_VARIABLE·X ·operator('<(o . o)>') T_VARIABLE·Y
+    T_VARIABLE·X ·buffer('<(o . o)>') T_VARIABLE·Y
 } >> {
     (T_VARIABLE·X ."hug". T_VARIABLE·Y)
 }

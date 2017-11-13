@@ -6,17 +6,25 @@ use
     InvalidArgumentException
 ;
 
+use Yay\ParserTracer\{ParserTracer, NullParserTracer};
+
 /**
  * This might need an interface
  */
 abstract class Parser {
+
+    protected static
+        $tracer
+    ;
 
     protected
         $type,
         $label,
         $stack,
         $onCommit,
-        $errorLevel = Error::DISABLED
+        $errorLevel = Error::DISABLED,
+        $optimized = false,
+        $dereferenced = false
     ;
 
     abstract function expected() : Expected;
@@ -25,6 +33,8 @@ abstract class Parser {
 
     function __construct(string $type, ...$stack)
     {
+        self::$tracer ?: self::$tracer = new NullParserTracer;
+
         $this->type = $type;
         $this->stack = $stack;
         $this->withErrorLevel($this->errorLevel);
@@ -52,20 +62,33 @@ abstract class Parser {
     function parse(TokenStream $ts) /*: Result|null*/
     {
         try {
+            self::$tracer->push($this);
+
             $index = $ts->index();
+
+            self::$tracer->trace($index, 'attempt');
+
             $result = $this->parser($ts, ...$this->stack);
+
+            if ($result instanceof Ast) {
+                self::$tracer->trace($index, 'production', implode('', $result->tokens()));
+
+                if (null !== $this->onCommit) ($this->onCommit)($result);
+            }
+            else {
+                $ts->jump($index);
+                self::$tracer->trace($index, 'error');
+            }
         }
         catch(Halt $e) {
             $ts->jump($index);
+            self::$tracer->trace($index, 'error');
 
             throw $e;
         }
-
-        if ($result instanceof Ast) {
-            if (null !== $this->onCommit) ($this->onCommit)($result);
+        finally {
+            self::$tracer->pop($this);
         }
-        else
-            $ts->jump($index);
 
         return $result;
     }
@@ -97,9 +120,7 @@ abstract class Parser {
 
             if ($this->stack) {
                 array_walk_recursive($this->stack, function($substack){
-                    if ($substack instanceof self) {
-                        $substack->withErrorLevel($this->errorLevel);
-                    }
+                    if ($substack instanceof self) $substack->withErrorLevel($this->errorLevel);
                 });
             }
         }
@@ -107,10 +128,27 @@ abstract class Parser {
         return $this;
     }
 
-    final protected function error(TokenStream $ts, Expected $expected = null) /*: Error|null*/
+    function optimize() : self
+    {
+        if (false === $this->optimized) {
+            $this->type = '*' . $this->type;
+            $this->optimized = true;
+            array_walk_recursive($this->stack, function(&$parser) {
+                if ($parser instanceof self) $parser = $parser->optimize();
+            });
+        }
+
+        return $this;
+    }
+
+    final function error(TokenStream $ts, Expected $expected = null) /*: Error|null*/
     {
         if ($this->errorLevel === Error::ENABLED)
             return new Error($expected ?: $this->expected(), $ts->current(), $ts->last());
     }
 
+    final static function setTracer(ParserTracer $tracer)
+    {
+        self::$tracer = $tracer;
+    }
 }
