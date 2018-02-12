@@ -8,10 +8,7 @@ use
     TypeError
 ;
 
-/**
- * Worst class ever. This needs to be replaced by a SyntaxObject or sort of
- */
-class Ast implements Result, Context {
+class Ast implements Result {
 
     protected
         $label = null,
@@ -19,12 +16,13 @@ class Ast implements Result, Context {
     ;
 
     private
-        $parent
+        $parent,
+        $meta
     ;
 
     function __construct(string $label = null, $ast = []) {
         if ($ast instanceof self)
-            throw new TypeError('Unmerged AST.');
+            throw new InvalidArgumentException('Unmerged AST.');
 
         $this->ast = $ast;
         $this->label = $label;
@@ -42,20 +40,13 @@ class Ast implements Result, Context {
             array_shift($path);
         }
 
-        try {
-            $ret = $this->getIn($this->ast, $path);
+        $ret = $this->getIn((array) $this->ast, $path);
 
-            if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
+        if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
 
-            if ($wrap) {
-                $label = end($path) ?: null;
-                $ret = new self($label, $ret);
-            }
-        }
-        catch(TypeError $e) {
-            if ($wrap) {
-                throw new \Yay\YayException("Could not access (Ast)->{'" . implode(' ', $path) . "'}.");
-            }
+        if ($wrap) {
+            $label = end($path) ?: null;
+            $ret = new self($label, $ret instanceof Ast ? $ret->unwrap() : $ret);
         }
 
         return $ret;
@@ -152,7 +143,7 @@ class Ast implements Result, Context {
         return null === $this->ast || 0 === \count($this->ast);
     }
 
-    function as(string $label = null) : self {
+    function as(string $label = null) : Result {
         if (null !== $label) $this->label = $label;
 
         return $this;
@@ -167,6 +158,17 @@ class Ast implements Result, Context {
 
         return $this;
     }
+
+    function withMeta(Map $meta) : Result {
+        $this->meta = $meta;
+
+        return $this;
+    }
+
+    function meta() : Map {
+        return $this->meta ?: Map::fromEmpty();
+    }
+
 
     function symbols() : array {
         return \is_array($this->ast) ? \array_keys($this->ast) : [];

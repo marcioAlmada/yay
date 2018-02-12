@@ -238,14 +238,11 @@ function buffer(string $match) : Parser
  */
 function traverse(Parser ...$parsers) : Parser
 {
-    $parsers[] = any();
-    $parser = either(...$parsers);
-
-    return new class(__FUNCTION__, $parser) extends Parser
+    return new class(__FUNCTION__, either(...$parsers), any()) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser) : Ast
+        protected function parser(TokenStream $ts, Parser $parser, Parser $any) : Ast
         {
-            while ($parser->parse($ts) instanceof Ast);
+            while ($parser->parse($ts) instanceof Ast || $any->parse($ts) instanceof Ast);
 
             return new Ast($this->label);
         }
@@ -749,43 +746,46 @@ function ns() : Parser
     ;
 }
 
-function ls(Parser $parser, Parser $delimiter) : Parser
+const
+    LS_KEEP_DELIMITER = 0x1,
+    LS_DISCARD_DELIMITER = 0x0
+;
+
+function ls(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
 {
     if (! $parser->isFallible())
         throw new InvalidArgumentException(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
-    if ((string) $parser === __FUNCTION__)
-        throw new InvalidArgumentException(
-            'List parser unit must be labeled at ' . __FUNCTION__ . '('. $parser . ', ...)');
-
-    return new class(__FUNCTION__, $parser, $delimiter) extends Parser
+    return new class(__FUNCTION__, $parser, $delimiter, $flags) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiter) /*: Result|null*/
+        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiterParser, int $flags) /*: Result|null*/
         {
             $ast = new Ast($this->label);
-            $midrule = function(Ast $result) use ($ast) { $ast->push($result); };
+            $stack = [];
+            if (($item = $parser->parse($ts)) instanceof Ast) {
+                $stack[] = [$item, null];
+                while (
+                    ($index = $ts->index()) &&
+                    ($delimiter = $delimiterParser->parse($ts)) instanceof Ast &&
+                    ($item = $parser->parse($ts)) instanceof Ast
+                ) {
+                    $stack[count($stack)-1][1] = $delimiter;
+                    $stack[] = [$item, null];
+                }
 
-            chain
-            (
-                (clone $parser)->onCommit($midrule)
-                ,
-                optional
-                (
-                    repeat
-                    (
-                        chain
-                        (
-                            (clone $delimiter)
-                            ,
-                            (clone $parser)
-                                ->onCommit($delimiter->label ? function(){} : $midrule)
-                        )
-                        ->onCommit($delimiter->label ? $midrule : function(){})
-                    )
-                )
-            )
-            ->parse($ts);
+                if (! ($item instanceof Ast)) $ts->jump($index);
+
+                while($tuple = array_shift($stack)) {
+                    if (($flags & LS_DISCARD_DELIMITER) === $flags) {
+                        $ast->push($tuple[0]);
+                    }
+                    else {
+                        $ast->push(new Ast(null, ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
+                    }
+                }
+
+            }
 
             return $ast->isEmpty() ? $this->error($ts) : $ast;
         }
@@ -802,21 +802,43 @@ function ls(Parser $parser, Parser $delimiter) : Parser
     };
 }
 
-function lst(Parser $parser, Parser $delimiter) : Parser
+function lst(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
 {
+    if (! $parser->isFallible())
+        throw new InvalidArgumentException(
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
-    $list = ls($parser, $delimiter);
-
-    return new class(__FUNCTION__, $list, $delimiter) extends Parser
+    return new class(__FUNCTION__, $parser, $delimiter, $flags) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $list, Parser $delimiter) /*: Result|null*/
+        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiterParser, int $flags) /*: Result|null*/
         {
-            $result = $list->as($this->label)->parse($ts);
+            $ast = new Ast($this->label);
+            $stack = [];
+            if (($item = $parser->parse($ts)) instanceof Ast) {
+                $stack[] = [$item, null];
+                while (
+                    ($index = $ts->index()) &&
+                    ($delimiter = $delimiterParser->parse($ts)) instanceof Ast &&
+                    ($item = $parser->parse($ts)) instanceof Ast
+                ) {
+                    $stack[count($stack)-1][1] = $delimiter;
+                    $stack[] = [$item, null];
+                }
 
-            if ($result instanceof Ast)
-                optional($delimiter)->parse($ts); // matches a possible trailing delimiter
+                if (! ($item instanceof Ast)) $stack[count($stack)-1][1] = $delimiter;
 
-            return $result;
+                while($tuple = array_shift($stack)) {
+                    if (($flags & LS_DISCARD_DELIMITER) === $flags) {
+                        $ast->push($tuple[0]);
+                    }
+                    else {
+                        $ast->push(new Ast(null, ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
+                    }
+                }
+
+            }
+
+            return $ast->isEmpty() ? $this->error($ts) : $ast;
         }
 
         function expected() : Expected
@@ -950,13 +972,17 @@ function closure() : Parser
     ;
 }
 
-function midrule(callable $midrule, bool $isFallible = true) : Parser
+function midrule(callable $midrule, bool $isFallible = true, Expected $expected = null) : Parser
 {
-    return new  class(__FUNCTION__, $midrule, new Expected, $isFallible) extends Parser
+    return new  class(__FUNCTION__, $midrule, $expected ?: new Expected, $isFallible) extends Parser
     {
-        function parse(TokenStream $ts) /*: Result|null*/
+        function parser(TokenStream $ts) /*: Result|null*/
         {
-            return $this->stack[0]($ts);
+            $result = $this->stack[0]($ts);
+
+            if ($result instanceof Ast) $result->as($this->label);
+
+            return $result;
         }
 
         function expected() : Expected
@@ -969,4 +995,13 @@ function midrule(callable $midrule, bool $isFallible = true) : Parser
             return $this->stack[2];
         }
     };
+}
+
+function expression(string $namespace = '') : Parser
+{
+    static $repository = [];
+
+    $namespace = md5(__NAMESPACE__);
+
+    return $repository[$namespace] ?? $repository[$namespace] = new ExpressionParser;
 }

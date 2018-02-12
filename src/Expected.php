@@ -10,8 +10,10 @@ class Expected {
         $this->tokens = $tokens;
     }
 
-    function append(self $tokens) {
-        foreach ($tokens->tokens as $token) $this->tokens[] = $token;
+    function append(self $expected) : self {
+        foreach ($expected->tokens as $token) $this->tokens[] = $token;
+
+        return $this;
     }
 
     function all() : array {

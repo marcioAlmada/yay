@@ -25,70 +25,71 @@ $x($y);
 <?php
 
 '
-object(Yay\\Ast)#%s (3) {
+object(Yay\\Ast)#%d (%d) {
   ["label":protected]=>
   NULL
   ["ast":protected]=>
-  array(5) {
+  array(%d) {
     ["T_VARIABLE·A"]=>
-    object(Yay\\Token)#%s (1) {
+    object(Yay\\Token)#%d (%d) {
       [0]=>
       string(14) "T_VARIABLE($x)"
     }
     [0]=>
-    object(Yay\\Token)#%s (1) {
+    object(Yay\\Token)#%d (%d) {
       [0]=>
-      string(3) "\'(\'"
+      string(%d) "\'(\'"
     }
     ["T_VARIABLE·B"]=>
-    object(Yay\\Token)#%s (1) {
+    object(Yay\\Token)#%d (%d) {
       [0]=>
       string(14) "T_VARIABLE($y)"
     }
     [1]=>
-    object(Yay\\Token)#%s (1) {
+    object(Yay\\Token)#%d (%d) {
       [0]=>
-      string(3) "\')\'"
+      string(%d) "\')\'"
     }
     [2]=>
-    array(0) {
+    array(%d) {
     }
   }
   ["parent":"Yay\\Ast":private]=>
   NULL
+  ["meta":"Yay\\Ast":private]=>
+  NULL
 }
-object(Yay\\TokenStream)#%s (3) {
+object(Yay\\TokenStream)#%d (%d) {
   ["first":protected]=>
-  object(Yay\\NodeStart)#%s (0) {
+  object(Yay\\NodeStart)#%d (%d) {
   }
   ["current":protected]=>
-  object(Yay\\Node)#%s (1) {
+  object(Yay\\Node)#%d (%d) {
     [0]=>
-    object(Yay\\Token)#%s (1) {
+    object(Yay\\Token)#%d (%d) {
       [0]=>
-      string(3) "\';\'"
+      string(%d) "\';\'"
     }
   }
   ["last":protected]=>
-  object(Yay\\NodeEnd)#%s (0) {
+  object(Yay\\NodeEnd)#%d (%d) {
   }
 }
-object(Yay\\Node)#%s (1) {
+object(Yay\\Node)#%d (%d) {
   [0]=>
-  object(Yay\\Token)#%s (1) {
+  object(Yay\\Token)#%d (%d) {
     [0]=>
     string(14) "T_VARIABLE($x)"
   }
 }
-object(Yay\\Node)#%s (1) {
+object(Yay\\Node)#%d (%d) {
   [0]=>
-  object(Yay\\Token)#%s (1) {
+  object(Yay\\Token)#%d (%d) {
     [0]=>
-    string(3) "\')\'"
+    string(%d) "\')\'"
   }
 }
 string(10) "Yay\\Engine"
 ';
 
 ?>
-

@@ -252,7 +252,7 @@ class Pattern extends MacroMember implements PatternInterface {
         $parser = $this->lookupParser($ast->{'* type'}->token());
         $args = $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
-        if ($label = $ast->{'label'})
+        if (($label = $ast->{'label'}) && $ast->{'* type'}->token() != '·_')
             $parser->as($this->lookupCapture($label));
 
         return $parser;

@@ -37,6 +37,18 @@ class Error implements Result {
         $this->last = $last;
     }
 
+    function as(string $label = null) : Result {
+        return $this;
+    }
+
+    function withMeta(Map $meta) : Result {
+        return $this;
+    }
+
+    function meta() : Map {
+        return Map::fromEmpty();
+    }
+
     function with(self $e) {
         $this->and = $e;
     }

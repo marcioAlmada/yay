@@ -118,9 +118,7 @@ abstract class Parser {
 
             if ($this->stack) {
                 array_walk_recursive($this->stack, function($substack){
-                    if ($substack instanceof self) {
-                        $substack->withErrorLevel($this->errorLevel);
-                    }
+                    if ($substack instanceof self) $substack->withErrorLevel($this->errorLevel);
                 });
             }
         }
@@ -128,7 +126,7 @@ abstract class Parser {
         return $this;
     }
 
-    final protected function error(TokenStream $ts, Expected $expected = null) /*: Error|null*/
+    final function error(TokenStream $ts, Expected $expected = null) /*: Error|null*/
     {
         if ($this->errorLevel === Error::ENABLED)
             return new Error($expected ?: $this->expected(), $ts->current(), $ts->last());

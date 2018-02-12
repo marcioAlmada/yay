@@ -85,14 +85,14 @@ class Macro implements Directive {
     }
 
     private function getAllBlueMacrosFromCrossover($node, BlueContext $blueContext): array {
-        if ($node instanceof Token)
-            return $blueContext->getDisabledMacros($node);
-        else if(is_array($node)) {
-            $macros = [];
-            foreach ($node as $n)
-                $macros += $this->getAllBlueMacrosFromCrossover($n, $blueContext);
+        if ($node instanceof Token) return $blueContext->getDisabledMacros($node);
 
-            return $macros;
-        }
+        if($node instanceof Ast) $node = $node->tokens();
+
+        $macros = [];
+        foreach ($node as $n)
+            $macros += $this->getAllBlueMacrosFromCrossover($n, $blueContext);
+
+        return $macros;
     }
 }
