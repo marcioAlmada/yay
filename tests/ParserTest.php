@@ -157,7 +157,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
-    function testOperator() {
+    function testBuffer() {
         $ts = TokenStream::fromSource('<?php $a <~> $b');
 
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
@@ -165,10 +165,10 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
             $ts,
             chain(
                 token(T_VARIABLE),
-                operator('<~>'),
+                buffer('<~>'),
                 token(T_VARIABLE)
             ),
-            'T_VARIABLE($a), OPERATOR(<~>), T_VARIABLE($b)'
+            'T_VARIABLE($a), BUFFER(<~>), T_VARIABLE($b)'
         );
 
         $ts = TokenStream::fromSource('<?php \n');
@@ -176,30 +176,30 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseSuccess(
             $ts,
-            operator('\n'),
-            'OPERATOR(\n)'
+            buffer('\n'),
+            'BUFFER(\n)'
         );
     }
 
-    function testOperatorError() {
+    function testBufferError() {
         $ts = TokenStream::fromSource('<?php < ~>');
 
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseError(
             $ts,
-            operator('<~>'),
-            "Unexpected T_WHITESPACE( ) on line 1, expected OPERATOR(<~>)."
+            buffer('<~>'),
+            "Unexpected T_WHITESPACE( ) on line 1, expected BUFFER(<~>)."
         );
     }
 
-    function testOperatorOnEnd() {
+    function testBufferOnEnd() {
         $ts = TokenStream::fromSource('<?php <~>');
 
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
         $this->parseSuccess(
             $ts,
-            operator('<~>'),
-            'OPERATOR(<~>)'
+            buffer('<~>'),
+            'BUFFER(<~>)'
         );
     }
 

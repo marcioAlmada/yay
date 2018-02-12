@@ -88,7 +88,7 @@ final class Engine {
                             (
                                 braces()->as('pattern')
                                 ,
-                                operator('>>')
+                                token(T_SR)
                                 ,
                                 optional
                                 (
@@ -100,7 +100,7 @@ final class Engine {
                                         ,
                                         braces()->as('body')
                                         ,
-                                        operator('>>')
+                                        token(T_SR)
                                     )
                                 )
                                 ->as('compiler')

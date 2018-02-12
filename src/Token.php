@@ -16,7 +16,7 @@ class Token implements \JsonSerializable {
     const
         ANY = 1021,
         NONE = 1032,
-        OPERATOR = 1054,
+        BUFFER = 1054,
         CLOAKED = 1065
     ;
 
@@ -26,7 +26,7 @@ class Token implements \JsonSerializable {
     const TOKENS = [
         self::ANY => 'ANY',
         self::NONE => 'NONE',
-        self::OPERATOR => 'OPERATOR',
+        self::BUFFER => 'BUFFER',
         self::CLOAKED => 'CLOAKED'
     ];
 

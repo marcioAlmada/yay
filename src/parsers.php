@@ -175,24 +175,24 @@ function always($type, $value = null) : Parser
     };
 }
 
-function operator(string $operator) : Parser
+function buffer(string $match) : Parser
 {
-    return new class(__FUNCTION__, trim($operator)) extends Parser
+    return new class(__FUNCTION__, trim($match)) extends Parser
     {
-        protected function parser(TokenStream $ts, string $operator) /*: Result|null*/
+        protected function parser(TokenStream $ts, string $match) /*: Result|null*/
         {
-            $max = mb_strlen($operator);
+            $max = mb_strlen($match);
             $buffer = '';
 
             while (
                 (mb_strlen($buffer) <= $max) &&
                 (null !== ($token = $ts->current())) &&
-                (false !== mb_strstr($operator, ($current = $token->value())))
+                (false !== mb_strstr($match, ($current = $token->value())))
             ){
                 $ts->step();
-                if(($buffer .= $current) === $operator) {
+                if(($buffer .= $current) === $match) {
                     $ts->skip();
-                    return new Ast($this->label, new Token(Token::OPERATOR, $buffer));
+                    return new Ast($this->label, new Token(Token::BUFFER, $buffer));
                 }
             }
 
@@ -201,7 +201,7 @@ function operator(string $operator) : Parser
 
         function expected() : Expected
         {
-            return new Expected(new Token(Token::OPERATOR, $this->stack[0]));
+            return new Expected(new Token(Token::BUFFER, $this->stack[0]));
         }
 
         function isFallible() : bool
