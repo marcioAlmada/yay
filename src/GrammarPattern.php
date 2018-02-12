@@ -62,7 +62,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                     (
                         either
                         (
-                            future
+                            pointer
                             (
                                 $parser // recursion !!!
                             )
@@ -137,7 +137,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                 ,
                 token('(')
                 ,
-                future($sequence)->as('member')
+                pointer($sequence)->as('member')
                 ,
                 token(',')
                 ,
@@ -327,7 +327,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                         $link = $this->collected->get($refLabel);
                         if ($link === null) {
                             if ($this->staged->contains($refLabel)) {
-                                $link = future($this->references[$refLabel]);
+                                $link = pointer($this->references[$refLabel]);
                             }
                             else {
                                 $link = $this->compilePattern($this->unreached->get($refLabel));

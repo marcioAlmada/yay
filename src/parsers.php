@@ -831,7 +831,7 @@ function lst(Parser $parser, Parser $delimiter) : Parser
     };
 }
 
-function future(&$parser) : Parser
+function pointer(&$parser) : Parser
 {
     $delayed = function() use(&$parser) : Parser { return clone $parser; };
 

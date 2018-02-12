@@ -70,7 +70,7 @@ class Pattern extends MacroMember implements PatternInterface {
                         (
                             either
                             (
-                                future
+                                pointer
                                 (
                                     $parser // recursion !!!
                                 )
@@ -263,7 +263,7 @@ class Pattern extends MacroMember implements PatternInterface {
 
         foreach ($args->list() as $arg) switch ((string) $arg->label()) {
             case 'this':
-                $compiled[] = future($this->pattern);
+                $compiled[] = pointer($this->pattern);
                 break;
             case 'token':
                 $token = $arg->token();
