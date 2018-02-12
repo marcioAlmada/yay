@@ -19,6 +19,7 @@ function token($type, $value = null) : Parser
 
         function __construct($type, Token $token)
         {
+            parent::{__FUNCTION__}($type, $token);
             $this->type = $type;
             $this->token = $token;
             $this->stack = $token;
@@ -27,16 +28,29 @@ function token($type, $value = null) : Parser
 
         final function parse(TokenStream $ts) /*: Result|null*/
         {
-            if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
-                $ts->next();
-                $result = new Ast($this->label, $token);
-                if (null !== $this->onCommit) ($this->onCommit)($result);
+            try {
+                self::$tracer->push($this);
 
-                return $result;
+                self::$tracer->trace($ts->index(), 'attempt');
+
+                if (null !== ($token = $ts->current()) && $token->equals($this->token)) {
+                    self::$tracer->trace($ts->index(), 'production', (string) $token);
+
+                    $ts->next();
+                    $result = new Ast($this->label, $token);
+                    if (null !== $this->onCommit) ($this->onCommit)($result);
+
+                    return $result;
+                }
+
+                self::$tracer->trace($ts->index(), 'error');
+
+                if ($this->errorLevel === Error::ENABLED)
+                    return new Error($this->expected, $token, $ts->last());
             }
-
-            if ($this->errorLevel === Error::ENABLED)
-                return new Error($this->expected, $token, $ts->last());
+            finally {
+                self::$tracer->pop($this);
+            }
         }
 
         function expected() : Expected

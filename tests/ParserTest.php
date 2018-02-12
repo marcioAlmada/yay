@@ -7,6 +7,16 @@ namespace Yay;
  */
 class ParserTest extends \PHPUnit_Framework_TestCase {
 
+    function setUp()
+    {
+        if ((bool) getenv('YAY_CLI_PARSER_TRACER')) Parser::setTracer(new \Yay\ParserTracer\CliParserTracer);
+    }
+
+    function tearDown()
+    {
+        Parser::setTracer(new \Yay\ParserTracer\NullParserTracer);
+    }
+
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
         $this->setExpectedException(
             Halt::class,

@@ -6,10 +6,16 @@ use
     InvalidArgumentException
 ;
 
+use Yay\ParserTracer\{ParserTracer, NullParserTracer};
+
 /**
  * This might need an interface
  */
 abstract class Parser {
+
+    protected static
+        $tracer
+    ;
 
     protected
         $type,
@@ -25,6 +31,8 @@ abstract class Parser {
 
     function __construct(string $type, ...$stack)
     {
+        self::$tracer ?: self::$tracer = new NullParserTracer;
+
         $this->type = $type;
         $this->stack = $stack;
         $this->withErrorLevel($this->errorLevel);
@@ -52,20 +60,33 @@ abstract class Parser {
     function parse(TokenStream $ts) /*: Result|null*/
     {
         try {
+            self::$tracer->push($this);
+
             $index = $ts->index();
+
+            self::$tracer->trace($index, 'attempt');
+
             $result = $this->parser($ts, ...$this->stack);
+
+            if ($result instanceof Ast) {
+                self::$tracer->trace($index, 'production', implode('', $result->tokens()));
+
+                if (null !== $this->onCommit) ($this->onCommit)($result);
+            }
+            else {
+                $ts->jump($index);
+                self::$tracer->trace($index, 'error');
+            }
         }
         catch(Halt $e) {
             $ts->jump($index);
+            self::$tracer->trace($index, 'error');
 
             throw $e;
         }
-
-        if ($result instanceof Ast) {
-            if (null !== $this->onCommit) ($this->onCommit)($result);
+        finally {
+            self::$tracer->pop($this);
         }
-        else
-            $ts->jump($index);
 
         return $result;
     }
@@ -113,4 +134,8 @@ abstract class Parser {
             return new Error($expected ?: $this->expected(), $ts->current(), $ts->last());
     }
 
+    final static function setTracer(ParserTracer $tracer)
+    {
+        self::$tracer = $tracer;
+    }
 }

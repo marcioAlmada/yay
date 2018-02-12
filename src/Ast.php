@@ -73,8 +73,18 @@ class Ast implements Result, Context {
 
     function tokens() {
         $tokens = [];
-        $exposed = $this->array();
-        array_walk_recursive($exposed, function($t) use(&$tokens){ if($t instanceof Token) $tokens[] = $t; });
+        $exposed = [];
+
+        if (\is_array($this->ast)) $exposed = $this->ast;
+        else $exposed = [$this->ast];
+
+        array_walk_recursive(
+            $exposed,
+            function($i) use(&$tokens){
+                if($i instanceof Token) $tokens[] = $i;
+                elseif ($i instanceof self) $tokens = array_merge($tokens, $i->tokens());
+            }
+        );
 
         return $tokens;
     }
