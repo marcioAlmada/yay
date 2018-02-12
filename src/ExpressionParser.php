@@ -366,6 +366,8 @@ class ExpressionParser extends Parser
         })
         ->as('expression');
 
+        $expression->optimize();
+
         $this->id = count($this->parameters, COUNT_RECURSIVE);
 
         return $expression;

@@ -585,6 +585,71 @@ function either(Parser ...$routes) : Parser
 
             return true;
         }
+
+        /**
+         * Optimizes either() parser stack from O(n²) to O(n) lookup table,
+         * specially effective when grammars with direct recursion are difficult to avoid.
+         *
+         * The parser produces the exact same results with or without the optimization, except for
+         * noticeable performance improvements on very long either() try lists.
+         */
+        function optimize() : Parser
+        {
+            parent::optimize();
+
+            $jumptable = [];
+            $parsers = $this->stack;
+
+            foreach ($parsers as $parser)
+                if (count($parser->expected()->all()))
+                    foreach ($parser->expected()->all() as $prefixToken)
+                        $jumptable[$prefixToken->type()][] = $parser->optimize();
+                else
+                    throw new \Exception("Cannot optimize {$this} parser stack at {$parser}");
+
+            foreach ($jumptable as $prefix => $possibleRoutes) {
+                if (count($possibleRoutes) > 1) $jumptable[$prefix] = either(...$possibleRoutes);
+                else $jumptable[$prefix] = $possibleRoutes[0];
+            }
+
+            return (new class ('*' . $this->type, $jumptable, $this) extends Parser {
+
+                function parser($ts, array $jumptable, Parser $wrapped) {
+                    if (null !== ($token = $ts->current()) && ($parser = $jumptable[$token->type()] ?? null)) {
+                        if (($result = $parser->parse($ts)) instanceof Ast)
+                            if ($this->label && $result->label())
+                                $result = (new Ast($this->label))->append($result);
+                            else
+                                $result->as($this->label);
+
+                        return $result;
+                    }
+
+                    return $wrapped->error($ts);
+                }
+
+                function expected() : Expected
+                {
+                    return $this->stack[1]->expected();
+                }
+
+                function isFallible() : bool
+                {
+                    return $this->stack[1]->isFallible();
+                }
+
+                /**
+                 * Disables further optimizations on already optimized parsers, preventing infinite
+                 * recursion during the optimization cycle
+                 */
+                function optimize() : Parser
+                {
+                    return $this;
+                }
+
+            })
+            ->as($this->label);
+        }
     };
 }
 
@@ -875,12 +940,33 @@ function pointer(&$parser) : Parser
 
         function expected() : Expected
         {
+            $this->preventCircularPointerDereference();
+
             return $this->stack[0]()->expected();
         }
 
         function isFallible() : bool
         {
             return true;
+        }
+
+        function optimize() : Parser
+        {
+            $this->preventCircularPointerDereference();
+
+            $parser = $this->stack[0]();
+            $parser->type = '*' . $parser->type;
+
+            if ($this->errorLevel === Error::ENABLED)
+                $parser->withErrorLevel($this->errorLevel);
+
+            return $parser->optimize();
+        }
+
+        private function preventCircularPointerDereference()
+        {
+            if (pointer::class === $this->type && $this->stack[0] === $this->stack[0]()->stack[0])
+                throw new \Exception("Circular pointer dereference at {$this}.");
         }
     };
 }

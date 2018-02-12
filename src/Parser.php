@@ -22,7 +22,8 @@ abstract class Parser {
         $label,
         $stack,
         $onCommit,
-        $errorLevel = Error::DISABLED
+        $errorLevel = Error::DISABLED,
+        $optimized = false
     ;
 
     abstract function expected() : Expected;
@@ -89,6 +90,19 @@ abstract class Parser {
         }
 
         return $result;
+    }
+
+    function optimize() : self
+    {
+        if (false === $this->optimized) {
+            $this->type = '*' . $this->type;
+            $this->optimized = true;
+            array_walk_recursive($this->stack, function(&$parser) {
+                if ($parser instanceof self) $parser = $parser->optimize();
+            });
+        }
+
+        return $this;
     }
 
     final function as($label) : self

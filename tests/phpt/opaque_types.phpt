@@ -6,7 +6,7 @@ Opaque types with macros that generate other macros :>
 macro {
     type T_STRING·newtype = T_STRING·basetype;
 } >> {
-    macro {
+    macro \\(·optimize) {
         \\(·either(instanceof, ·token(','), ·token('('))·prec) T_STRING·newtype
     } >> {
         \\(·prec) T_STRING·basetype
