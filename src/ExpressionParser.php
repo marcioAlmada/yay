@@ -147,9 +147,9 @@ class ExpressionParser extends Parser
         $anonymous_class = chain(
             token(T_CLASS),
             optional($arguments),
-            optional(chain(token(T_EXTENDS), $name)),
-            optional(chain(token(T_IMPLEMENTS), ls($name, token(','), LS_KEEP_DELIMITER))),
-            braces()
+            optional(chain(token(T_EXTENDS), $name))->as('extends'),
+            optional(chain(token(T_IMPLEMENTS), ls($name, token(','), LS_KEEP_DELIMITER)->as('implements_list')))->as('implements'),
+            token('{'), layer(), token('}')->as('body')
         );
 
         $anonymous_function = chain(...[

@@ -57,10 +57,10 @@ new class {};
 ('(function(){})'); // expression
 
 
-('new class'); // expression
+('new class{}'); // expression
 
 
-('(new classfunction foo(){ } )->foo()'); // expression
+('(new class{function foo(){ } })->foo()'); // expression
 
 
 ?>
