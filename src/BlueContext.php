@@ -12,11 +12,19 @@ class BlueContext {
         foreach ($macros as $id => $_) $this->map[$token->id()][$id] = true;
     }
 
-    function getDisabledMacros($token) {
+    function getDisabledMacrosFromToken($token) {
         assert($token instanceof Token);
 
         if (isset($this->map[$token->id()])) return $this->map[$token->id()];
 
         return [];
+    }
+
+    function getDisabledMacrosFromTokens($tokens) {
+        assert(\is_array($tokens));
+
+        return array_reduce($tokens, function($macros, $token) {
+            return $macros += $this->getDisabledMacrosFromToken($token);
+        }, []);
     }
 }
