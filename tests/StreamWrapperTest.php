@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group large
  */
-class StreamWrapperTest extends \PHPUnit_Framework_TestCase {
+class StreamWrapperTest extends \PHPUnit\Framework\TestCase {
 
     const
         FIXTURES_DIR = 'fixtures/wrapper',
@@ -33,7 +33,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider syntaxErrorProvider
      */
     function testStreamWrapperOnSyntaxError(string $file, string $error) {
-        $this->setExpectedException(\ParseError::class, $error);
+        $this->expectException(\ParseError::class, $error);
         include 'yay://' . $file;
     }
 

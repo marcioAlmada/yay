@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class TokenStreamTest extends \PHPUnit_Framework_TestCase
+class TokenStreamTest extends \PHPUnit\Framework\TestCase
 {
 
     function testToString() {

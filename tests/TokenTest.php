@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class TokenTest extends \PHPUnit_Framework_TestCase {
+class TokenTest extends \PHPUnit\Framework\TestCase {
     function equalsProvider() : array {
         return [
             [

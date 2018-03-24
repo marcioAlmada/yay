@@ -6,8 +6,7 @@ use
     Exception,
     RecursiveDirectoryIterator,
     RecursiveIteratorIterator,
-    RegexIterator,
-    PHPUnit_Framework_Assert as Assert
+    RegexIterator
 ;
 
 use PhpParser\{ ParserFactory, PrettyPrinter };
@@ -15,7 +14,7 @@ use PhpParser\{ ParserFactory, PrettyPrinter };
 /**
  * @group large
  */
-class SpecsTest extends \PHPUnit_Framework_TestCase
+class SpecsTest extends \PHPUnit\Framework\TestCase
 {
     public static function setupBeforeClass() {
         /**
@@ -124,7 +123,7 @@ class Test {
             }
 
             try{
-                Assert::assertStringMatchesFormat($this->expected, $this->out);
+                \PHPUnit\Framework\Assert::assertStringMatchesFormat($this->expected, $this->out);
                 $this->status = self::PASSED;
             }
             catch(Exception $e) {

@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class AstTest extends \PHPUnit_Framework_TestCase {
+class AstTest extends \PHPUnit\Framework\TestCase {
 
     function testAstFetch() {
         $ast = new Ast('foo', ['bar' => ['baz' => true, 'buz' => false]]);
@@ -45,7 +45,8 @@ class AstTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider providerForTestMapAstCastOnFailure
      */
     function testMapAstCastOnFailure(string $path, string $castMethod, string $typeName) {
-        $this->setExpectedExceptionRegExp(YayException::class, "/^Ast cannot be casted to '{$typeName}'$/");
+        $this->expectException(YayException::class);
+        $this->expectExceptionMessageRegExp("/^Ast cannot be casted to '{$typeName}'$/");
         $ast = new Ast(null, ['defined' => true]);
         var_dump($ast->{$path}->$castMethod());
     }

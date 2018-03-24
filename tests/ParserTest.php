@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class ParserTest extends \PHPUnit_Framework_TestCase {
+class ParserTest extends \PHPUnit\Framework\TestCase {
 
     function setUp()
     {
@@ -18,7 +18,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     }
 
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
-        $this->setExpectedException(
+        $this->expectException(
             Halt::class,
             implode(PHP_EOL, (array) $msg)
         );
