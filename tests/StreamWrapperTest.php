@@ -33,7 +33,8 @@ class StreamWrapperTest extends \PHPUnit\Framework\TestCase {
      * @dataProvider syntaxErrorProvider
      */
     function testStreamWrapperOnSyntaxError(string $file, string $error) {
-        $this->expectException(\ParseError::class, $error);
+        $this->expectException(\ParseError::class);
+        $this->expectExceptionMessage($error);
         include 'yay://' . $file;
     }
 
