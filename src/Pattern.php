@@ -27,8 +27,6 @@ class Pattern extends MacroMember implements PatternInterface {
         $this->scope = $scope;
         $this->pattern = $this->compile($pattern);
 
-        // var_dump($this->pattern);
-
         if ($tags->contains('·optimize')) $this->pattern = $this->pattern->optimize();
     }
 

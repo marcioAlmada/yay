@@ -171,19 +171,19 @@ class Expansion extends MacroMember {
             )
             ->onCommit(function(Ast $result) use($cg) {
                 if (! $result->optional)
-                    $this->lookupContext($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
+                    $this->lookupScope($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
                 $this->constant = false;
             })
             ,
             rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
                 ->onCommit(function(Ast $result) use($cg) {
-                    $this->lookupContext($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
+                    $this->lookupScope($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
                     $this->constant = false;
                 })
             ,
             rtoken('/·/')
                 ->onCommit(function(Ast $result) use($cg) {
-                    $this->lookupContext($result->token(), $cg->context, self::E_BAD_EXPANSION);
+                    $this->lookupScope($result->token(), $cg->context, self::E_BAD_EXPANSION);
                 })
         )
         ->parse($cg->ts);
@@ -223,9 +223,9 @@ class Expansion extends MacroMember {
                 ->onCommit(function(Ast $result)  use($states) {
                     $cg = $states->current();
 
-                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+                    $tokens = $cg->this->lookupAstOptional($result->{'label'}, $cg->context)->tokens();
 
-                    $expansion = TokenStream::fromSlice($context ? [$result->{'label'}] : $result->{'expansion'});
+                    $expansion = TokenStream::fromSlice($tokens ? [$result->{'label'}] : $result->{'expansion'});
 
                     $mutation = $cg->this->mutate(
                         $expansion,
@@ -252,9 +252,9 @@ class Expansion extends MacroMember {
                 ->onCommit(function(Ast $result)  use($states) {
                     $cg = $states->current();
 
-                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+                    $context = $cg->this->lookupAstOptional($result->{'label'}, $cg->context);
 
-                    if (! $context) return;
+                    if ($context->isEmpty()) return;
 
                     $expansion = TokenStream::fromSlice($result->{'expansion'});
 
@@ -283,9 +283,9 @@ class Expansion extends MacroMember {
                 ->onCommit(function(Ast $result)  use($states) {
                     $cg = $states->current();
 
-                    $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+                    $context = $cg->this->lookupAstOptional($result->{'label'}, $cg->context);
 
-                    if ($context) return;
+                    if (! $context->isEmpty()) return;
 
                     $expansion = TokenStream::fromSlice($result->{'expansion'});
 
@@ -302,15 +302,15 @@ class Expansion extends MacroMember {
                     $cg = $states->current();
                     $ts = $cg->ts;
 
-                    $token = $cg->this->lookupContext($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
+                    $ast = $cg->this->lookupAst($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
 
                     $ts->previous();
                     $node = $ts->index();
 
-                    if ($token instanceof Token)
-                        $node->token = $token;
-                    else
+                    if ($ast->isEmpty())
                         $ts->extract($node, $node->next);
+                    else
+                        $node->token = $ast->token();
 
                     $ts->next();
                 })
@@ -360,15 +360,15 @@ class Expansion extends MacroMember {
                     $cg = $states->current();
 
                     if ($result->optional)
-                        $context = $cg->this->lookupContextOptional($result->{'label'}, $cg->context);
+                        $context = $cg->this->lookupAstOptional($result->{'label'}, $cg->context)->unwrap();
                     else
-                        $context = $cg->this->lookupContext($result->{'label'}, $cg->context, self::E_UNDEFINED_EXPANSION);
+                        $context = $cg->this->lookupAst($result->{'label'}, $cg->context, self::E_UNDEFINED_EXPANSION)->unwrap();
 
-                    if ($context === null) return;
+                    if (null === $context) return;
 
                     $delimiters = $result->{'delimiters'};
 
-                    // normalize single context
+                    // normalize associative arrays
                     if (array_values($context) !== $context) $context = [$context];
 
                     foreach (array_reverse($context) as $i => $subContext) {
@@ -389,22 +389,8 @@ class Expansion extends MacroMember {
                 )
                 ->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
-
-                    $context = $cg->this->lookupContext($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
-
-                    if ($context instanceof Token) {
-                        $cg->ts->inject(TokenStream::fromSequence($context));
-                    }
-                    elseif (\is_array($context) && \count($context)) {
-                        $tokens = [];
-                        array_walk_recursive(
-                            $context,
-                            function(Token $token) use(&$tokens) {
-                                $tokens[] = $token;
-                            }
-                        );
-                        $cg->ts->inject(TokenStream::fromSlice($tokens));
-                    }
+                    $tokens = $cg->this->lookupAst($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION)->tokens();
+                    $cg->ts->inject(TokenStream::fromSlice($tokens));
                 })
             )
         ;
@@ -457,9 +443,9 @@ class Expansion extends MacroMember {
         return $expander;
     }
 
-    private function lookupContext(Token $token, Context $context, string $error) /*: Token | []Token*/ {
+    private function lookupScope(Token $token, Map $context, string $error) : bool {
         $symbol = (string) $token;
-        if (null === ($result = $context->get($symbol))) {
+        if (! ($result = $context->get($symbol))) {
             $this->fail(
                 $error,
                 $symbol,
@@ -474,9 +460,26 @@ class Expansion extends MacroMember {
         return $result;
     }
 
-    private function lookupContextOptional(Token $token, Context $context) /*: Token | []Token*/ {
+    private function lookupAst(Token $token, Ast $context, string $error) : Ast {
         $symbol = (string) $token;
+        if (null === ($result = $context->get('* ' . $symbol))->unwrap()) {
+            $this->fail(
+                $error,
+                $symbol,
+                $token->line(),
+                json_encode(
+                    $context->symbols(),
+                    self::PRETTY_PRINT
+                )
+            );
+        }
 
-        return $context->get($symbol);
+        return $result;
+    }
+
+    private function lookupAstOptional(Token $token, Ast $context) : Ast {
+        $result = $context->get('* ' . (string) $token);
+
+        return $result;
     }
 }

@@ -57,7 +57,7 @@ class Macro implements Directive {
             $this->compilerPass->apply($crossover, $ts, $from, $to->previous, $engine);
 
             $blueContext = $engine->blueContext();
-            $blueMacros = $this->getAllBlueMacrosFromCrossover($crossover->unwrap(), $blueContext);
+            $blueMacros = $blueContext->getDisabledMacrosFromTokens($crossover->tokens());
 
             if ($this->isTerminal && isset($blueMacros[$this->id])) { // already expanded
                 $ts->jump($from);
@@ -81,18 +81,6 @@ class Macro implements Directive {
             $ts->inject($expansion);
 
             $engine->cycle()->next();
-        }
-    }
-
-    private function getAllBlueMacrosFromCrossover($node, BlueContext $blueContext): array {
-        if ($node instanceof Token)
-            return $blueContext->getDisabledMacros($node);
-        else if(is_array($node)) {
-            $macros = [];
-            foreach ($node as $n)
-                $macros += $this->getAllBlueMacrosFromCrossover($n, $blueContext);
-
-            return $macros;
         }
     }
 }

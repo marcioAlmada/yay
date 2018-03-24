@@ -7,4 +7,3 @@ interface Result {
 	function withMeta(Map $meta) : self;
 	function meta() : Map;
 }
-

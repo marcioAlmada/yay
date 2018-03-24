@@ -1,5 +1,5 @@
 --TEST--
-Test ·operator
+Test ·buffer
 --FILE--
 <?php
 

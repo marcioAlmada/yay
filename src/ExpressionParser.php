@@ -37,12 +37,10 @@ class ExpressionParser extends Parser
 
     function __construct()
     {
-        parent::__construct(__CLASS__);
-
-        $this->parser = $this->rebuildParser();
+        parent::__construct(__CLASS__, $this->rebuildParser());
     }
 
-    function parse(TokenStream $ts) /*: Result|null*/
+    function parser(TokenStream $ts) /*: Result|null*/
     {
         $result = $this->rebuildParser()->parse($ts);
 
@@ -53,17 +51,17 @@ class ExpressionParser extends Parser
 
     function expected() : Expected
     {
-        return $this->parser->expected();
+        return $this->stack[0]->expected();
     }
 
     function isFallible() : bool
     {
-        return $this->parser->isFallible();
+        return $this->stack[0]->isFallible();
     }
 
     private function rebuildParser() : Parser
     {
-        if ($this->id === count($this->parameters, COUNT_RECURSIVE)) return $this->parser;
+        if ($this->id === count($this->parameters, COUNT_RECURSIVE)) return $this->stack[0];
 
         // pointers {
         $variable = pointer($variable)->as('variable_pointer');
@@ -77,7 +75,7 @@ class ExpressionParser extends Parser
         $arguments = pointer($arguments)->as('arguments_pointer');
         // }
 
-        if (null === $this->parser) {
+        if (null === $this->stack[0]) {
             $this->addOperator(self::ARITY_UNARY|self::ASSOC_RIGHT, token(T_INCLUDE), token(T_INCLUDE_ONCE), token(T_REQUIRE), token(T_REQUIRE_ONCE));
             $this->addOperator(self::ARITY_BINARY|self::ASSOC_LEFT, chain(token(T_LOGICAL_OR), optional(indentation())));
             $this->addOperator(self::ARITY_BINARY|self::ASSOC_LEFT, chain(token(T_LOGICAL_XOR), optional(indentation())));
@@ -149,9 +147,9 @@ class ExpressionParser extends Parser
         $anonymous_class = chain(
             token(T_CLASS),
             optional($arguments),
-            optional(chain(token(T_EXTENDS), $name)),
-            optional(chain(token(T_IMPLEMENTS), ls($name, token(','), LS_KEEP_DELIMITER))),
-            braces()
+            optional(chain(token(T_EXTENDS), $name))->as('extends'),
+            optional(chain(token(T_IMPLEMENTS), ls($name, token(','), LS_KEEP_DELIMITER)->as('implements_list')))->as('implements'),
+            token('{'), layer(), token('}')->as('body')
         );
 
         $anonymous_function = chain(...[
@@ -389,7 +387,7 @@ class ExpressionParser extends Parser
                     protected function parser(TokenStream $ts, Parser $operator, int $precedence, int $arity, int $associativity) /*: Result|null*/ {
                         if(($result = $operator->parse($ts)) instanceof Ast)
                             $result->as($this->label)->withMeta(Map::fromKeysAndValues(compact('precedence', 'arity', 'associativity')));
-                        
+
                         return $result;
                     }
 

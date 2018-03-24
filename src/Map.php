@@ -2,7 +2,7 @@
 
 namespace Yay;
 
-class Map implements Context, \Countable {
+class Map implements \Countable {
     protected $map = [];
 
     function get($key) {

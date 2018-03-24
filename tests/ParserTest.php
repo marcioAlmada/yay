@@ -9,7 +9,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
 
     function setUp()
     {
-        if ((bool) getenv('TEST_TRACE')) Parser::setTracer(new \Yay\ParserTracer\CliParserTracer);
+        if ((bool) getenv('YAY_CLI_PARSER_TRACER')) Parser::setTracer(new \Yay\ParserTracer\CliParserTracer);
     }
 
     function tearDown()
@@ -56,10 +56,10 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->assertSame(implode(PHP_EOL, (array) $msg), $result->message());
     }
 
-    protected function parseSuccess(TokenStream $ts, Parser $parser, string $expected) : Ast {
+    protected function parseSuccess(TokenStream $ts, Parser $parser, string $expected = null) : Ast {
         $commited = false;
         $ast = $parser->onCommit(
-            function($ast) use ($expected, &$commited){
+            function($ast) use (&$commited){
                 $commited = true;
             }
         )
@@ -70,7 +70,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
 
         $tokens = array_map(function(token $t) { return $t->dump(); }, $ast->tokens());
 
-        $this->assertEquals($expected, implode(', ', $tokens));
+        if ($expected) $this->assertEquals($expected, implode(', ', $tokens));
 
         return $ast;
     }
@@ -588,6 +588,16 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     function providerForTestLs() {
         return [
             [
+                '<?php a b c',
+                "T_STRING(a)",
+                'b'
+            ],
+            [
+                '<?php a, b,',
+                "T_STRING(a), T_STRING(b)",
+                ','
+            ],
+            [
                 '<?php a, b, c ',
                 "T_STRING(a), T_STRING(b), T_STRING(c)",
                 ''
@@ -635,6 +645,16 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     function providerForTestLsWithTrailingDelimiter() {
         return [
             [
+                '<?php a b c',
+                "T_STRING(a)",
+                'b'
+            ],
+            [
+                '<?php a, b,',
+                "T_STRING(a), T_STRING(b)",
+                ''
+            ],
+            [
                 '<?php a, b, c, *',
                 "T_STRING(a), T_STRING(b), T_STRING(c)"
             ],
@@ -648,7 +668,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider providerForTestLsWithTrailingDelimiter
      */
-    function testLsWithTrailingDelimiter(string $src, string $expected) {
+    function testLsWithTrailingDelimiter(string $src, string $expected, string $end = '*') {
         $ts = TokenStream::fromSource($src);
         $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
 
@@ -664,11 +684,26 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
             $expected
         );
 
-        $this->assertEquals('*', (string) $ts->current());
+        $this->assertEquals($end, (string) $ts->current());
     }
 
     function providerForTestLsWithTrailingDelimiterKeepingTheDelimiter() {
         return [
+            [
+                '<?php a b, c',
+                "T_STRING(a)",
+                'b'
+            ],
+            [
+                '<?php a b c',
+                "T_STRING(a)",
+                'b'
+            ],
+            [
+                '<?php a, b c',
+                "T_STRING(a), ',', T_STRING(b)",
+                'c'
+            ],
             [
                 '<?php a, b, c',
                 "T_STRING(a), ',', T_STRING(b), ',', T_STRING(c)",
@@ -697,29 +732,29 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         ];
     }
 
-    // /**
-    //  * @dataProvider providerForTestLsWithTrailingDelimiterKeepingTheDelimiter
-    //  */
-    // function testLsWithTrailingDelimiterKeepingTheDelimiter(string $src, string $expected, string $end) {
-    //     $ts = TokenStream::fromSource($src);
-    //     $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
+    /**
+     * @dataProvider providerForTestLsWithTrailingDelimiterKeepingTheDelimiter
+     */
+    function testLsWithTrailingDelimiterKeepingTheDelimiter(string $src, string $expected, string $end) {
+        $ts = TokenStream::fromSource($src);
+        $this->parseSuccess($ts, token(T_OPEN_TAG), "T_OPEN_TAG(<?php )");
 
-    //     $this->parseSuccess(
-    //         $ts,
-    //         lst
-    //         (
-    //             token(T_STRING)->as('letter')
-    //             ,
-    //             token(',')
-    //             ,
-    //             LS_KEEP_DELIMITER
-    //         )
-    //         ,
-    //         $expected
-    //     );
+        $this->parseSuccess(
+            $ts,
+            lst
+            (
+                token(T_STRING)->as('letter')
+                ,
+                token(',')
+                ,
+                LS_KEEP_DELIMITER
+            )
+            ,
+            $expected
+        );
 
-    //     $this->assertEquals($end, (string) $ts->current());
-    // }
+        $this->assertEquals($end, (string) $ts->current());
+    }
 
     function testConsume() {
         $ts = TokenStream::fromSource('<?php A  {X} B {X} C    {x} ');
@@ -762,6 +797,59 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         ->parse($ts);
 
         $this->assertEquals('<?php A  B    ', (string) $ts);
+    }
+
+
+    function goodExpressionDataProvider()
+    {
+        foreach($this->getFixture('expression/good') as $i => $src) yield "Expression {$i}" => [$src];
+    }
+
+
+    function randomExpressionDataProvider()
+    {
+        foreach($this->getFixture('expression/random') as $i => $src) yield "Expression {$i}" => [$src];
+    }
+
+
+    function evalExpressionDataProvider()
+    {
+        foreach($this->getFixture('expression/eval') as $i => $src) yield "Expression {$i}" => [$src, true];
+    }
+    /**
+     * @dataProvider goodExpressionDataProvider
+     * @dataProvider randomExpressionDataProvider
+     * @dataProvider evalExpressionDataProvider
+     */
+    function testExpressionParserWithGoodExpressions(string $src, bool $eval = false)
+    {
+        $ts = TokenStream::fromSourceWithoutOpenTag($src);
+        $ast = $this->parseSuccess($ts, expression());
+        $this->assertInstanceOf(NodeEnd::class, $ts->index());
+
+        if ($eval) {
+            $this->assertTrue(
+                $this->eval($src) === $this->eval($this->printExpressionAst($ast))
+            )
+            ;
+        }
+    }
+
+    function badExpressionDataProvider()
+    {
+        foreach($this->getFixture('expression/bad') as $i => $src) yield "Expression {$i}" => [$src];
+    }
+
+    /**
+     * @dataProvider badExpressionDataProvider
+     *
+     * The token stream can not be poiting to it's NodeEnd after parsing
+     */
+    function testExpressionParserWithBadExpressions($src)
+    {
+        $ts = TokenStream::fromSourceWithoutOpenTag($src);
+        expression()->withErrorLevel(Error::ENABLED)->parse($ts);
+        $this->assertNotInstanceOf(NodeEnd::class, $ts->index());
     }
 
     function testRaytrace() {
@@ -1048,5 +1136,62 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('public', (string) $ast->{'interface methods 2 is public'});
         $this->assertNull($ast->{'interface methods 2 is abstract'});
         $this->assertNull($ast->{'interface methods 2 is static'});
+    }
+
+    private function getFixture(string $label) : array
+    {
+        return include __DIR__ . "/fixtures/{$label}.php";
+    }
+
+    private function printExpressionAst(Ast $ast){
+        $buff = '';
+
+        if ($ast->operator) {
+            switch ($ast->operator->meta()->get('arity')) {
+                case ExpressionParser::ARITY_BINARY:
+                    $buff .= '(';
+                    $buff .= $this->printExpressionAst($ast->left);
+                    $buff .= ' ' . $this->printExpressionAst($ast->operator) . ' ';
+                    $buff.= $this->printExpressionAst($ast->right);
+                    $buff .= ')';
+                    break;
+                case ExpressionParser::ARITY_TERNARY:
+                    $buff .= '(';
+                    $buff .= $this->printExpressionAst($ast->left);
+                    $buff .= ' ' . $this->printExpressionAst($ast->middle) . ' ';
+                    $buff.= $this->printExpressionAst($ast->right);
+                    $buff .= ')';
+                    break;
+                case ExpressionParser::ARITY_UNARY:
+                    switch ($ast->operator->meta()->get('associativity')) {
+                        case ExpressionParser::ASSOC_NONE:
+                        case ExpressionParser::ASSOC_LEFT:
+                            $buff .= $this->printExpressionAst($ast->left);
+                            $buff .= ' ' . $this->printExpressionAst($ast->operator) . ' ';
+                            break;
+                        case ExpressionParser::ASSOC_RIGHT:
+                            $buff .= ' ' . $this->printExpressionAst($ast->operator) . ' ';
+                            $buff.= $this->printExpressionAst($ast->right);
+                            break;
+                        default:
+                            throw new \Exception('Unknown operator associativity.');
+                    }
+                    break;
+                default:
+                    throw new \Exception('Unknown operator arity.');
+            }
+        }
+        else $buff .= implode('', $ast->tokens());
+
+        return $buff;
+    }
+
+    private function eval(string $src)
+    {
+        ob_start();
+        $result = eval("return {$src};");
+        ob_end_clean();
+
+        return $result;
     }
 }

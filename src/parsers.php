@@ -175,22 +175,22 @@ function always($type, $value = null) : Parser
     };
 }
 
-function buffer(string $operator) : Parser
+function buffer(string $match) : Parser
 {
-    return new class(__FUNCTION__, trim($operator)) extends Parser
+    return new class(__FUNCTION__, trim($match)) extends Parser
     {
-        protected function parser(TokenStream $ts, string $operator) /*: Result|null*/
+        protected function parser(TokenStream $ts, string $match) /*: Result|null*/
         {
-            $max = mb_strlen($operator);
+            $max = mb_strlen($match);
             $buffer = '';
 
             while (
                 (mb_strlen($buffer) <= $max) &&
                 (null !== ($token = $ts->current())) &&
-                (false !== mb_strstr($operator, ($current = $token->value())))
+                (false !== mb_strstr($match, ($current = $token->value())))
             ){
                 $ts->step();
-                if(($buffer .= $current) === $operator) {
+                if(($buffer .= $current) === $match) {
                     $ts->skip();
                     return new Ast($this->label, new Token(Token::BUFFER, $buffer));
                 }
@@ -255,11 +255,6 @@ function traverse(Parser ...$parsers) : Parser
         function isFallible() : bool
         {
             return $this->stack[0]->isFallible();
-        }
-
-        function optimize() : Parser
-        {
-            return $this;
         }
     };
 }
@@ -488,15 +483,13 @@ function chain(Parser ...$links) : Parser
 {
     return new class(__FUNCTION__, ...$links) extends Parser
     {
-        private $noSpacesBetweenLinks = false;
-
         protected function parser(TokenStream $ts, Parser ...$links) /*: Result|null*/
         {
             $asts = [];
             $ast = new Ast($this->label);
 
             foreach ($links as $i => $link) {
-                if (($result = $link->parse($ts)) instanceof Ast && ! $this->skipped($i, $ts)) {
+                if (($result = $link->parse($ts)) instanceof Ast) {
                     $asts[$i] = $result;
                     $ast->append($result);
                 }
@@ -535,18 +528,6 @@ function chain(Parser ...$links) : Parser
                 if ($substack->isFallible()) return true;
 
             return false;
-        }
-
-        function noSpacesBetweenLinks() : self
-        {
-            $clone = clone $this;
-            $clone->noSpacesBetweenLinks = true;
-            return $clone;
-        }
-
-        private function skipped($link, $ts) : bool
-        {
-            return $this->noSpacesBetweenLinks && $i > 0 && $ts->index()->previous->token->isSkippable();
         }
     };
 }
@@ -626,7 +607,7 @@ function either(Parser ...$routes) : Parser
                 else
                     throw new \Exception("Cannot optimize {$this} parser stack at {$parser}");
 
-            foreach ($jumptable as $prefix => $possibleRoutes) {   
+            foreach ($jumptable as $prefix => $possibleRoutes) {
                 if (count($possibleRoutes) > 1) $jumptable[$prefix] = either(...$possibleRoutes);
                 else $jumptable[$prefix] = $possibleRoutes[0];
             }
@@ -837,28 +818,13 @@ const
 
 function ls(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
 {
-    return ·lsInternal($parser, $delimiter, $flags, function($ts, $index, $item){
-        if (! ($item instanceof Ast)) $ts->jump($index);
-    });
-}
-
-function lst(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
-{
-    return ·lsInternal($parser, $delimiter, $flags, function(){});
-}
-
-function ·lsInternal(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER, \Closure $callback) {
     if (! $parser->isFallible())
         throw new InvalidArgumentException(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
-    if ((string) $parser === __FUNCTION__)
-        throw new InvalidArgumentException(
-            'List parser unit must be labeled at ' . __FUNCTION__ . '('. $parser . ', ...)');
-
-    return new class(__FUNCTION__, $parser, $delimiter, $flags, $callback) extends Parser
+    return new class(__FUNCTION__, $parser, $delimiter, $flags) extends Parser
     {
-        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiterParser, int $flags, $callback) /*: Result|null*/
+        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiterParser, int $flags) /*: Result|null*/
         {
             $ast = new Ast($this->label);
             $stack = [];
@@ -873,7 +839,58 @@ function ·lsInternal(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD
                     $stack[] = [$item, null];
                 }
 
-                $callback($ts, $index, $item);
+                if (! ($item instanceof Ast)) $ts->jump($index);
+
+                while($tuple = array_shift($stack)) {
+                    if (($flags & LS_DISCARD_DELIMITER) === $flags) {
+                        $ast->push($tuple[0]);
+                    }
+                    else {
+                        $ast->push(new Ast(null, ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
+                    }
+                }
+
+            }
+
+            return $ast->isEmpty() ? $this->error($ts) : $ast;
+        }
+
+        function expected() : Expected
+        {
+            return $this->stack[0]->expected();
+        }
+
+        function isFallible() : bool
+        {
+            return $this->stack[0]->isFallible();
+        }
+    };
+}
+
+function lst(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
+{
+    if (! $parser->isFallible())
+        throw new InvalidArgumentException(
+            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
+
+    return new class(__FUNCTION__, $parser, $delimiter, $flags) extends Parser
+    {
+        protected function parser(TokenStream $ts, Parser $parser, Parser $delimiterParser, int $flags) /*: Result|null*/
+        {
+            $ast = new Ast($this->label);
+            $stack = [];
+            if (($item = $parser->parse($ts)) instanceof Ast) {
+                $stack[] = [$item, null];
+                while (
+                    ($index = $ts->index()) &&
+                    ($delimiter = $delimiterParser->parse($ts)) instanceof Ast &&
+                    ($item = $parser->parse($ts)) instanceof Ast
+                ) {
+                    $stack[count($stack)-1][1] = $delimiter;
+                    $stack[] = [$item, null];
+                }
+
+                if (! ($item instanceof Ast)) $stack[count($stack)-1][1] = $delimiter;
 
                 while($tuple = array_shift($stack)) {
                     if (($flags & LS_DISCARD_DELIMITER) === $flags) {

@@ -8,10 +8,7 @@ use
     TypeError
 ;
 
-/**
- * Worst class ever. This needs to be replaced by a SyntaxObject or sort of
- */
-class Ast implements Result, Context {
+class Ast implements Result {
 
     protected
         $label = null,
@@ -24,10 +21,8 @@ class Ast implements Result, Context {
     ;
 
     function __construct(string $label = null, $ast = []) {
-        if ($ast instanceof self) {
-            // $ast = $ast->unwrap();
+        if ($ast instanceof self)
             throw new InvalidArgumentException('Unmerged AST.');
-        }
 
         $this->ast = $ast;
         $this->label = $label;
@@ -45,20 +40,13 @@ class Ast implements Result, Context {
             array_shift($path);
         }
 
-        try {
-            $ret = $this->getIn($this->ast, $path);
+        $ret = $this->getIn((array) $this->ast, $path);
 
-            if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
+        if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
 
-            if ($wrap) {
-                $label = end($path) ?: null;
-                $ret = new self($label, $ret);
-            }
-        }
-        catch(TypeError $e) {
-            if ($wrap) {
-                throw new \Yay\YayException("Could not access (Ast)->{'" . implode(' ', $path) . "'}.");
-            }
+        if ($wrap) {
+            $label = end($path) ?: null;
+            $ret = new self($label, $ret instanceof Ast ? $ret->unwrap() : $ret);
         }
 
         return $ret;
@@ -85,7 +73,7 @@ class Ast implements Result, Context {
             $exposed,
             function($i) use(&$tokens){
                 if($i instanceof Token) $tokens[] = $i;
-                elseif ($i instanceof self) $tokens = array_merge($tokens, $i->tokens()); 
+                elseif ($i instanceof self) $tokens = array_merge($tokens, $i->tokens());
             }
         );
 
