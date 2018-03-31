@@ -18,10 +18,8 @@ class ParserTest extends \PHPUnit\Framework\TestCase {
     }
 
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
-        $this->expectException(
-            Halt::class,
-            implode(PHP_EOL, (array) $msg)
-        );
+        $this->expectException(Halt::class);
+        $this->expectExceptionMessage(implode(PHP_EOL, (array) $msg));
 
         $current = $ts->current();
 
