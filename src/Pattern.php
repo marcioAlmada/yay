@@ -5,12 +5,16 @@ namespace Yay;
 class Pattern extends MacroMember implements PatternInterface {
 
     const
-        E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
-        E_BAD_DOMINANCE = "Bad dominant macro marker '·' offset %d on line %d.",
+        E_BAD_CAPTURE = "Bad macro capture identifier '$' on line %d.",
+        E_BAD_DOMINANCE = "Bad dominant macro marker '$' offset %d on line %d.",
         E_BAD_PARSER_NAME = "Bad macro parser identifier '%s' on line %d.",
         E_BAD_TOKEN_TYPE = "Undefined token type '%s' on line %d.",
         E_EMPTY_PATTERN = "Empty macro pattern on line %d.",
         E_IDENTIFIER_REDEFINITION = "Redefinition of macro capture identifier '%s' on line %d."
+    ;
+
+    const
+        NULL_LABEL = '_'
     ;
 
     protected
@@ -27,7 +31,7 @@ class Pattern extends MacroMember implements PatternInterface {
         $this->scope = $scope;
         $this->pattern = $this->compile($pattern);
 
-        if ($tags->contains('·optimize')) $this->pattern = $this->pattern->optimize();
+        if ($tags->contains('optimize')) $this->pattern = $this->pattern->optimize();
     }
 
     function match(TokenStream $ts) {
@@ -42,27 +46,77 @@ class Pattern extends MacroMember implements PatternInterface {
         return $this->pattern->expected();
     }
 
+    /**
+     * Defines the preprocessor sigil started by `$(` and ended by `)`
+     */
+    private function sigil(Parser ...$parsers) : Parser {
+        return
+            chain(
+                ...array_merge(
+                    [
+                        token('$')->as('declaration'),
+                        token('(')
+                    ],
+                    $parsers,
+                    [
+                        commit( token(')'))
+                    ]
+                )
+            )
+        ;
+    }
+
+    /**
+     * Defines the preprocessor aliased capture syntax as in `as foo` used like `$(T_STRING as foo)`
+     */
+    private function alias() : Parser {
+        return
+            chain(
+                token(T_AS),
+                label()->as('name')
+            )
+            ->as('alias')
+        ;
+    }
+
     private function compile(array $tokens) {
 
+        // cg is the compiler globals
         $cg = (object)[
             'ts' => TokenStream::fromSlice($tokens),
             'parsers' => [],
         ];
 
+        /*
+         * Here we traverse the macro declaration token stream and look for
+         * declared ast node matchers under the preprocessor sigil `$(...)`
+         */
         traverse
         (
-            rtoken('/^(T_\w+)·(\w+)$/')
+            /*
+                Matches:
+                    $(T_STRING)
+                Compiles to:
+                    token(T_STRING)
+
+                Matches:
+                    $(T_STRING as foo)
+                Compiles to:
+                    token(T_STRING)->as('foo')
+             */
+            $this->sigil(rtoken('/^T_\w+$/')->as('token_constant'), optional($this->alias()))
                 ->onCommit(function(Ast $result) use($cg) {
-                    $token = $result->token();
-                    $identifier = $this->lookupCapture($token);
-                    $type = $this->lookupTokenType($token);
-                    $cg->parsers[] = token($type)->as($identifier);
+                    $token = $this->compileTokenConstant($result->{'* token_constant'});
+                    $alias = $this->compileAlias($result->{'* alias'});
+                    $cg->parsers[] = token($token)->as($alias);
                 })
             ,
+            // Matches complex parser combinator declarations
+            $this->sigil
             (
                 $parser = chain
                 (
-                    rtoken('/^·\w+$/')->as('type')
+                    label()->as('type')
                     ,
                     token('(')
                     ,
@@ -76,7 +130,6 @@ class Pattern extends MacroMember implements PatternInterface {
                                 (
                                     $parser // recursion !!!
                                 )
-                                ->as('parser')
                                 ,
                                 chain
                                 (
@@ -90,11 +143,11 @@ class Pattern extends MacroMember implements PatternInterface {
                                 ,
                                 string()->as('string')
                                 ,
-                                rtoken('/^T_\w+·\w+$/')->as('token')
+                                chain(rtoken('/^T_\w+$/')->as('token_constant'), $this->alias())->as('token')
                                 ,
-                                rtoken('/^T_\w+$/')->as('constant')
+                                rtoken('/^T_\w+$/')->as('token_constant')
                                 ,
-                                rtoken('/^·this$/')->as('this')
+                                $this->sigil(token(T_STRING, 'this'))->as('this')
                                 ,
                                 label()->as('label')
                                 ,
@@ -112,38 +165,84 @@ class Pattern extends MacroMember implements PatternInterface {
                     )
                     ->as('args')
                     ,
-                    commit
-                    (
-                        token(')')
-                    )
+                    token(')')
                     ,
-                    optional
-                    (
-                        rtoken('/^·\w+$/')->as('label'), null
-                    )
+                    optional($this->alias())
                 )
+                ->as('parser')
             )
             ->onCommit(function(Ast $result) use($cg) {
-                $cg->parsers[] = $this->compileParser($result);
+                $cg->parsers[] = $this->compileParser($result->{'* parser'});
             })
             ,
-            // handles {···layer}
-            $this->layer('{', '}', braces(), $cg)
+            /*
+                Matches:
+                    $({...})
+                Compiles to:
+                    braces()
+
+                Matches:
+                    $({...} as foo)
+                Compiles to:
+                    braces()->as('foo')
+            */
+            $this->sigil($this->layer('{', '}', braces(), $cg), optional($this->alias()))
             ,
-            // handles [···layer]
-            $this->layer('[', ']', brackets(), $cg)
+            /*
+                Matches:
+                    $([...])
+                Compiles to:
+                    brackets()
+
+                Matches:
+                    $([...] as foo)
+                Compiles to:
+                    brackets()->as('foo')
+            */
+            $this->sigil($this->layer('[', ']', brackets(), $cg), optional($this->alias()))
             ,
-            // handles (···layer)
-            $this->layer('(', ')', parentheses(), $cg)
+            /*
+                Matches:
+                    $((...))
+                Compiles to:
+                    parentheses()
+
+                Matches:
+                    $((...) as foo)
+                Compiles to:
+                    parentheses()->as('foo')
+            */
+            $this->sigil($this->layer('(', ')', parentheses(), $cg), optional($this->alias()))
             ,
-            // handles  non delimited ···layer
-            rtoken('/^···(\w+)$/')
+            /*
+                Matches:
+                    $(...)
+                Compiles to:
+                    layer()
+
+                Matches:
+                    $(... as foo)
+                Compiles to:
+                    layer()->as('foo')
+            */
+            $this->sigil(token(T_ELLIPSIS), optional($this->alias()))
                 ->onCommit(function(Ast $result) use($cg) {
-                    $identifier = $this->lookupCapture($result->token());
-                    $cg->parsers[] = layer()->as($identifier);
+                    $alias = $this->compileAlias($result->{'* alias'});
+                    $cg->parsers[] = layer()->as($alias);
                 })
             ,
-            token(T_STRING, '·')
+            /*
+                Matches:
+                    $$$ <the rest of the pattern>
+                Compiles to:
+                    commit(<the rest of the pattern>)
+
+                > Causes the pattern after $ to throw a preprocessor error in case the pattern is
+                not fully matched. The normal behavior is to silent failure and backtrack. This is
+                useful to introduce first class language features with elegant syntax errors within
+                DSLs
+             */
+            buffer('$$$')
                 ->onCommit(function(Ast $result) use ($cg) {
                     $offset = \count($cg->parsers);
                     if (0 !== $this->dominance || 0 === $offset) {
@@ -152,12 +251,23 @@ class Pattern extends MacroMember implements PatternInterface {
                     $this->dominance = $offset;
                 })
             ,
-            rtoken('/·/')
-                ->onCommit(function(Ast $result) {
-                    $token = $result->token();
-                    $this->fail(self::E_BAD_CAPTURE, $token, $token->line());
+            /*
+                Matches:
+                    Possible orphaned $()
+
+                > Causes a preprocessor error pointing a macro syntax error
+             */
+            chain(token('$')->as('declaration'), token('('))
+                ->onCommit(function(Ast $result) use ($cg) {
+                    $this->fail(self::E_BAD_CAPTURE, $result->{'* declaration'}->token()->line());
                 })
             ,
+            /*
+                Matches:
+                    Anything the preprocessor is not aware of
+                Compiles to:
+                    A literal pattern of whatever was matched
+             */
             any()
                 ->onCommit(function(Ast $result) use($cg) {
                     $cg->parsers[] = token($result->token());
@@ -167,7 +277,7 @@ class Pattern extends MacroMember implements PatternInterface {
 
         $this->specificity = \count($cg->parsers);
 
-        // check if macro dominance '·' is last token
+        // check if macro dominance '$' is last token
         if ($this->dominance === $this->specificity)
             $this->fail(self::E_BAD_DOMINANCE, $this->dominance, $cg->ts->last()->line());
 
@@ -203,31 +313,30 @@ class Pattern extends MacroMember implements PatternInterface {
             (
                 token($start)
                 ,
-                rtoken('/^···(\w+)$/')->as('label')
+                token(T_ELLIPSIS)
                 ,
-                commit
-                (
-                    token($end)
-                )
+                $this->alias()
+                ,
+                commit(token($end))
             )
             ->onCommit(function(Ast $result) use($parser, $cg) {
-                $identifier = $this->lookupCapture($result->label);
+                $identifier = $this->compileAlias($result->{'* alias'});
                 $cg->parsers[] = (clone $parser)->as($identifier);
             });
     }
 
-    protected function lookupTokenType(Token $token) : int {
-        $type = explode('·', (string) $token)[0];
+    protected function compileTokenConstant(Ast $constant) : int {
+        $type = (string) $constant->token();
         if (! defined($type))
-            $this->fail(self::E_BAD_TOKEN_TYPE, $type, $token->line());
+            $this->fail(self::E_BAD_TOKEN_TYPE, $type, $constant->token()->line());
 
         return constant($type);
     }
 
-    private function lookupCapture(Token $token) : string {
-        $identifier = (string) $token;
+    private function compileAlias(Ast $alias) : string {
+        $identifier = $alias->{'name'} ? (string) $alias->{'* name'}->token() : '_';
 
-        if ($identifier === '·_') return '';
+        if ($identifier === self::NULL_LABEL) return '';
 
         if ($this->scope->contains($identifier))
             $this->fail(self::E_IDENTIFIER_REDEFINITION, $identifier, $token->line());
@@ -237,12 +346,11 @@ class Pattern extends MacroMember implements PatternInterface {
         return $identifier;
     }
 
-    private function lookupParser(Token $token) : callable {
-        $identifier = (string) $token;
-        $parser = '\Yay\\' . explode('·', $identifier)[1];
+    private function compileParserCallable(Ast $type) : callable {
+        $parser = implode('', $type->tokens());
 
-        if ($identifier === '·_')
-            return function(){ return midrule(function(){ return new Ast; }); };
+        if (0 !== strpos($parser, '\\'))
+            $parser = '\Yay\\' . $parser;
 
         if (! function_exists($parser))
             $this->fail(self::E_BAD_PARSER_NAME, $identifier, $token->line());
@@ -251,11 +359,11 @@ class Pattern extends MacroMember implements PatternInterface {
     }
 
     protected function compileParser(Ast $ast) : Parser {
-        $parser = $this->lookupParser($ast->{'* type'}->token());
+        $parser = $this->compileParserCallable($ast->{'* type'});
         $args = $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
-        if (($label = $ast->{'label'}) && $ast->{'* type'}->token() != '·_')
-            $parser->as($this->lookupCapture($label));
+        $alias = $this->compileAlias($label = $ast->{'* alias'});
+        $parser->as((string) $alias);
 
         return $parser;
     }
@@ -268,10 +376,12 @@ class Pattern extends MacroMember implements PatternInterface {
                 $compiled[] = pointer($this->pattern);
                 break;
             case 'token':
-                $token = $arg->token();
-                $type = $this->lookupTokenType($token);
-                $label = $this->lookupCapture($token);
-                $compiled[] = token($type)->as($label);
+                $token = $this->compileTokenConstant($arg->{'* token_constant'});
+                $alias = $this->compileAlias($arg->{'* alias'});
+                $compiled[] = token($token)->as($alias);
+                break;
+            case 'token_constant':
+                $compiled[] = $this->compileTokenConstant($arg);
                 break;
             case 'label':
             case 'literal':
@@ -282,9 +392,6 @@ class Pattern extends MacroMember implements PatternInterface {
                 break;
             case 'string':
                 $compiled[] = trim((string) $arg->token(), '"\'');
-                break;
-            case 'constant': // T_*
-                $compiled[] = $this->lookupTokenType($arg->token());
                 break;
             case 'function': // function(...){...}
                 $compiled[] = $this->compileAnonymousFunctionArg($arg);
