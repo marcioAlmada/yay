@@ -38,7 +38,7 @@ final class Engine {
                         $tstring = $token->value();
 
                         // skip when something looks like a new macro to be parsed
-                        if ('macro' === $tstring) break;
+                        if ('$' === $tstring) break;
 
                         // here attempt to match and expand userland macros
                         // but just in case at least one macro passes the entry point heuristics
@@ -66,16 +66,22 @@ final class Engine {
                 (
                     chain
                     (
-                        token(T_STRING, 'macro')->as('declaration')
+                        token('$')->as('declaration')
+                        ,
+                        token('(')
+                        ,
+                        token(T_STRING, 'macro')
                         ,
                         optional
                         (
                             repeat
                             (
-                                rtoken('/^·\w+$/')
+                                label()
                             )
                         )
                         ->as('tags')
+                        ,
+                        token(')')
                         ,
                         lookahead
                         (
@@ -122,7 +128,7 @@ final class Engine {
                     $scope = Map::fromEmpty();
                     $tags = Map::fromValues(array_map('strval', $macroAst->{'tags'}));
 
-                    if ($tags->contains('·grammar')) {
+                    if ($tags->contains('grammar')) {
                         $pattern = new GrammarPattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
                     }
                     else {
@@ -135,7 +141,7 @@ final class Engine {
 
                     $this->registerDirective($macro);
 
-                    if ($macro->tags()->contains('·global')) $this->globalDirectives[] = $macro;
+                    if ($macro->tags()->contains('global')) $this->globalDirectives[] = $macro;
                 })
             )
         ;
