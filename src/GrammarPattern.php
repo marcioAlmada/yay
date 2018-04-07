@@ -139,10 +139,13 @@ class GrammarPattern extends Pattern implements PatternInterface {
                 ,
                 pointer($sequence)->as('member')
                 ,
-                token(',')
-                ,
-                (clone $literal)->as('delimiter')
-                ,
+                optional(
+                    chain(
+                        token(',')
+                        ,
+                        (clone $literal)->as('delimiter')
+                    )
+                )->as('hasDelimiter'),
                 token(')')
             )
             ->as('list')
@@ -343,7 +346,9 @@ class GrammarPattern extends Pattern implements PatternInterface {
                         break;
                     case 'list':
                         $link = $this->compileSequence($ast->{'* member'}, $label);
-                        $chain[] = optional(ls($link, token($ast->{'* delimiter'}->token())));
+                        /** @var Ast $ast */
+                        $ast = $ast->{'* hasDelimiter delimiter'};
+                        $chain[] = $ast->isEmpty() ? optional(repeat($link)) : optional(ls($link, token($ast->token())));
                         break;
                     case 'commit':
                         $commit = true;
