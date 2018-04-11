@@ -174,6 +174,10 @@ class Ast implements Result {
         return \is_array($this->ast) ? \array_keys($this->ast) : [];
     }
 
+    function implode(string $glue = '') : string {
+        return implode($glue, $this->tokens());
+    }
+
     /**
      * Stolen from igorw/get-in because YAY can't have a lot of dependencies
      */
