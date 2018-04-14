@@ -70,73 +70,85 @@ final class Engine {
                         ,
                         token('(')
                         ,
-                        token(T_STRING, 'macro')
-                        ,
-                        optional
-                        (
-                            repeat
-                            (
-                                label()
-                            )
-                        )
-                        ->as('tags')
-                        ,
-                        token(')')
-                        ,
-                        lookahead
-                        (
-                            token('{')
-                        )
-                        ,
                         commit
                         (
                             chain
                             (
-                                braces()->as('pattern')
-                                ,
-                                token(T_SR)
+                                token(T_STRING, 'macro')
                                 ,
                                 optional
                                 (
-                                    chain
+                                    repeat
                                     (
-                                        token(T_FUNCTION)
-                                        ,
-                                        parentheses()->as('args')
-                                        ,
-                                        braces()->as('body')
-                                        ,
-                                        token(T_SR)
+                                        chain(token(':'), label()->as('tag'))
                                     )
                                 )
-                                ->as('compiler')
+                                ->as('tags')
                                 ,
-                                braces()->as('expansion')
+                                token(')')
+                                ,
+                                lookahead
+                                (
+                                    token('{')
+                                )
+                                ,
+                                commit
+                                (
+                                    chain
+                                    (
+                                        braces()->as('pattern')
+                                        ,
+                                        token(T_SR)
+                                        ,
+                                        optional
+                                        (
+                                            chain
+                                            (
+                                                token(T_FUNCTION)
+                                                ,
+                                                parentheses()->as('args')
+                                                ,
+                                                braces()->as('body')
+                                                ,
+                                                token(T_SR)
+                                            )
+                                        )
+                                        ->as('compiler')
+                                        ,
+                                        braces()->as('expansion')
+                                    )
+                                )
+                                ->as('body')
+                                ,
+                                optional
+                                (
+                                    token(';')
+                                )
                             )
-                        )
-                        ->as('body')
-                        ,
-                        optional
-                        (
-                            token(';')
+                            ->as('macro')
                         )
                     )
                     ,
                     CONSUME_DO_TRIM
                 )
                 ->onCommit(function(Ast $macroAst) {
+
                     $scope = Map::fromEmpty();
-                    $tags = Map::fromValues(array_map('strval', $macroAst->{'tags'}));
+
+                    $tags = Map::fromValues(array_map(
+                        function(Ast $node) :string { return (string) $node->{'* tag'}->token(); },
+                        iterator_to_array($macroAst->{'* macro tags'}->list())
+                    ));
 
                     if ($tags->contains('grammar')) {
-                        $pattern = new GrammarPattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
+                        $pattern = new GrammarPattern($macroAst->{'declaration'}->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
                     }
                     else {
-                        $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
+                        $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
                     }
 
-                    $compilerPass = new CompilerPass($macroAst->{'body compiler'});
-                    $expansion = new Expansion($macroAst->{'body expansion'}, $tags, $scope);
+                    $compilerPass = new CompilerPass($macroAst->{'macro body compiler'});
+                    $expansion = new Expansion($macroAst->{'macro body expansion'}, $tags, $scope);
                     $macro = new Macro($tags, $pattern, $compilerPass, $expansion);
 
                     $this->registerDirective($macro);
