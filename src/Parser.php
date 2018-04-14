@@ -19,7 +19,7 @@ abstract class Parser {
 
     protected
         $type,
-        $label,
+        $label = '',
         $stack,
         $onCommit,
         $errorLevel = Error::DISABLED,
@@ -41,7 +41,7 @@ abstract class Parser {
 
     final function __toString() : string
     {
-        return $this->type . ($this->label !== null ? " as {$this->label}" : '');
+        return $this->type . ($this->label !== '' ? " as {$this->label}" : '');
     }
 
     final function __debugInfo()
@@ -105,7 +105,7 @@ abstract class Parser {
         return $this;
     }
 
-    final function as($label) : self
+    function as(string $label) : self
     {
         if ('' !== (string) $label) {
             if(false !== strpos($label, ' '))

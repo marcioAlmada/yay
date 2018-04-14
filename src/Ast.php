@@ -11,7 +11,7 @@ use
 class Ast implements Result {
 
     protected
-        $label = null,
+        $label = '',
         $ast = []
     ;
 
@@ -20,7 +20,7 @@ class Ast implements Result {
         $meta
     ;
 
-    function __construct(string $label = null, $ast = []) {
+    function __construct(string $label = '', $ast = []) {
         if ($ast instanceof self)
             throw new InvalidArgumentException('Unmerged AST.');
 
@@ -113,7 +113,7 @@ class Ast implements Result {
         $isAssociative = \count(array_filter(array_keys($array), 'is_string')) > 0;
 
         foreach ($array as $label => $value)
-            yield new self(($isAssociative ? $label : null), $value);
+            yield new self(($isAssociative ? $label : ''), $value);
     }
 
     function flatten() : self {
@@ -121,7 +121,7 @@ class Ast implements Result {
     }
 
     function append(self $ast) : self {
-        if (null !== $ast->label) {
+        if ('' !== $ast->label) {
             if (isset($this->ast[$ast->label]))
                 throw new InvalidArgumentException(
                     "Duplicated AST label '{$ast->label}'.");
@@ -143,8 +143,8 @@ class Ast implements Result {
         return null === $this->ast || 0 === \count($this->ast);
     }
 
-    function as(string $label = null) : Result {
-        if (null !== $label) $this->label = $label;
+    function as(string $label = '') : Result {
+        if ('' !== $label) $this->label = $label;
 
         return $this;
     }
