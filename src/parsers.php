@@ -1083,6 +1083,31 @@ function midrule(callable $midrule, bool $isFallible = true, Expected $expected 
     };
 }
 
+function _() : Parser {
+    return new  class(__FUNCTION__) extends Parser
+    {
+        function parser(TokenStream $ts) : Ast
+        {
+            return new Ast;
+        }
+
+        function expected() : Expected
+        {
+            return new Expected;
+        }
+
+        function isFallible() : bool
+        {
+            return false;
+        }
+
+        function as(string $label) : Parser
+        {
+            return $this;
+        }
+    };
+}
+
 function expression(string $namespace = '') : Parser
 {
     static $repository = [];
