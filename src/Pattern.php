@@ -46,39 +46,6 @@ class Pattern extends MacroMember implements PatternInterface {
         return $this->pattern->expected();
     }
 
-    /**
-     * Defines the preprocessor sigil started by `$(` and ended by `)`
-     */
-    private function sigil(Parser ...$parsers) : Parser {
-        return
-            chain(
-                ...array_merge(
-                    [
-                        token('$')->as('declaration'),
-                        token('(')
-                    ],
-                    $parsers,
-                    [
-                        commit( token(')'))
-                    ]
-                )
-            )
-        ;
-    }
-
-    /**
-     * Defines the preprocessor aliased capture syntax as in `as foo` used like `$(T_STRING as foo)`
-     */
-    private function alias() : Parser {
-        return
-            chain(
-                token(T_AS),
-                label()->as('name')
-            )
-            ->as('alias')
-        ;
-    }
-
     private function compile(array $tokens) {
 
         // cg is the compiler globals
