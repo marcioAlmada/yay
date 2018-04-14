@@ -3,7 +3,7 @@
 namespace Yay;
 
 interface Result {
-	function as(string $label = null) : self;
+	function as(string $label = '') : self;
 	function withMeta(Map $meta) : self;
 	function meta() : Map;
 }
