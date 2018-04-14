@@ -55,8 +55,8 @@ class Pattern extends MacroMember implements PatternInterface {
         ];
 
         /*
-         * Here we traverse the macro declaration token stream and look for
-         * declared ast node matchers under the preprocessor sigil `$(...)`
+            Here we traverse the macro declaration token stream and look for
+            declared ast node matchers under the preprocessor sigil `$(...)`
          */
         traverse
         (
@@ -274,9 +274,9 @@ class Pattern extends MacroMember implements PatternInterface {
                 ,
                 token(T_ELLIPSIS)
                 ,
-                $this->alias()
-                ,
                 commit(token($end))
+                ,
+                $this->alias()
             )
             ->onCommit(function(Ast $result) use($parser, $cg) {
                 $identifier = $this->compileAlias($result->{'* alias'});
@@ -306,15 +306,21 @@ class Pattern extends MacroMember implements PatternInterface {
     }
 
     private function compileParserCallable(Ast $type) : callable {
-        $parser = implode('', $type->tokens());
+        $tokens = $type->tokens();
 
-        if (0 !== strpos($parser, '\\'))
-            $parser = '\Yay\\' . $parser;
+        $function = implode('', $tokens);
 
-        if (! function_exists($parser))
-            $this->fail(self::E_BAD_PARSER_NAME, $identifier, $token->line());
+        if (0 !== strpos($function, '\\'))
+            $function = '\Yay\\' . $function;
 
-        return $parser;
+        if (! function_exists($function))
+            $this->fail(
+                self::E_BAD_PARSER_NAME,
+                $function,
+                $tokens[0] != '\\' ? $tokens[0]->line() : $tokens[1]->line()
+            );
+
+        return $function;
     }
 
     protected function compileParser(Ast $ast) : Parser {
