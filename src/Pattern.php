@@ -117,14 +117,6 @@ class Pattern extends MacroMember implements PatternInterface {
                                 $this->sigil(token(T_STRING, 'this'))->as('this')
                                 ,
                                 label()->as('label')
-                                ,
-                                between
-                                (
-                                    token(T_CONSTANT_ENCAPSED_STRING, "''"),
-                                    any(),
-                                    token(T_CONSTANT_ENCAPSED_STRING, "''")
-                                )
-                                ->as('literal')
                             )
                             ,
                             token(',')
@@ -351,7 +343,6 @@ class Pattern extends MacroMember implements PatternInterface {
                 $compiled[] = $this->compileTokenConstant($arg);
                 break;
             case 'label':
-            case 'literal':
                 $compiled[] = token($arg->token());
                 break;
             case 'parser':
