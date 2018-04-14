@@ -3,21 +3,21 @@ Proof of concept inlined generics
 --FILE--
 <?php
 
-macro ·unsafe {
+$(macro :unsafe) {
 
     /** generic stack class macro */
-    Stack < ·ns()·type >
+    Stack < $(ns() as type) >
 
 } >> {
 
     class {
         private $stack = [];
 
-        function push(·type $item) {
+        function push($(type) $item) {
             $this->stack[] = $item;
         }
 
-        function pop() : ·type {
+        function pop() : $(type) {
             return end($this->stack);
         }
     }

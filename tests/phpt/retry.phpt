@@ -3,14 +3,14 @@ Proof of concept "retry" implementation --pretty-print
 --FILE--
 <?php
 
-macro { retry; } >> { goto retry; }
+$(macro) { retry; } >> { goto retry; }
 
-macro {
+$(macro) {
     try {
-        ···try_body
+        $(layer() as try_body)
     }
-    catch(·ns()·type T_VARIABLE·exception) {
-        ···catch_body
+    catch($(ns() as type) $(T_VARIABLE as exception)) {
+        $(layer() as catch_body)
     }
 } >> {
     /*
@@ -22,10 +22,10 @@ macro {
     */
     try {
         retry:
-        ···try_body
+        $(try_body)
     }
-    catch(·type T_VARIABLE·exception) {
-        ··expand(···catch_body)
+    catch($(type) $(exception)) {
+        $$(expand($(catch_body)))
     }
 }
 
@@ -60,11 +60,11 @@ function request_something()
     }
 }
 try {
-    retry·0:
+    retry___0:
     request_something();
 } catch (Exception $e) {
     echo $e->getMessage() . PHP_EOL;
-    goto retry·0;
+    goto retry___0;
 }
 echo 'END';
 
