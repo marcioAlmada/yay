@@ -3,40 +3,43 @@ Check that midrule works
 --FILE--
 <?php
 
-macro {
-    ·chain(
-        matched,
-        ·midrule(function($stream) {
-            $index = $stream->index();
+$(macro) {
+    $(
+        chain(
+            attempt,
+            midrule(function($stream) {
+                $index = $stream->index();
 
-            if (in_array(strtolower($stream->current()), ["true", "false", "null"])) {
-                return new \Yay\Error(null, null, $stream->last());
-            }
+                if (in_array(strtolower($stream->current()), ["true", "false", "null"])) {
+                    return new \Yay\Error(null, null, $stream->last());
+                }
 
-            return new \Yay\Ast;
-        }),
-        ·ns()·ns
+                return new \Yay\Ast;
+            }),
+            ns() as ns
+        )
     )
 } >> {
-    replaced ·ns
+    mateched $(ns)
 }
 
-matched true
-matched false
-matched null
 
-matched strtoupper
-matched ucwords
+attempt true
+attempt false
+attempt null
+
+attempt strtoupper
+attempt ucwords
 
 ?>
 --EXPECTF--
 <?php
 
-matched true
-matched false
-matched null
+attempt true
+attempt false
+attempt null
 
-replaced strtoupper
-replaced ucwords
+mateched strtoupper
+mateched ucwords
 
 ?>

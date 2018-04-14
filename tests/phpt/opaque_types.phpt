@@ -3,8 +3,8 @@ Opaque types with macros that generate other macros :>
 --FILE--
 <?php
 
-macro {
-    type T_STRING·newtype = T_STRING·basetype;
+$(macro) {
+    type $(T_STRING as newtype) = $(T_STRING as newtype);
 } >> {
     macro \\(·optimize) {
         \\(·either(instanceof, ·token(','), ·token('('))·prec) T_STRING·newtype

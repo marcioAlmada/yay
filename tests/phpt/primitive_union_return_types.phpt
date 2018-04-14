@@ -1,35 +1,35 @@
 --TEST--
-Primitive union return types
+Primitive union return types --pretty-print
 --FILE--
 <?php
 
-macro ·unsafe {
+$(macro :unsafe) {
     // this doesn't work with scalars yet
     // a more procedural macro construct would be necessary
-    function ·optional(T_STRING·name) (···args)
-        // match union return type, like ":<A>|<\B>|<A\B\C>"
-        ·optional
+    function $(optional(token(T_STRING) as name)) $((...) as args)
+    // match union return type, like ":<A>|<\B>|<A\B\C>"
+    $(
+        optional
         (
-            ·chain
+            chain
             (
-                ·token(':'),
-                ·ls
+                token(':'),
+                ls
                 (
-                    ·ns()·type,
-                    ·token('|')
+                    ns() as type,
+                    token('|')
                 )
-                ·union
+                as union
             )
-            ·return_type
+            as return_type
         )
-    {
-        ···body
-    }
+    )
+    $({...} as body)
 } >> {
-    function T_STRING·name (···args)
+    function $(name) ($(args))
     {
-        $fn = (function(···args){
-            ···body
+        $fn = (function($(args)){
+            $(body)
         });
 
         $ret = isset($this)
@@ -37,9 +37,11 @@ macro ·unsafe {
             : $fn(...function_get_args());
 
         if (
-            ·return_type ··· { ·union ··· ( && ) {
-                ! $ret instanceof ·type
-            }}
+            $(return_type ... {
+                $(union ... ( && ) {
+                    ! $ret instanceof $(type)
+                })
+            })
         ) {
             throw new TypeError("Some fancy type Error");
         }
@@ -66,55 +68,33 @@ $fn = function() : Foo|Bar {
 --EXPECTF--
 <?php
 
-class Foo {
-    function bar (bool $x)
+class Foo
+{
+    function bar(bool $x)
     {
-        $fn = (function(bool $x){
+        $fn = function (bool $x) {
             if ($x) {
-            return new Z;
-        } else {
-            return new A;
-        }
-    
-        });
-
-        $ret = isset($this)
-            ? $fn->call($this, ...function_get_args())
-            : $fn(...function_get_args());
-
-        if (
-            ! $ret instanceof A
-            && ! $ret instanceof Foo\B
-            && ! $ret instanceof \Foo\Bar\C
-            
-        ) {
+                return new Z();
+            } else {
+                return new A();
+            }
+        };
+        $ret = isset($this) ? $fn->call($this, ...function_get_args()) : $fn(...function_get_args());
+        if (!$ret instanceof A && !$ret instanceof Foo\B && !$ret instanceof \Foo\Bar\C) {
             throw new TypeError("Some fancy type Error");
         }
-
         return $ret;
     }
 }
-
-$fn = function  ()
-    {
-        $fn = (function(){
-            return null;
-
-        });
-
-        $ret = isset($this)
-            ? $fn->call($this, ...function_get_args())
-            : $fn(...function_get_args());
-
-        if (
-            ! $ret instanceof Foo
-            && ! $ret instanceof Bar
-            
-        ) {
-            throw new TypeError("Some fancy type Error");
-        }
-
-        return $ret;
+$fn = function () {
+    $fn = function () {
+        return null;
     };
+    $ret = isset($this) ? $fn->call($this, ...function_get_args()) : $fn(...function_get_args());
+    if (!$ret instanceof Foo && !$ret instanceof Bar) {
+        throw new TypeError("Some fancy type Error");
+    }
+    return $ret;
+};
 
 ?>

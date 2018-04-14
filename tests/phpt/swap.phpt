@@ -3,10 +3,10 @@ Swap
 --FILE--
 <?php
 
-macro {
-    swap ( T_VARIABLE·A , T_VARIABLE·B )
+$(macro) {
+    swap ( $(T_VARIABLE as A) , $(T_VARIABLE as B) )
 } >> {
-    (list(T_VARIABLE·A, T_VARIABLE·B) = [T_VARIABLE·B, T_VARIABLE·A])
+    (list($(A), $(B)) = [$(B), $(A)])
 }
 
 $x = 1;
