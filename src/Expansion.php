@@ -92,33 +92,35 @@ class Expansion extends MacroMember {
         traverse
         (
             /*
-                Matches `\$(...)` escape syntax, as in:
+                Matches `\\$(...)` escape syntax, as in:
 
-                    \$(something to be ignored by the preprocessor)
+                    \\$(something to be ignored by the preprocessor)
 
                 Compiles to:
 
-                    Token(Token::CLOAKED, 'something to be ignored by the preprocessor')
+                    Token(Token::ESCAPED, '$(something to be ignored by the preprocessor)')
 
                 This enables anyone to use the reserved sigil `$()` as part of an expansion
-                by escapting it as `\$()`
+                by escapting it as `\\$()`
              */
             consume
             (
                 chain
                 (
-                    buffer('\$')
+                    buffer('\\\\$(')->as('declaration')
                     ,
-                    parentheses()->as('cloaked')
+                    layer()
+                    ,
+                    token(')')
                 )
             )
             ->onCommit(function(Ast $result) use ($cg){
                 $cg->ts->inject(
                     TokenStream::fromSequence(
                         new Token(
-                            Token::CLOAKED,
-                            implode('', $result->cloaked),
-                            $result->cloaked[0]->line()
+                            Token::ESCAPED,
+                            $result->implode(),
+                            $result->{'* declaration'}->token()->line()
                         )
                     )
                 );
@@ -126,7 +128,7 @@ class Expansion extends MacroMember {
             })
             ,
             // skips the escape token produced by the rule above ^
-            token(Token::CLOAKED)
+            token(Token::ESCAPED)
             ,
             /*
                 Here we analyze the expansion and mark the expansion as constant or not.
@@ -225,7 +227,7 @@ class Expansion extends MacroMember {
             $parser ??
             traverse
             (
-                token(Token::CLOAKED)
+                token(Token::ESCAPED)
                 ,
                 consume
                 (
@@ -416,12 +418,12 @@ class Expansion extends MacroMember {
             (
                 consume
                 (
-                    token(Token::CLOAKED)
+                    token(Token::ESCAPED)
                 )
                 ->onCommit(function(Ast $result) use($cg) {
                     $cg->ts->inject(
                         TokenStream::fromSourceWithoutOpenTag(
-                            (string) $result->token()
+                            ltrim((string) $result->token(), '\\')
                         )
                     );
                 })

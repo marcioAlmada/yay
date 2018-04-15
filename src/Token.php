@@ -17,7 +17,7 @@ class Token implements \JsonSerializable {
         ANY = 1021,
         NONE = 1032,
         BUFFER = 1054,
-        CLOAKED = 1065
+        ESCAPED = 1065
     ;
 
     /**
@@ -27,7 +27,7 @@ class Token implements \JsonSerializable {
         self::ANY => 'ANY',
         self::NONE => 'NONE',
         self::BUFFER => 'BUFFER',
-        self::CLOAKED => 'CLOAKED'
+        self::ESCAPED => 'ESCAPED'
     ];
 
     protected
