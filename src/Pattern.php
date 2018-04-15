@@ -298,7 +298,7 @@ class Pattern extends MacroMember implements PatternInterface {
         if ($identifier === self::NULL_LABEL) return '';
 
         if ($this->scope->contains($identifier))
-            $this->fail(self::E_IDENTIFIER_REDEFINITION, $identifier, $token->line());
+            $this->fail(self::E_IDENTIFIER_REDEFINITION, $identifier, $alias->{'* name'}->token()->line());
 
         $this->scope->add($identifier);
 
