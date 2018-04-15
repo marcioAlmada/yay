@@ -20,12 +20,11 @@ abstract class MacroMember {
             chain(
                 ...array_merge(
                     [
-                        token('$')->as('declaration'),
-                        token('(')
+                        buffer('$(')->as('declaration'),
                     ],
                     $parsers,
                     [
-                        commit( token(')'))
+                        commit(token(')'))
                     ]
                 )
             )
