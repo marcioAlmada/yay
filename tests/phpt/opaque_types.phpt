@@ -4,12 +4,14 @@ Opaque types with macros that generate other macros :>
 <?php
 
 $(macro) {
-    type $(T_STRING as newtype) = $(T_STRING as newtype);
+	// this macro creates another macro that when run replaces the literal
+	// carried by $(basetype) with the literal carried by $(newtype)
+    type $(T_STRING as basetype) = $(T_STRING as newtype);
 } >> {
-    macro \\(·optimize) {
-        \\(·either(instanceof, ·token(','), ·token('('))·prec) T_STRING·newtype
+    \\$(macro) {
+        \\$(either(instanceof, token(','), token('(')) as prec) \\$(optional(indentation()) as whitespace) $(basetype)
     } >> {
-        \\(·prec) T_STRING·basetype
+        \\$(prec)\\$(whitespace)$(newtype)
     }
 }
 
@@ -23,7 +25,7 @@ function register_user(\Username $nick, \Password $password ) : User {}
 --EXPECTF--
 <?php
 
-function register_user( string $nick, string $password ) : User {}
+function register_user(string $nick, string $password ) : User {}
 function register_user(\Username $nick, \Password $password ) : User {}
 
 ?>
