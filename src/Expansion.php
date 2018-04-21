@@ -92,7 +92,7 @@ class Expansion extends MacroMember {
         traverse
         (
             /*
-                Matches `\\$(...)` escape syntax, as in:
+                Matches `\\$(...)` and `\\$$(...)` escape syntax, as in:
 
                     \\$(something to be ignored by the preprocessor)
 
@@ -107,7 +107,7 @@ class Expansion extends MacroMember {
             (
                 chain
                 (
-                    buffer('\\\\$(')->as('declaration')
+                    either(buffer('\\\\$('), buffer('\\\\$$('))->as('declaration')
                     ,
                     layer()
                     ,
@@ -120,11 +120,12 @@ class Expansion extends MacroMember {
                         new Token(
                             Token::ESCAPED,
                             $result->implode(),
-                            $result->{'* declaration'}->token()->line()
+                            $result->{'* declaration'}->tokens()[0]->line()
                         )
                     )
                 );
                 $this->cloaked = true;
+                $this->constant = false;
             })
             ,
             // skips the escape token produced by the rule above ^
@@ -246,7 +247,7 @@ class Expansion extends MacroMember {
 
                     $tokens = $cg->this->lookupAstOptional($result->{'label'}, $cg->context)->tokens();
 
-                    $expansion = TokenStream::fromSlice($tokens ? [$result->{'label'}] : $result->{'expansion'});
+                    $expansion = TokenStream::fromSlice($tokens ?: $result->{'expansion'});
 
                     $mutation = $cg->this->mutate(
                         $expansion,
@@ -400,7 +401,7 @@ class Expansion extends MacroMember {
 
         $cg = (object) [
             'ts' => $ts,
-            'context' => $context->label() ? new Ast(null, [$context->label() => $context->unwrap()]) : $context,
+            'context' => $context->label() ? new Ast('', [$context->label() => $context->unwrap()]) : $context,
             'engine' => $engine,
             'this' => $this,
         ];
@@ -437,14 +438,14 @@ class Expansion extends MacroMember {
     }
 
     private function lookupExpander(Ast $expander) : string {
-        $name = $expander->implode();
+        $resolvedName = $name = $expander->implode();
 
-        if (! $expander->{'full-qualified'}) $name = '\Yay\Dsl\Expanders\\' . $name;
+        if (! $expander->{'full-qualified'}) $resolvedName = '\Yay\Dsl\Expanders\\' . $name;
 
-        if (! function_exists($name))
-            $this->fail(self::E_BAD_EXPANDER, $name, $token->line());
+        if (! function_exists($resolvedName))
+            $this->fail(self::E_BAD_EXPANDER, $name, $expander->tokens()[0]->line());
 
-        return $name;
+        return $resolvedName;
     }
 
     private function lookupScope(Token $token, Map $context, string $error) : bool {

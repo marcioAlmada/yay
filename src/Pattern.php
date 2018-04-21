@@ -5,8 +5,8 @@ namespace Yay;
 class Pattern extends MacroMember implements PatternInterface {
 
     const
-        E_BAD_CAPTURE = "Bad macro capture identifier '$' on line %d.",
-        E_BAD_DOMINANCE = "Bad dominant macro marker '$' offset %d on line %d.",
+        E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
+        E_BAD_DOMINANCE = "Bad dominant macro marker '$!' offset %d on line %d.",
         E_BAD_PARSER_NAME = "Bad macro parser identifier '%s' on line %d.",
         E_BAD_TOKEN_TYPE = "Undefined token type '%s' on line %d.",
         E_EMPTY_PATTERN = "Empty macro pattern on line %d.",
@@ -192,7 +192,7 @@ class Pattern extends MacroMember implements PatternInterface {
             ,
             /*
                 Matches:
-                    $$$ <the rest of the pattern>
+                    $! <the rest of the pattern>
                 Compiles to:
                     commit(<the rest of the pattern>)
 
@@ -201,11 +201,11 @@ class Pattern extends MacroMember implements PatternInterface {
                 useful to introduce first class language features with elegant syntax errors within
                 DSLs
              */
-            buffer('$$$')
+            buffer('$!')
                 ->onCommit(function(Ast $result) use ($cg) {
                     $offset = \count($cg->parsers);
                     if (0 !== $this->dominance || 0 === $offset) {
-                        $this->fail(self::E_BAD_DOMINANCE, $offset, $result->token()->line());
+                        $this->fail(self::E_BAD_DOMINANCE, $offset, $result->tokens()[0]->line());
                     }
                     $this->dominance = $offset;
                 })
@@ -216,9 +216,9 @@ class Pattern extends MacroMember implements PatternInterface {
 
                 > Causes a preprocessor error pointing a macro syntax error
              */
-            chain(token('$')->as('declaration'), token('('))
+            $this->sigil(layer())
                 ->onCommit(function(Ast $result) use ($cg) {
-                    $this->fail(self::E_BAD_CAPTURE, $result->{'* declaration'}->token()->line());
+                    $this->fail(self::E_BAD_CAPTURE, $result->implode(), $result->declaration[0]->line());
                 })
             ,
             /*
