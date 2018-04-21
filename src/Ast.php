@@ -45,7 +45,7 @@ class Ast implements Result {
         if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
 
         if ($wrap) {
-            $label = end($path) ?: null;
+            $label = end($path) ?: '';
             $ret = new self($label, $ret instanceof Ast ? $ret->unwrap() : $ret);
         }
 
