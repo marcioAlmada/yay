@@ -1,19 +1,19 @@
 --TEST--
-Test for !· operator
+Test for ! operator
 --FILE--
 <?php
 
-macro {
-    T_STRING·foo;
+$(macro) {
+    $(T_STRING as foo);
 } >> {
-    T_STRING·bar !· {T_STRING·bar};
+    $(bar ! {$(bar)});
 }
 
 test;
 
 ?>
 --EXPECTF--
-Undefined macro expansion 'T_STRING·bar' on line 6 with context: [
-    "T_STRING·foo",
+Undefined macro expansion 'bar' on line 6 with context: [
+    "foo",
     0
 ]

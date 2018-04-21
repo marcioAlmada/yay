@@ -1,12 +1,12 @@
 <?php namespace Yay\Fixtures\Wrapper;
 
-macro {
-    type T_STRING·newtype = T_STRING·basetype;
+$(macro) {
+    type $(T_STRING as newtype) = $(T_STRING as basetype);
 } >> {
-    macro {
-        \\(·either(instanceof, ·token(','), ·token('('), ·token(':'))·prec) T_STRING·newtype
+    \\$(macro) {
+        \\$(either(instanceof, token(','), token('('), token(':')) as prec) $(newtype)
     } >> {
-        \\(·prec) T_STRING·basetype
+        \\$(prec) $(basetype)
     }
 }
 

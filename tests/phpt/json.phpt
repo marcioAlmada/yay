@@ -3,26 +3,26 @@ Proof of concept native json support with PEG macro --pretty-print
 --FILE--
 <?php
 
-macro ·grammar {
+$(macro :grammar) {
 
-    << ·json { ''json'' '':'' !! ·root }
+    << $(json) { ''json'' '':'' $! $(root) }
 
-    ·root { ·object | ·array }
+    $(root) { $(obj) | $(array_) }
 
-    ·array { ''['' ·values '']'' }
+    $(array_) { ''['' $(values) '']'' }
 
-    ·object { ''{'' ·pairs ''}'' }
-    ·pairs { list(·pair , '','') }
-    ·pair { ·string{}·key '':'' ·value }
+    $(obj) { ''{'' $(pairs) ''}'' }
+    $(pairs) { list($(pair) , '','') }
+    $(pair) { $(str as key) '':'' $(value) }
 
-    ·values { list(·value , '','') }
-    ·value { ·array | ·object | ·null | ·false | ·true | ·number | ·string }
+    $(values) { list($(value) , '','') }
+    $(value) { $(array_) | $(obj) | $(null) | $(false) | $(true) | $(number) | $(str) }
 
-    ·null { ''null'' }
-    ·true { ''true'' }
-    ·false { ''false'' }
-    ·string { T_CONSTANT_ENCAPSED_STRING }
-    ·number { T_LNUMBER }
+    $(null) { ''null'' }
+    $(true) { ''true'' }
+    $(false) { ''false'' }
+    $(str) { T_CONSTANT_ENCAPSED_STRING }
+    $(number) { T_LNUMBER }
 
 } >> {
     JSON_MATCH

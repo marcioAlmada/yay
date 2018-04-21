@@ -3,7 +3,7 @@ Macro expansions should be whitespace sensitive by default
 --FILE--
 <?php
 
-macro { x() } >> { y ( ) }
+$(macro) { x() } >> { y ( ) }
 
 x();
 

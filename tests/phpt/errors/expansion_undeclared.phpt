@@ -4,11 +4,11 @@ Expansion tokens should always have a valid reference
 <?php
 
 
-macro {
-    T_VARIABLE·foo >> T_VARIABLE·bar
+$(macro) {
+    $(T_VARIABLE as foo) >> $(T_VARIABLE as bar)
 } >> {
-    T_VARIABLE·foo T_STRING·bar
-                    // ^ undefined expansion!!!
+    $(foo) $(bar) $(baz)
+           		  // ^ undefined expansion!!!
 }
 
 
@@ -16,7 +16,7 @@ $a >> $b;
 
 ?>
 --EXPECTF--
-Undefined macro expansion 'T_STRING·bar' on line 7 with context: [
-    "T_VARIABLE·foo",
-    "T_VARIABLE·bar"
+Undefined macro expansion 'baz' on line 7 with context: [
+    "foo",
+    "bar"
 ]

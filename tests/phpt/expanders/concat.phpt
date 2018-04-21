@@ -1,12 +1,12 @@
 --TEST--
-Test ·concat expander
+Test concat expander
 --FILE--
 <?php
 
-macro {
-    yay\concat( ·label('/^\w+$/')·word )
+$(macro) {
+    yay\concat($(label() as word))
 } >> {
-    ··concat(foo_ ·word _baz)
+    $$(concat(foo_ $(word) _baz))
 }
 
 yay\concat(bar);

@@ -4,7 +4,7 @@ Proof of concept "unless" implementation
 <?php
 
 $(macro) {
-    unless $$$ $((...) as expression) $({...} as body)
+    unless $! $((...) as expression) $({...} as body)
 } >> {
     if (! ($(expression))) {
         $(body)

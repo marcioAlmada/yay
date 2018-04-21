@@ -1,17 +1,18 @@
 --TEST--
-Extra test for ·ls()
+Extra test for ls()
 --FILE--
 <?php
 
-macro {
-   ·ls(
-        ·token(T_VARIABLE)·var
-        ,
-        ·token(':')
-    )
-   ·vars
+$(macro) {
+   $(
+        ls(
+            token(T_VARIABLE) as var
+            ,
+            token(':')
+        ) as vars
+   )
 } >> {
-    match(·vars ···(, ){·var})
+    match($(vars ...(, ){$(var)}))
 }
 
 $a : $b : $c AND $x : $y : $z;

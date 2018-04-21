@@ -3,20 +3,20 @@ Non delimited layer matching with nesting
 --FILE--
 <?php
 
-macro {
-    (T_STRING·A (T_STRING·B ···rest))
+$(macro) {
+    ($(T_STRING as A) ($(T_STRING as B) $(... as rest)))
 } >> {
-    (T_STRING·B ···rest)
+    ($(B) $(rest))
 }
 
 (level_a (level_b [level_c, 1, 2, 3]))
 
 // done
 
-macro {
-    (T_STRING·A (T_STRING·B (T_STRING·C ···rest)))
+$(macro) {
+    ($(T_STRING as A) ($(T_STRING as B) ($(T_STRING as C) $(... as rest))))
 } >> {
-    (T_STRING·C ···rest)
+    ($(C) $(rest))
 }
 
 (level_a (level_b (level_c [level_d, 1, 2, 3, { level_e : (4) }])))

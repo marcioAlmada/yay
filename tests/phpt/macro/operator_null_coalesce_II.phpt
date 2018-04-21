@@ -1,13 +1,13 @@
 --TEST--
-Test for ??· operator --pretty-print
+Test for ?! operator --pretty-print
 --FILE--
 <?php
 
-macro ·global {
-    type T_STRING·handler ·optional(·chain(·token(T_EXTENDS), ·indentation(), ·ns()))·extended
+$(macro :global) {
+    type $(T_STRING as handler) $(optional(chain(token(T_EXTENDS), indentation(), ns())) as extended)
 }
 >> {
-    class T_STRING·handler ·undefined ?!· {extends \StandardType}
+    class $(handler) $(undefined ?! {extends \StandardType})
 }
 
 type Foo

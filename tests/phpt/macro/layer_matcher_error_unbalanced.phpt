@@ -3,8 +3,8 @@ Layer matcher error with unbalanced token pairs
 --FILE--
 <?php
 
-macro {
-    µ(···match)
+$(macro) {
+    µ$((...) as match)
 } >> {
     MATCH
 }

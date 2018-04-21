@@ -3,12 +3,12 @@ Compile time capture redefinition
 --FILE--
 <?php
 
-macro {
-    T_VARIABLE·foo T_VARIABLE·foo
+$(macro) {
+    $(T_VARIABLE as foo) $(T_VARIABLE as foo)
 } >> {
     foo
 }
 
 ?>
 --EXPECTF--
-Redefinition of macro capture identifier 'T_VARIABLE·foo' on line 4.
+Redefinition of macro capture identifier 'foo' on line 4.

@@ -3,10 +3,10 @@ Test ast unpacking with optional flag
 --FILE--
 <?php
 
-macro {
-    T_STRING·foo;
+$(macro) {
+    $(T_STRING as foo);
 } >> {
-    ·undefined ?··· { (·item) };
+    $(undefined ?... { ($(item)) });
 }
 
 foo;

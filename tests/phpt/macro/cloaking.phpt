@@ -3,20 +3,26 @@ Cloaking (necessary for certain kinds of second order macros)
 --FILE--
 <?php
 
-macro { foo } >> { \\(·notAnExpander(first)) }
+$(macro) { foo } >> { \\$$(notAnExpander(first)) }
+
+$(macro) { bar } >> { \\$(notAnExpansion) }
 
 foo;
 
-macro { \\( bar ) } >> { \\(·notAnExpander(second)) }
-
 bar;
+
+$(macro) { $ ( baz ) } >> { \\$$(notAnExpander(second)) }
+
+baz;
 
 ?>
 --EXPECTF--
 <?php
 
-·notAnExpander(first);
+$$(notAnExpander(first));
 
-bar;
+$(notAnExpansion);
+
+baz;
 
 ?>
