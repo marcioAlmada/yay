@@ -1,12 +1,12 @@
 --TEST--
-Test for ?· operator
+Test for ? operator
 --FILE--
 <?php
 
-macro {
-    T_STRING·foo;
+$(macro) {
+    $(T_STRING as foo);
 }>>{
-    T_STRING·undefined ?· { pass(T_STRING·foo) };
+    $(undefined ? { pass($(foo)) });
 }
 
 test;

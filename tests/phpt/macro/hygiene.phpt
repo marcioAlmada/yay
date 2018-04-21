@@ -3,10 +3,10 @@ Macro hygiene
 --FILE--
 <?php
 
-macro { test(T_VARIABLE·A, T_VARIABLE·B); } >> {
+$(macro) { test($(T_VARIABLE as A), $(T_VARIABLE as B)); } >> {
 
-$x += T_VARIABLE·A;
-$y += T_VARIABLE·B;
+$x += $(A);
+$y += $(B);
 
 }
 
@@ -14,25 +14,25 @@ test($a, $b);
 
 test($b, $c);
 
-macro { T_VARIABLE·A += T_VARIABLE·B; } >> { $z = (T_VARIABLE·A += T_VARIABLE·B); }
+$(macro) { $(T_VARIABLE as A) += $(T_VARIABLE as B); } >> { $z = ($(A) += $(B)); }
 
 test($a, $b);
 
-macro { unsafe_test(T_VARIABLE·A) } >> { $unsafe = ··unsafe($code) = T_VARIABLE·A; }
+$(macro) { unsafe_test($(T_VARIABLE as A)) } >> { $unsafe = $$(unsafe($code)) = $(A); }
 
 unsafe_test($dirty);
 
-macro {
+$(macro) {
 
-    retry ( ···times ) { ···body }
+    retry ( $(layer() as times) ) { $(layer() as body) }
 
 } >> {
 
-    $times = (int)(···times);
+    $times = (int)($(times));
 
     retry: {
         if ($times > 0) {
-            ···body;
+            $(body);
             $times--;
             goto retry;
         }
@@ -45,24 +45,24 @@ retry(3) { echo "Attempt..."; }
 --EXPECTF--
 <?php
 
-$x·0 += $a;
-$y·0 += $b;
+$x___0 += $a;
+$y___0 += $b;
 
-$x·1 += $b;
-$y·1 += $c;
+$x___1 += $b;
+$y___1 += $c;
 
-$z·3 = ($x·2 += $a);
-$z·4 = ($y·2 += $b);
+$z___3 = ($x___2 += $a);
+$z___4 = ($y___2 += $b);
 
-$unsafe·5 = $code = $dirty;;
+$unsafe___5 = $code = $dirty;;
 
-$times·6 = (int)(3);
+$times___6 = (int)(3);
 
-    retry·6: {
-        if ($times·6 > 0) {
+    retry___6: {
+        if ($times___6 > 0) {
             echo "Attempt..."; ;
-            $times·6--;
-            goto retry·6;
+            $times___6--;
+            goto retry___6;
         }
     }
 

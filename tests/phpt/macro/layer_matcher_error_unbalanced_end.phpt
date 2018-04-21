@@ -3,8 +3,8 @@ Non delimited layer matching
 --FILE--
 <?php
 
-macro {
-    µ(···match)
+$(macro) {
+    µ$((...) as match)
 } >> {
     MATCH
 }

@@ -1,3 +1,3 @@
 <?php
 
-macro { T_HAKUNAMATATA·foo } >> { };
+$(macro) { $(T_HAKUNAMATATA as foo) } >> { };

@@ -3,9 +3,9 @@ Empty expansions
 --FILE--
 <?php
 
-macro { $foo->bar->baz; } >> { };
+$(macro) { $foo->bar->baz; } >> { };
 
-macro { DEBUG { ···body } } >> { };
+$(macro) { DEBUG { $(layer() as body) } } >> { };
 
 $foo->bar;
 

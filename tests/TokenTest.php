@@ -21,11 +21,11 @@ class TokenTest extends \PHPUnit\Framework\TestCase {
                 [T_STRING],
                 true
             ],[
-                [T_STRING, "·"],
-                [T_STRING, '·'],
+                [T_STRING, "."],
+                [T_STRING, '.'],
                 true
             ],[
-                [T_STRING, "·"],
+                [T_STRING, "."],
                 [T_STRING],
                 true
             ],[

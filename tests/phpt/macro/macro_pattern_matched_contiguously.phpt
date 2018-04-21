@@ -5,11 +5,11 @@ Macro pattern matched contiguously --pretty-print
 
 declare(strict_types=1);
 
-macro {
-    T_STRING·method (···args) { ···body }
+$(macro) {
+    $(T_STRING as method) ($(layer() as args)) { $(layer() as body) }
 } >> {
-    function T_STRING·method (···args) {
-        ···body
+    function $(method) ($(args)) {
+        $(body)
     }
 }
 

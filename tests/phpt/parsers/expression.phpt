@@ -1,12 +1,12 @@
 --TEST--
-Extra test for ·expression()
+Extra test for expression()
 --FILE--
 <?php
 
-macro {
-   ·expression()·someExpression;
+$(macro) {
+   $(expression() as someExpression);
 } >> {
-    (··stringify(·someExpression)); // expression
+    ($$(stringify($(someExpression)))); // expression
 }
 
 null;

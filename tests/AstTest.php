@@ -47,7 +47,7 @@ class AstTest extends \PHPUnit\Framework\TestCase {
     function testMapAstCastOnFailure(string $path, string $castMethod, string $typeName) {
         $this->expectException(YayException::class);
         $this->expectExceptionMessageRegExp("/^Ast cannot be casted to '{$typeName}'$/");
-        $ast = new Ast(null, ['defined' => true]);
+        $ast = new Ast('', ['defined' => true]);
         var_dump($ast->{$path}->$castMethod());
     }
 
@@ -66,7 +66,7 @@ class AstTest extends \PHPUnit\Framework\TestCase {
      * @dataProvider providerForTestAstCast
      */
     function testAstCast(string $path, string $castMethod, $expected) {
-        $ast = new Ast(null, [
+        $ast = new Ast('', [
             'some' => [
                 'null' => null,
                 'boolean' => true,
@@ -84,7 +84,7 @@ class AstTest extends \PHPUnit\Framework\TestCase {
     }
 
     function testAstFlattenning() {
-        $ast = new Ast(null, [
+        $ast = new Ast('', [
             'deep' => [
                 'token' => $token1 = new Token(T_STRING, 'foo'),
                 'deeper' => [

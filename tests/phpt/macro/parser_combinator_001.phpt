@@ -1,12 +1,12 @@
 --TEST--
-Parser combinator with "T_*·label" argument
+Parser combinator with type and alias. Ex.: "token(T_STRING) as name"
 --FILE--
 <?php
 
-macro {
-    { ·ls(T_STRING·name, ·token(','))·names }
+$(macro) {
+    { $(ls(token(T_STRING) as name, token(',')) as names) }
 } >> {
-    [·names ···(, ) {T_STRING·name}]
+    [$(names ...(, ) {$(name)})]
 }
 
 { a, b, c }

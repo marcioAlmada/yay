@@ -3,7 +3,7 @@ Macro should not become a reserved keyword
 --FILE--
 <?php
 
-macro { x } >> { y }
+$(macro) { x } >> { y }
 
 function macro(){}
 

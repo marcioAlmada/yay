@@ -4,7 +4,7 @@ Shorthand function with support for:
     [x] lexical scoping through generated explicit use() directive
     [x] return types
     [x] argument types
-    [ ] default argument values // requires ·constantExpression() parser
+    [ ] default argument values // requires constantExpression() parser
 
 use --pretty-print
 

@@ -3,10 +3,10 @@ Non delimited layer matching
 --FILE--
 <?php
 
-macro ·recursion {
-    (T_STRING·A ···rest) // matches a lisp form
+$(macro :recursion) {
+    ($(T_STRING as A) $(... as rest)) // matches a lisp form
 } >> {
-    T_STRING·A(···rest)
+    $(A)($(rest))
 }
 
 (sum 1 (multiply 2 3))

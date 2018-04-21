@@ -3,12 +3,12 @@ Macros should resonate according to declaration order
 --FILE--
 <?php
 
-macro { x ( ) } >> { y() }
-macro { y ( ) } >> { z() }
+$(macro) { x ( ) } >> { y() }
+$(macro) { y ( ) } >> { z() }
 
 x(); y(); z();
 
-macro { z ( ) } >> { a() }
+$(macro) { z ( ) } >> { a() }
 
 x(); y(); z();
 

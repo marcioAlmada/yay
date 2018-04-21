@@ -3,7 +3,7 @@ Empty expansion and comments
 --FILE--
 <?php
 
-macro { @ T_STRING·label ; } >> { };
+$(macro) { @ $(T_STRING as label) ; } >> { };
 
 @foo;
 

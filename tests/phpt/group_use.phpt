@@ -4,7 +4,7 @@ A proof of concept polyfill for group use --pretty-print
 <?php
 
 $(macro) {
-    use $(ns() as base) \ $$$ {
+    use $(ns() as base) \ $! {
         $(
             ls(
                 chain(
