@@ -38,7 +38,7 @@ final class Engine {
                         $tstring = $token->value();
 
                         // skip when something looks like a new macro to be parsed
-                        if ('$' === $tstring) break;
+                        if ('$' === $tstring && buffer('$(')->parse($ts) instanceof Ast) break;
 
                         // here attempt to match and expand userland macros
                         // but just in case at least one macro passes the entry point heuristics
@@ -66,16 +66,14 @@ final class Engine {
                 (
                     chain
                     (
-                        token('$')->as('declaration')
+                        buffer('$(')->as('declaration')
                         ,
-                        token('(')
+                        token(T_STRING, 'macro')
                         ,
                         commit
                         (
                             chain
                             (
-                                token(T_STRING, 'macro')
-                                ,
                                 optional
                                 (
                                     repeat
@@ -141,10 +139,10 @@ final class Engine {
                     ));
 
                     if ($tags->contains('grammar')) {
-                        $pattern = new GrammarPattern($macroAst->{'declaration'}->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
+                        $pattern = new GrammarPattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
                     }
                     else {
-                        $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
+                        $pattern = new Pattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
                     }
 
                     $compilerPass = new CompilerPass($macroAst->{'macro body compiler'});

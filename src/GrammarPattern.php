@@ -35,11 +35,11 @@ class GrammarPattern extends Pattern implements PatternInterface {
 
     private function compile(int $line, array $tokens) {
 
-        $label = rtoken('/^·\w+$/')->as('label');
+        $label = label()->as('label');
 
         $doubleQuotes = token(T_CONSTANT_ENCAPSED_STRING, "''");
 
-        $commit = chain(token('!'), token('!'))->as('commit');
+        $commit = chain(buffer('$!'))->as('commit');
 
         $literal = between($doubleQuotes, any(), $doubleQuotes)->as('literal');
 
@@ -49,10 +49,10 @@ class GrammarPattern extends Pattern implements PatternInterface {
 
         $productionModifier = optional(token(T_SL), false)->as('production?');
 
-        $parser = (
-            chain
+        $parsec = $this->sigil(
+            $parser = chain
             (
-                rtoken('/^·\w+$/')->as('type')
+                label()->as('type')
                 ,
                 token('(')
                 ,
@@ -66,7 +66,6 @@ class GrammarPattern extends Pattern implements PatternInterface {
                             (
                                 $parser // recursion !!!
                             )
-                            ->as('parser')
                             ,
                             chain
                             (
@@ -80,9 +79,11 @@ class GrammarPattern extends Pattern implements PatternInterface {
                             ,
                             string()->as('string')
                             ,
-                            rtoken('/^T_\w+·\w+$/')->as('token')
+                            chain(rtoken('/^T_\w+$/')->as('token_constant'), $this->alias())->as('token')
                             ,
-                            rtoken('/^T_\w+$/')->as('constant')
+                            rtoken('/^T_\w+$/')->as('token_constant')
+                            ,
+                            $this->sigil(token(T_STRING, 'this'))->as('this')
                             ,
                             label()->as('label')
                         )
@@ -92,38 +93,20 @@ class GrammarPattern extends Pattern implements PatternInterface {
                 )
                 ->as('args')
                 ,
-                commit
-                (
-                    token(')')
-                )
+                token(')')
                 ,
-                optional
-                (
-                    rtoken('/^·\w+$/')->as('label'), null
-                )
-            )
-            ->as('parser')
-        );
+                optional($this->alias())
+            )->as('parser')
+        )->as('parser');
 
         $labelReference =
-            chain
-            (
+            $this->sigil(
                 $label
                 ,
                 optional
                 (
-                    chain
-                    (
-                        token('{')
-                        ,
-                        token('}')
-                        ,
-                        $label
-                    )
-                    ,
-                    null
+                    $this->alias()
                 )
-                ->as('alias')
             )
             ->as('reference')
         ;
@@ -155,7 +138,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                 (
                     $list
                     ,
-                    $parser
+                    $parsec
                     ,
                     $labelReference
                     ,
@@ -178,7 +161,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                 (
                     $productionModifier
                     ,
-                    $label
+                    $this->sigil($label)->as('rule_name')
                     ,
                     $optionalModifier
                     ,
@@ -228,7 +211,8 @@ class GrammarPattern extends Pattern implements PatternInterface {
         foreach ($grammarAst->{'* rules'}->list() as $ast) {
 
             $ruleAst = $ast->{'* rule'};
-            $labelAst = $ast->{'* rule label'};
+            $labelAst = $ast->{'* rule rule_name label'};
+
             $label = (string) $labelAst->token();
 
             if ($ruleAst->{'production?'}) {
@@ -289,7 +273,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
 
     private function compilePattern(Ast $rule) : Parser {
 
-        $label = (string) $rule->{'label'};
+        $label = (string) $rule->{'* rule_name label'}->token();
 
         if (! ($sequence = $rule->{'* sequence'})->isEmpty())
             $pattern = $this->compileSequence($sequence, $label);
@@ -317,10 +301,10 @@ class GrammarPattern extends Pattern implements PatternInterface {
                         $chain[] = token($ast->token());
                         break;
                     case 'constant': // T_*
-                        $chain[] = token(parent::lookupTokenType($ast->token()));
+                        $chain[] = token(parent::compileTokenConstant($ast));
                         break;
                     case 'parser':
-                        $chain[] = parent::compileParser($ast);
+                        $chain[] = parent::compileParser($ast->{'* parser'});
                         break;
                     case 'reference':
                         $refLabel = (string) $ast->{'label'};
@@ -337,7 +321,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                             }
                         }
 
-                        $link = (clone $link)->as((string) $ast->{'alias label'} ?: null);
+                        $link = (clone $link)->as((string) $ast->{'alias name'} ?: '');
 
                         $chain[] = $link;
                         break;
@@ -366,6 +350,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
         }
 
         $this->staged->remove($label);
+
 
         return $pattern;
     }
