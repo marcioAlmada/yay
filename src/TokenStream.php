@@ -255,10 +255,18 @@ class TokenStream {
 
         $line = 0;
         $current = $first;
+        $realign = []; // tokenizer omits line number sometimes so we borrow from next non whitespace
         foreach ($tokens as $t){
             if (\is_array($t)) {
                 $line = $t[2];
                 $token = new Token(...$t);
+
+                if (T_WHITESPACE !== $token->type()) {
+                    foreach ($realign as $i => $node)
+                        $node->token = new Token($node->token->type(), $node->token->value(), $line);
+
+                    $realign = [];
+                }
             }
             else {
                 $token = new Token($t, $t, $line);
@@ -269,6 +277,8 @@ class TokenStream {
             $node->previous = $current;
 
             $current = $node;
+
+            if (is_string($current->token->type())) $realign[] = $current;
         }
 
         $current->next = $last;
