@@ -326,7 +326,7 @@ class Pattern extends MacroMember implements PatternInterface {
         $parser = $this->compileParserCallable($ast->{'* type'});
         $args = $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
-        $alias = $this->compileAlias($label = $ast->{'* alias'});
+        $alias = $this->compileAlias($ast->{'* alias'});
         $parser->as((string) $alias);
 
         return $parser;
