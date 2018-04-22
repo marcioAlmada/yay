@@ -102,7 +102,7 @@ final class Engine {
                                         (
                                             chain
                                             (
-                                                token(T_FUNCTION)
+                                                token(T_FUNCTION)->as('declaration')
                                                 ,
                                                 parentheses()->as('args')
                                                 ,
@@ -111,7 +111,7 @@ final class Engine {
                                                 token(T_SR)
                                             )
                                         )
-                                        ->as('compiler')
+                                        ->as('compiler_pass')
                                         ,
                                         braces()->as('expansion')
                                     )
@@ -145,7 +145,7 @@ final class Engine {
                         $pattern = new Pattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
                     }
 
-                    $compilerPass = new CompilerPass($macroAst->{'macro body compiler'});
+                    $compilerPass = new CompilerPass($macroAst->{'* macro body compiler_pass'});
                     $expansion = new Expansion($macroAst->{'macro body expansion'}, $tags, $scope);
                     $macro = new Macro($tags, $pattern, $compilerPass, $expansion);
 
