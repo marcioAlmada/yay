@@ -1179,7 +1179,7 @@ class ParserTest extends \PHPUnit\Framework\TestCase {
                     throw new \Exception('Unknown operator arity.');
             }
         }
-        else $buff .= implode('', $ast->tokens());
+        else $buff .= $ast->implode();
 
         return $buff;
     }
