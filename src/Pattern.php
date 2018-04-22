@@ -306,19 +306,18 @@ class Pattern extends MacroMember implements PatternInterface {
     }
 
     private function compileParserCallable(Ast $type) : callable {
-        $tokens = $type->tokens();
+        $function = $type->implode();
 
-        $function = implode('', $tokens);
+        if (0 !== strpos($function, '\\')) $function = '\Yay\\' . $function;
 
-        if (0 !== strpos($function, '\\'))
-            $function = '\Yay\\' . $function;
-
-        if (! function_exists($function))
+        if (! function_exists($function)) {
+            $tokens = $type->tokens();
             $this->fail(
                 self::E_BAD_PARSER_NAME,
                 $function,
                 $tokens[0] != '\\' ? $tokens[0]->line() : $tokens[1]->line()
             );
+        }
 
         return $function;
     }

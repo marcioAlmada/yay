@@ -70,7 +70,7 @@ abstract class Parser {
             $result = $this->parser($ts, ...$this->stack);
 
             if ($result instanceof Ast) {
-                self::$tracer->trace($index, 'production', implode('', $result->tokens()));
+                self::$tracer->trace($index, 'production', $result->implode());
 
                 if (null !== $this->onCommit) ($this->onCommit)($result);
             }
