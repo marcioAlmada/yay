@@ -358,7 +358,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 $compiled[] = trim((string) $arg->token(), '"\'');
                 break;
             case 'function': // function(...){...}
-                $compiled[] = $this->compileAnonymousFunctionArg($arg);
+                $compiled[] = new AnonymousFunction($arg);
                 break;
             default:
                 $compiled = array_merge(
@@ -366,25 +366,5 @@ class Pattern extends MacroMember implements PatternInterface {
         }
 
         return $compiled;
-    }
-
-    private function compileAnonymousFunctionArg($arg) : \Closure {
-        if ($arg instanceof Ast) {
-            $arg = $arg->unwrap();
-        }
-
-        if (!is_array($arg)) {
-            throw new InvalidArgumentException('$arg should be an array or instance of Yay\Ast');
-        }
-
-        $arglist = implode('', $arg['args']);
-        $body = implode('', $arg['body']);
-        $source = "<?php\nreturn static function({$arglist}){\n{$body}\n};";
-        $file = sys_get_temp_dir() . '/yay-function-' . sha1($source);
-
-        if (!is_readable($file))
-            file_put_contents($file, $source);
-
-        return include $file;
     }
 }
