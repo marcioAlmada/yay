@@ -1086,7 +1086,7 @@ function midrule(callable $midrule, bool $isFallible = true, Expected $expected 
 function _() : Parser {
     return new  class(__FUNCTION__) extends Parser
     {
-        function parser(TokenStream $ts) : Ast
+        function parser() : Ast
         {
             return new Ast;
         }
@@ -1101,7 +1101,7 @@ function _() : Parser {
             return false;
         }
 
-        function as(string $label) : Parser
+        function as(string $_) : Parser
         {
             return $this;
         }

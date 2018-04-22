@@ -262,7 +262,7 @@ class TokenStream {
                 $token = new Token(...$t);
 
                 if (T_WHITESPACE !== $token->type()) {
-                    foreach ($realign as $i => $node)
+                    foreach ($realign as $node)
                         $node->token = new Token($node->token->type(), $node->token->value(), $line);
 
                     $realign = [];
