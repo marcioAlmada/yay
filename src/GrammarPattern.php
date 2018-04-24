@@ -49,63 +49,15 @@ class GrammarPattern extends Pattern implements PatternInterface {
 
         $productionModifier = optional(token(T_SL), false)->as('production?');
 
-        $parsec = $this->sigil(
-            $parser = chain
-            (
-                label()->as('type')
-                ,
-                token('(')
-                ,
-                optional
-                (
-                    ls
-                    (
-                        either
-                        (
-                            pointer
-                            (
-                                $parser // recursion !!!
-                            )
-                            ,
-                            chain
-                            (
-                                token(T_FUNCTION)
-                                ,
-                                parentheses()->as('args')
-                                ,
-                                braces()->as('body')
-                            )
-                            ->as('function')
-                            ,
-                            string()->as('string')
-                            ,
-                            chain(rtoken('/^T_\w+$/')->as('token_constant'), $this->alias())->as('token')
-                            ,
-                            rtoken('/^T_\w+$/')->as('token_constant')
-                            ,
-                            $this->sigil(token(T_STRING, 'this'))->as('this')
-                            ,
-                            label()->as('label')
-                        )
-                        ,
-                        token(',')
-                    )
-                )
-                ->as('args')
-                ,
-                token(')')
-                ,
-                optional($this->alias())
-            )->as('parser')
-        )->as('parser');
+        $parsec = sigil(parsec())->as('parser');
 
         $labelReference =
-            $this->sigil(
+            sigil(
                 $label
                 ,
                 optional
                 (
-                    $this->alias()
+                    alias()
                 )
             )
             ->as('reference')
@@ -161,7 +113,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                 (
                     $productionModifier
                     ,
-                    $this->sigil($label)->as('rule_name')
+                    sigil($label)->as('rule_name')
                     ,
                     $optionalModifier
                     ,
@@ -304,7 +256,7 @@ class GrammarPattern extends Pattern implements PatternInterface {
                         $chain[] = token(parent::compileTokenConstant($ast));
                         break;
                     case 'parser':
-                        $chain[] = parent::compileParser($ast->{'* parser'});
+                        $chain[] = parent::compileParser($ast->{'* parsec'});
                         break;
                     case 'reference':
                         $refLabel = (string) $ast->{'label'};

@@ -38,7 +38,7 @@ final class Engine {
                         $tstring = $token->value();
 
                         // skip when something looks like a new macro to be parsed
-                        if ('$' === $tstring && buffer('$(')->parse($ts) instanceof Ast) break;
+                        if (YAY_DOLLAR === $tstring && sigil_prefix()->parse($ts) instanceof Ast) break;
 
                         // here attempt to match and expand userland macros
                         // but just in case at least one macro passes the entry point heuristics
@@ -66,25 +66,24 @@ final class Engine {
                 (
                     chain
                     (
-                        buffer('$(')->as('declaration')
-                        ,
-                        token(T_STRING, 'macro')
+                        sigil(
+                            token(T_STRING, 'macro')
+                            ,
+                            optional
+                            (
+                                repeat
+                                (
+                                    chain(token(':'), label()->as('tag'))
+                                )
+                            )
+                            ->as('tags')
+                        )
+                        ->as('declaration')
                         ,
                         commit
                         (
                             chain
                             (
-                                optional
-                                (
-                                    repeat
-                                    (
-                                        chain(token(':'), label()->as('tag'))
-                                    )
-                                )
-                                ->as('tags')
-                                ,
-                                token(')')
-                                ,
                                 lookahead
                                 (
                                     token('{')
@@ -135,15 +134,13 @@ final class Engine {
 
                     $tags = Map::fromValues(array_map(
                         function(Ast $node) :string { return (string) $node->{'* tag'}->token(); },
-                        iterator_to_array($macroAst->{'* macro tags'}->list())
+                        iterator_to_array($macroAst->{'* declaration tags'}->list())
                     ));
 
-                    if ($tags->contains('grammar')) {
+                    if ($tags->contains('grammar'))
                         $pattern = new GrammarPattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
-                    }
-                    else {
+                    else
                         $pattern = new Pattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
-                    }
 
                     $compilerPass = new CompilerPass($macroAst->{'* macro body compiler_pass'});
                     $expansion = new Expansion($macroAst->{'macro body expansion'}, $tags, $scope);

@@ -23,6 +23,7 @@
     "autoload": {
         "files": [
             "src/parsers.php",
+            "src/parsers_internal.php",
             "src/expanders.php"
         ],
         "psr-4": {
