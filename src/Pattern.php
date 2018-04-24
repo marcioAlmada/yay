@@ -6,7 +6,7 @@ class Pattern extends MacroMember implements PatternInterface {
 
     const
         E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
-        E_BAD_DOMINANCE = "Bad dominant macro marker '$!' offset %d on line %d.",
+        E_BAD_DOMINANCE = "Bad dominant macro marker '" . YAY_PATTERN_COMMIT . "' offset %d on line %d.",
         E_BAD_PARSER_NAME = "Bad macro parser identifier '%s' on line %d.",
         E_BAD_TOKEN_TYPE = "Undefined token type '%s' on line %d.",
         E_EMPTY_PATTERN = "Empty macro pattern on line %d.",
@@ -71,7 +71,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 Compiles to:
                     token(T_STRING)->as('foo')
              */
-            $this->sigil(rtoken('/^T_\w+$/')->as('token_constant'), optional($this->alias()))
+            sigil(token_constant(), optional(alias()))
                 ->onCommit(function(Ast $result) use($cg) {
                     $token = $this->compileTokenConstant($result->{'* token_constant'});
                     $alias = $this->compileAlias($result->{'* alias'});
@@ -79,60 +79,10 @@ class Pattern extends MacroMember implements PatternInterface {
                 })
             ,
             // Matches complex parser combinator declarations
-            $this->sigil
-            (
-                $parser = chain
-                (
-                    label()->as('type')
-                    ,
-                    token('(')
-                    ,
-                    optional
-                    (
-                        ls
-                        (
-                            either
-                            (
-                                pointer
-                                (
-                                    $parser // recursion !!!
-                                )
-                                ,
-                                chain
-                                (
-                                    token(T_FUNCTION)
-                                    ,
-                                    parentheses()->as('args')
-                                    ,
-                                    braces()->as('body')
-                                )
-                                ->as('function')
-                                ,
-                                string()->as('string')
-                                ,
-                                chain(rtoken('/^T_\w+$/')->as('token_constant'), $this->alias())->as('token')
-                                ,
-                                rtoken('/^T_\w+$/')->as('token_constant')
-                                ,
-                                $this->sigil(token(T_STRING, 'this'))->as('this')
-                                ,
-                                label()->as('label')
-                            )
-                            ,
-                            token(',')
-                        )
-                    )
-                    ->as('args')
-                    ,
-                    token(')')
-                    ,
-                    optional($this->alias())
-                )
-                ->as('parser')
-            )
-            ->onCommit(function(Ast $result) use($cg) {
-                $cg->parsers[] = $this->compileParser($result->{'* parser'});
-            })
+            sigil(parsec())
+                ->onCommit(function(Ast $result) use($cg) {
+                    $cg->parsers[] = $this->compileParser($result->{'* parsec'});
+                })
             ,
             /*
                 Matches:
@@ -145,7 +95,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 Compiles to:
                     braces()->as('foo')
             */
-            $this->sigil($this->layer('{', '}', braces(), $cg), optional($this->alias()))
+            sigil($this->layer('{', '}', braces(), $cg))
             ,
             /*
                 Matches:
@@ -158,7 +108,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 Compiles to:
                     brackets()->as('foo')
             */
-            $this->sigil($this->layer('[', ']', brackets(), $cg), optional($this->alias()))
+            sigil($this->layer('[', ']', brackets(), $cg))
             ,
             /*
                 Matches:
@@ -171,7 +121,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 Compiles to:
                     parentheses()->as('foo')
             */
-            $this->sigil($this->layer('(', ')', parentheses(), $cg), optional($this->alias()))
+            sigil($this->layer('(', ')', parentheses(), $cg))
             ,
             /*
                 Matches:
@@ -184,7 +134,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 Compiles to:
                     layer()->as('foo')
             */
-            $this->sigil(token(T_ELLIPSIS), optional($this->alias()))
+            sigil(token(T_ELLIPSIS), optional(alias()))
                 ->onCommit(function(Ast $result) use($cg) {
                     $alias = $this->compileAlias($result->{'* alias'});
                     $cg->parsers[] = layer()->as($alias);
@@ -201,7 +151,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 useful to introduce first class language features with elegant syntax errors within
                 DSLs
              */
-            buffer('$!')
+            pattern_commit()
                 ->onCommit(function(Ast $result) use ($cg) {
                     $offset = \count($cg->parsers);
                     if (0 !== $this->dominance || 0 === $offset) {
@@ -216,9 +166,9 @@ class Pattern extends MacroMember implements PatternInterface {
 
                 > Causes a preprocessor error pointing a macro syntax error
              */
-            $this->sigil(layer())
+            sigil(layer())
                 ->onCommit(function(Ast $result) use ($cg) {
-                    $this->fail(self::E_BAD_CAPTURE, $result->implode(), $result->declaration[0]->line());
+                    $this->fail(self::E_BAD_CAPTURE, $result->implode(), $result->{'sigil'}[0]->line());
                 })
             ,
             /*
@@ -276,7 +226,7 @@ class Pattern extends MacroMember implements PatternInterface {
                 ,
                 commit(token($end))
                 ,
-                $this->alias()
+                alias()
             )
             ->onCommit(function(Ast $result) use($parser, $cg) {
                 $identifier = $this->compileAlias($result->{'* alias'});
@@ -339,7 +289,7 @@ class Pattern extends MacroMember implements PatternInterface {
             case 'this':
                 $compiled[] = pointer($this->pattern);
                 break;
-            case 'token':
+            case 'named_token_constant':
                 $token = $this->compileTokenConstant($arg->{'* token_constant'});
                 $alias = $this->compileAlias($arg->{'* alias'});
                 $compiled[] = token($token)->as($alias);
@@ -350,7 +300,7 @@ class Pattern extends MacroMember implements PatternInterface {
             case 'label':
                 $compiled[] = token($arg->token());
                 break;
-            case 'parser':
+            case 'parsec':
                 $compiled[] = $this->compileParser($arg);
                 break;
             case 'string':

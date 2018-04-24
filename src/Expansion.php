@@ -107,7 +107,7 @@ class Expansion extends MacroMember {
             (
                 chain
                 (
-                    either(buffer('\\\\$('), buffer('\\\\$$('))->as('declaration')
+                    either(escaped_sigil_prefix(), escaped_expander_sigil_prefix())->as('declaration')
                     ,
                     layer()
                     ,
@@ -145,7 +145,8 @@ class Expansion extends MacroMember {
              */
             either
             (
-                $this->sigil(
+                sigil
+                (
                     label()->as('label')
                     ,
                     token('?')
@@ -155,7 +156,8 @@ class Expansion extends MacroMember {
                     braces()->as('expansion')
                 )
                 ,
-                $this->sigil(
+                sigil
+                (
                     label()->as('label')
                     ,
                     token('?')
@@ -163,7 +165,8 @@ class Expansion extends MacroMember {
                     braces()->as('expansion')
                 )
                 ,
-                $this->sigil(
+                sigil
+                (
                     label()->as('label')
                     ,
                     token('!')
@@ -171,19 +174,15 @@ class Expansion extends MacroMember {
                     braces()->as('expansion')
                 )
                 ,
-                chain(
-                    buffer('$$')->as('declaration')
-                    ,
-                    token('(')
-                    ,
+                expander_sigil
+                (
                     ns()->as('expander')
                     ,
                     either(parentheses(), braces())->as('args')
-                    ,
-                    commit(token(')'))
                 )
                 ,
-                $this->sigil(
+                sigil
+                (
                     label()->as('label')
                     ,
                     optional(token('?'))->as('optional')
@@ -202,7 +201,7 @@ class Expansion extends MacroMember {
                         $this->lookupScope($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
                 })
                 ,
-                $this->sigil(label()->as('label'))
+                sigil(label()->as('label'))
                     ->onCommit(function(Ast $result) use($cg) {
                         $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
                     })
@@ -232,7 +231,8 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    $this->sigil(
+                    sigil
+                    (
                         label()->as('label')
                         ,
                         token('?')
@@ -260,7 +260,8 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    $this->sigil(
+                    sigil
+                    (
                         label()->as('label')
                         ,
                         token('?')
@@ -288,7 +289,8 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    $this->sigil(
+                    sigil
+                    (
                         label()->as('label')
                         ,
                         token('!')
@@ -316,16 +318,11 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    chain(
-                        buffer('$$')->as('declaration')
-                        ,
-                        token('(')
-                        ,
+                    expander_sigil
+                    (
                         ns()->as('expander')
                         ,
                         either(parentheses(), braces())->as('args')
-                        ,
-                        commit(token(')'))
                     )
                 )
                 ->onCommit(function(Ast $result) use ($states) {
@@ -344,7 +341,8 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    $this->sigil(
+                    sigil
+                    (
                         label()->as('label')
                         ,
                         optional(token('?'))->as('optional')
@@ -388,7 +386,7 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    $this->sigil(label()->as('label'))
+                    sigil(label()->as('label'))
                 )
                 ->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
