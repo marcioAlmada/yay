@@ -274,7 +274,7 @@ class Pattern extends MacroMember implements PatternInterface {
 
     protected function compileParser(Ast $ast) : Parser {
         $parser = $this->compileParserCallable($ast->{'* type'});
-        $args = $this->compileParserArgs($ast->{'* args'});
+        $args = $ast->{'* args'}->isEmpty() ? [] : $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
         $alias = $this->compileAlias($ast->{'* alias'});
         $parser->as((string) $alias);
@@ -284,34 +284,36 @@ class Pattern extends MacroMember implements PatternInterface {
 
     protected function compileParserArgs(Ast $args) : array {
         $compiled = [];
-
-        foreach ($args->list() as $arg) switch ((string) $arg->label()) {
-            case 'this':
-                $compiled[] = pointer($this->pattern);
-                break;
-            case 'named_token_constant':
-                $token = $this->compileTokenConstant($arg->{'* token_constant'});
-                $alias = $this->compileAlias($arg->{'* alias'});
-                $compiled[] = token($token)->as($alias);
-                break;
-            case 'token_constant':
-                $compiled[] = $this->compileTokenConstant($arg);
-                break;
-            case 'label':
-                $compiled[] = token($arg->token());
-                break;
-            case 'parsec':
-                $compiled[] = $this->compileParser($arg);
-                break;
-            case 'string':
-                $compiled[] = trim((string) $arg->token(), '"\'');
-                break;
-            case 'function': // function(...){...}
-                $compiled[] = new AnonymousFunction($arg);
-                break;
-            default:
-                $compiled = array_merge(
-                    $compiled, $this->compileParserArgs($arg));
+        foreach ($args->list() as $ast) {
+            $type = key($ast->array());
+            $arg = $ast->{"* {$type}"};
+            switch ($type) {
+                case 'this':
+                    $compiled[] = pointer($this->pattern);
+                    break;
+                case 'named_token_constant':
+                    $token = $this->compileTokenConstant($arg->{'* token_constant'});
+                    $alias = $this->compileAlias($arg->{'* alias'});
+                    $compiled[] = token($token)->as($alias);
+                    break;
+                case 'token_constant':
+                    $compiled[] = $this->compileTokenConstant($arg);
+                    break;
+                case 'literal':
+                    $compiled[] = token($arg->token());
+                    break;
+                case 'parsec':
+                    $compiled[] = $this->compileParser($arg);
+                    break;
+                case 'string':
+                    $compiled[] = trim((string) $arg->token(), '"\'');
+                    break;
+                case 'function': // function(...){...}
+                    $compiled[] = new AnonymousFunction($arg);
+                    break;
+                default:
+                    assert(false, "Unknown parser argument type '{$type}'");
+            }
         }
 
         return $compiled;

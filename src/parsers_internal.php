@@ -113,7 +113,7 @@ function parsec() : Parser {
                             ,
                             sigil(token(T_STRING, 'this'))->as('this')
                             ,
-                            label()->as('label')
+                            label()->as('literal')
                         )
                         ,
                         token(',')
