@@ -106,14 +106,7 @@ class Ast implements Result {
     }
 
     function list() {
-        $array = $this->array();
-
-        reset($array);
-
-        $isAssociative = \count(array_filter(array_keys($array), 'is_string')) > 0;
-
-        foreach ($array as $label => $value)
-            yield new self(($isAssociative ? $label : ''), $value);
+        foreach (array_keys($this->array()) as $index) yield $index => $this->{"* {$index}"};
     }
 
     function flatten() : self {
