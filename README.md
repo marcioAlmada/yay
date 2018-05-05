@@ -11,8 +11,6 @@
 This means that language features could be distributed as composer packages (as long as the macro based implementations
 can be expressed in pure PHP code, and the implementation is fast enough).
 
-> Not ready for real world usage yet :bomb:
-
 [Roadmap](https://github.com/marcioAlmada/yay/issues/3).
 
 ## Set Up
@@ -45,7 +43,7 @@ Every macro consist of a matcher and an expander that when executed allows you t
 Consider the simplest example possible:
 
 ```php
-(macro :unsafe) { $ } >> { $this } // this shorthand
+$(macro :unsafe) { $ } >> { $this } // this shorthand
 ```
 
 The macro is basically expanding a literal `$` token to `$this`. The following code would expand to:
@@ -61,7 +59,7 @@ class Foo {                              |   class Foo {
 }                                        |   }
 ```
 
-Notice that the `:unsafe` tag is necessary to avoid macro hygiene on `$this` expansion.
+> Notice that the `:unsafe` tag is necessary to avoid macro hygiene on `$this` expansion.
 
 This macro is actually very naive, a more producion ready version would be:
 
@@ -105,7 +103,7 @@ To implement `unless` we need to match the literal `unless` keyword followed by 
 
 ```php
 $(macro) {
-    unless $! ($(layer() as expression)) { $(layer() as body) }
+    unless ($(layer() as expression)) { $(layer() as body) }
 } >> {
     if (! ($(expression))) {
         $(body)
@@ -137,16 +135,18 @@ enum Fruits {
 var_dump(\Fruits::Orange <=> \Fruits::Apple);
 ```
 So, syntactically, enums are declared with the literal `enum` word followed by a `T_STRING` and a comma
-separated list of identifiers withing braces `{A, B, C}`.
+separated list of identifiers withing braces such as `{A, B, C}`.
 
 YAY uses parser combinators internally for everything and these more high level parsers are fully
-exposed on macro declarations. Our enum macro will need high level matchers like `ls()` and `word()`
+exposed on macro declarations. Our enum macro will need high level matchers like `ls()` and `label()`
 combined to match the desired syntax, like so:
 
 ```php
-macro {
+$(macro) {
     enum $(T_STRING as name) {
         $(
+            // ls() matches a delimited list
+            // in this case a list of label() delimited by ',' such as `foo, bar, baz`
             ls
             (
                 label() as field
@@ -161,7 +161,7 @@ macro {
 }
 ```
 
-The macro is already capable to match the enums:
+The macro is already capable to match the enum syntax:
 
 ```php
 // source                      // expansion
@@ -198,21 +198,21 @@ $(macro :unsafe) {
     }
 } >> {
     class $(name) implements Enum {
-        private static $store;
+        private static $registry;
 
         private function __construct() {}
 
-        static function __callStatic(string $field, array $args) : self {
-            if(! self::$store) {
-                self::$store = new \stdclass;
+        static function __callStatic(string $type, array $args) : self {
+            if(! self::$registry) {
+                self::$registry = new \stdclass;
                 $(fields ... {
-                    self::$store->$(field) = new class extends $(name) {};
+                    self::$registry->$(field) = new class extends $(name) {};
                 })
             }
 
-            if (isset(self::$store->$field)) return self::$store->$field;
+            if (isset(self::$registry->$type)) return self::$registry->$type;
 
-            throw new \Exception('Undefined enum field ' . __CLASS__ . "->{$field}.");
+            throw new \Exception(sprintf('Undefined enum type %s->%s', __CLASS__, $type));
         }
     }
 }
@@ -223,18 +223,15 @@ $(macro) {
         chain(
             ns() as class, // matches a namespace
             token(T_DOUBLE_COLON), // matches T_DOUBLE_COLON used for static access
-            not(class), // avoids matching ::class resolution syntax
+            not(class), // avoids matching `Foo::class`, class resolution syntax
             label() as field, // matches the enum field name
-            not(token('(')) // avoids matching static method calls
+            not(token('(')) // avoids matching static method calls such as `Foo::bar()`
         )
     )
 } >> {
     \enum_field_or_class_constant($(class)::class, $$(stringify($(field))))
 }
 ```
-
-You can use https://github.com/marcioAlmada/yay-enums to run the example above
-on your own environment, as a playground.
 
 > More examples within the phpt tests folder https://github.com/marcioAlmada/yay/tree/master/tests/phpt
 
@@ -248,7 +245,7 @@ on your own environment, as a playground.
 
 A cookbook is on the making
 
-> Why TF are you working on this?
+> Why are you working on this?
 
 Because it's being fun. It may become useful. [Because we can™](https://github.com/haskellcamargo/because-we-can).
 
