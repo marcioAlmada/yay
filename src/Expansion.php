@@ -335,7 +335,8 @@ class Expansion extends MacroMember {
                     $expansion = TokenStream::fromSlice($result->{'args'});
                     $mutation = $cg->this->mutate($expansion, $cg->context, $cg->engine);
 
-                    $mutation = $cg->this->lookupExpander($expander)($mutation, $cg->engine);
+                    $expander = $cg->this->compileCallable('\Yay\Dsl\Expanders\\', $expander, self::E_BAD_EXPANDER);
+                    $mutation = $expander($mutation, $cg->engine);
                     $cg->ts->inject($mutation);
                 })
                 ,
@@ -433,17 +434,6 @@ class Expansion extends MacroMember {
         }
 
         return $cg->ts;
-    }
-
-    private function lookupExpander(Ast $expander) : string {
-        $resolvedName = $name = $expander->implode();
-
-        if (! $expander->{'full-qualified'}) $resolvedName = '\Yay\Dsl\Expanders\\' . $name;
-
-        if (! function_exists($resolvedName))
-            $this->fail(self::E_BAD_EXPANDER, $name, $expander->tokens()[0]->line());
-
-        return $resolvedName;
     }
 
     private function lookupScope(Token $token, Map $context, string $error) : bool {

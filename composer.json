@@ -30,6 +30,12 @@
             "Yay\\": "src/"
         }
     },
+    "autoload-dev": {
+        "files": [
+            "tests/fixtures/parsers.php",
+            "tests/fixtures/expanders.php"
+        ]
+    },
     "bin": [
         "bin/yay",
         "bin/yay-pretty"

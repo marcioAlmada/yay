@@ -15,4 +15,21 @@ abstract class MacroMember {
     protected function fail(string $error, ...$args) {
         throw new YayParseError(sprintf($error, ...$args));
     }
+
+    protected function compileCallable(string $namespace, Ast $type, string $error): callable {
+        $name = $function = $type->implode();
+
+        if (0 !== strpos($function, '\\')) $function = $namespace . $function;
+
+        if (! function_exists($function)) {
+            $tokens = $type->tokens();
+            $this->fail(
+                $error,
+                $name,
+                $tokens[0] != '\\' ? $tokens[0]->line() : $tokens[1]->line()
+            );
+        }
+
+        return $function;
+    }
 }

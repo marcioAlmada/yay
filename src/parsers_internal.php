@@ -80,7 +80,7 @@ function parsec() : Parser {
         $parser =
             chain
             (
-                label()->as('type')
+                ns()->as('type')
                 ,
                 token('(')
                 ,
