@@ -1,12 +1,12 @@
 --TEST--
-Test ·buffer
+Test buffer()
 --FILE--
 <?php
 
-macro {
-    T_VARIABLE·X ·buffer('<(o . o)>') T_VARIABLE·Y
+$(macro) {
+    $(T_VARIABLE as X) $(buffer('<(o . o)>')) $(T_VARIABLE as Y)
 } >> {
-    (T_VARIABLE·X ."hug". T_VARIABLE·Y)
+    ($(X) ."hug". $(Y))
 }
 
 $foo <(o.o)> $bar;

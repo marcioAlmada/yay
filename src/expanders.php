@@ -4,7 +4,7 @@ namespace Yay\DSL\Expanders;
 
 use Yay\{Engine, Token, TokenStream, Ast, YayException, Cycle, Parser, Context};
 use function Yay\{
-    token, rtoken, identifier, chain, either, any, parentheses, braces, traverse, midrule
+    token, rtoken, identifier, chain, either, any, parentheses, braces, traverse, midrule, buffer
 };
 
 function stringify(TokenStream $ts) : TokenStream {
@@ -67,8 +67,8 @@ function hygienize(TokenStream $ts, Engine $engine) : TokenStream {
 
     traverse
     (
-        // hygiene must skip whatever is passed through the ··unsafe() expander
-        chain(token(T_STRING, '··unsafe'), either(parentheses(), braces()))
+        // hygiene must skip whatever is passed through the $$(unsafe()) expander
+        chain(buffer('$$'), token('('), token(T_STRING, 'unsafe'), either(parentheses(), braces()), token(')'))
         ,
         either
         (
@@ -80,7 +80,7 @@ function hygienize(TokenStream $ts, Engine $engine) : TokenStream {
         )
         ->onCommit(function(Ast $result) use ($cg) {
             if (($t = $cg->node->token) && (($value = (string) $t) !== '$this'))
-                $cg->node->token = new Token($t->type(), "{$value}·{$cg->scope}", $t->line());
+                $cg->node->token = new Token($t->type(), "{$value}___{$cg->scope}", $t->line());
 
             $cg->node = null;
         })

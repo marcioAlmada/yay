@@ -2,10 +2,6 @@
 
 namespace Yay;
 
-use
-    RuntimeException
-;
-
 class Cycle {
 
     protected

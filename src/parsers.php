@@ -183,6 +183,7 @@ function buffer(string $match) : Parser
         {
             $max = mb_strlen($match);
             $buffer = '';
+            $tokens = [];
 
             while (
                 (mb_strlen($buffer) <= $max) &&
@@ -190,9 +191,10 @@ function buffer(string $match) : Parser
                 (false !== mb_strstr($match, ($current = $token->value())))
             ){
                 $ts->step();
+                $tokens[] = $token;
                 if(($buffer .= $current) === $match) {
                     $ts->skip();
-                    return new Ast($this->label, new Token(Token::BUFFER, $buffer));
+                    return new Ast($this->label, $tokens);
                 }
             }
 
@@ -485,12 +487,10 @@ function chain(Parser ...$links) : Parser
     {
         protected function parser(TokenStream $ts, Parser ...$links) /*: Result|null*/
         {
-            $asts = [];
             $ast = new Ast($this->label);
 
             foreach ($links as $i => $link) {
                 if (($result = $link->parse($ts)) instanceof Ast) {
-                    $asts[$i] = $result;
                     $ast->append($result);
                 }
                 else {
@@ -846,7 +846,7 @@ function ls(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER
                         $ast->push($tuple[0]);
                     }
                     else {
-                        $ast->push(new Ast(null, ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
+                        $ast->push(new Ast('', ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
                     }
                 }
 
@@ -897,7 +897,7 @@ function lst(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITE
                         $ast->push($tuple[0]);
                     }
                     else {
-                        $ast->push(new Ast(null, ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
+                        $ast->push(new Ast('', ['item' => $tuple[0], 'delimiter' => $tuple[1]]));
                     }
                 }
 
@@ -995,7 +995,7 @@ function not(Parser $parser) : Parser
             $index = $ts->index();
             $result = $parser->parse($ts);
             $ts->jump($index); // always backtrack
-            return ($result instanceof Ast) ? $this->error($ts) : new Ast();
+            return ($result instanceof Ast) ? $this->error($ts) : new Ast;
         }
 
         function expected() : Expected
@@ -1079,6 +1079,31 @@ function midrule(callable $midrule, bool $isFallible = true, Expected $expected 
         function isFallible() : bool
         {
             return $this->stack[2];
+        }
+    };
+}
+
+function _() : Parser {
+    return new  class(__FUNCTION__) extends Parser
+    {
+        function parser() : Ast
+        {
+            return new Ast;
+        }
+
+        function expected() : Expected
+        {
+            return new Expected;
+        }
+
+        function isFallible() : bool
+        {
+            return false;
+        }
+
+        function as(string $_) : Parser
+        {
+            return $this;
         }
     };
 }

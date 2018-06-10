@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class ParserTest extends \PHPUnit_Framework_TestCase {
+class ParserTest extends \PHPUnit\Framework\TestCase {
 
     function setUp()
     {
@@ -18,10 +18,8 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
     }
 
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
-        $this->setExpectedException(
-            Halt::class,
-            implode(PHP_EOL, (array) $msg)
-        );
+        $this->expectException(Halt::class);
+        $this->expectExceptionMessage(implode(PHP_EOL, (array) $msg));
 
         $current = $ts->current();
 
@@ -164,7 +162,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                 buffer('<~>'),
                 token(T_VARIABLE)
             ),
-            'T_VARIABLE($a), BUFFER(<~>), T_VARIABLE($b)'
+            "T_VARIABLE(\$a), '<', '~', '>', T_VARIABLE(\$b)"
         );
 
         $ts = TokenStream::fromSource('<?php \n');
@@ -173,7 +171,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess(
             $ts,
             buffer('\n'),
-            'BUFFER(\n)'
+            'T_NS_SEPARATOR(\), T_STRING(n)'
         );
     }
 
@@ -195,7 +193,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
         $this->parseSuccess(
             $ts,
             buffer('<~>'),
-            'BUFFER(<~>)'
+            "'<', '~', '>'"
         );
     }
 
@@ -1181,7 +1179,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase {
                     throw new \Exception('Unknown operator arity.');
             }
         }
-        else $buff .= implode('', $ast->tokens());
+        else $buff .= $ast->implode();
 
         return $buff;
     }

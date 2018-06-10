@@ -1,12 +1,12 @@
 --TEST--
-Test ·stringify expander
+Test stringify expander
 --FILE--
 <?php
 
-macro {
-    yay\stringify(···args)
+$(macro) {
+    yay\stringify($(layer() as args))
 } >> {
-    ··stringify(···args)
+    $$(stringify($(args)))
 }
 
 $source = yay\stringify(function($a, $b $c){ echo 'the sum is: ' . $a + $b + $c; });

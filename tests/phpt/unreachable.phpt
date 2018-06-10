@@ -5,12 +5,12 @@ Guards
 
 class FlowError extends \Error {}
 
-macro { UNREACHABLE() } >> {
+$(macro) { UNREACHABLE() } >> {
     throw new \FlowError('Unreachable point reached.')
 }
 
-macro { UNREACHABLE (·string()·message) } >> {
-    throw new \FlowError(·message)
+$(macro) { UNREACHABLE ($(string() as message)) } >> {
+    throw new \FlowError($(message))
 }
 
 $var = '?';

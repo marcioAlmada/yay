@@ -38,7 +38,7 @@ final class Engine {
                         $tstring = $token->value();
 
                         // skip when something looks like a new macro to be parsed
-                        if ('macro' === $tstring) break;
+                        if (YAY_DOLLAR === $tstring && sigil_prefix()->parse($ts) instanceof Ast) break;
 
                         // here attempt to match and expand userland macros
                         // but just in case at least one macro passes the entry point heuristics
@@ -66,76 +66,89 @@ final class Engine {
                 (
                     chain
                     (
-                        token(T_STRING, 'macro')->as('declaration')
-                        ,
-                        optional
-                        (
-                            repeat
+                        sigil(
+                            token(T_STRING, 'macro')
+                            ,
+                            optional
                             (
-                                rtoken('/^·\w+$/')
+                                repeat
+                                (
+                                    chain(token(':'), label()->as('tag'))
+                                )
                             )
+                            ->as('tags')
                         )
-                        ->as('tags')
-                        ,
-                        lookahead
-                        (
-                            token('{')
-                        )
+                        ->as('declaration')
                         ,
                         commit
                         (
                             chain
                             (
-                                braces()->as('pattern')
+                                lookahead
+                                (
+                                    token('{')
+                                )
                                 ,
-                                token(T_SR)
-                                ,
-                                optional
+                                commit
                                 (
                                     chain
                                     (
-                                        token(T_FUNCTION)
-                                        ,
-                                        parentheses()->as('args')
-                                        ,
-                                        braces()->as('body')
+                                        braces()->as('pattern')
                                         ,
                                         token(T_SR)
+                                        ,
+                                        optional
+                                        (
+                                            chain
+                                            (
+                                                token(T_FUNCTION)->as('declaration')
+                                                ,
+                                                parentheses()->as('args')
+                                                ,
+                                                braces()->as('body')
+                                                ,
+                                                token(T_SR)
+                                            )
+                                        )
+                                        ->as('compiler_pass')
+                                        ,
+                                        braces()->as('expansion')
                                     )
                                 )
-                                ->as('compiler')
+                                ->as('body')
                                 ,
-                                braces()->as('expansion')
+                                optional
+                                (
+                                    token(';')
+                                )
                             )
-                        )
-                        ->as('body')
-                        ,
-                        optional
-                        (
-                            token(';')
+                            ->as('macro')
                         )
                     )
                     ,
                     CONSUME_DO_TRIM
                 )
                 ->onCommit(function(Ast $macroAst) {
+
                     $scope = Map::fromEmpty();
-                    $tags = Map::fromValues(array_map('strval', $macroAst->{'tags'}));
 
-                    if ($tags->contains('·grammar')) {
-                        $pattern = new GrammarPattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
-                    }
-                    else {
-                        $pattern = new Pattern($macroAst->{'declaration'}->line(), $macroAst->{'body pattern'}, $tags, $scope);
-                    }
+                    $tags = Map::fromValues(array_map(
+                        function(Ast $node) :string { return (string) $node->{'* tag'}->token(); },
+                        iterator_to_array($macroAst->{'* declaration tags'}->list())
+                    ));
 
-                    $compilerPass = new CompilerPass($macroAst->{'body compiler'});
-                    $expansion = new Expansion($macroAst->{'body expansion'}, $tags, $scope);
+                    if ($tags->contains('grammar'))
+                        $pattern = new GrammarPattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
+                    else
+                        $pattern = new Pattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
+
+                    $compilerPass = new CompilerPass($macroAst->{'* macro body compiler_pass'});
+                    $expansion = new Expansion($macroAst->{'macro body expansion'}, $tags, $scope);
                     $macro = new Macro($tags, $pattern, $compilerPass, $expansion);
 
                     $this->registerDirective($macro);
 
-                    if ($macro->tags()->contains('·global')) $this->globalDirectives[] = $macro;
+                    if ($macro->tags()->contains('global')) $this->globalDirectives[] = $macro;
                 })
             )
         ;

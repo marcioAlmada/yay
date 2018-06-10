@@ -3,7 +3,7 @@ Macro expansions should be comment insensitive by default
 --FILE--
 <?php
 
-macro {
+$(macro) {
     x
     /**/
     (

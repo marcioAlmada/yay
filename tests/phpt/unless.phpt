@@ -3,11 +3,11 @@ Proof of concept "unless" implementation
 --FILE--
 <?php
 
-macro {
-    unless · (···expression) { ···body }
+$(macro) {
+    unless $! $((...) as expression) $({...} as body)
 } >> {
-    if (! (···expression)) {
-        ···body
+    if (! ($(expression))) {
+        $(body)
     }
 }
 

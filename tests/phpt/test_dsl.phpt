@@ -3,16 +3,16 @@ Example DSL for testing --pretty-print
 --FILE--
 <?php
 
-macro ·recursion {
-    ·identifier()·procedure  T_CONSTANT_ENCAPSED_STRING·description {···body}
+$(macro :recursion) {
+    $(identifier() as procedure)  $(T_CONSTANT_ENCAPSED_STRING as description) $({...} as body)
 } >> {
-    ·procedure(T_CONSTANT_ENCAPSED_STRING·description, function() {···body});
+    $(procedure)($(description), function() {$(body)});
 }
 
-macro {
-    ·identifier()·procedure {···body}
+$(macro) {
+    $(identifier() as procedure) $({...} as body)
 } >> {
-    ·procedure(function() {···body});
+    $(procedure)(function() {$(body)});
 }
 
 describe 'ArrayObject' {

@@ -3,19 +3,19 @@ Test compiler pass arguments --pretty-print
 --FILE--
 <?php
 
-macro {
-    T_VARIABLE·A(T_VARIABLE·B)
-    ·_()·debug
+$(macro) {
+    $(T_VARIABLE as A)($(T_VARIABLE as B))
+    $(_() as debug)
 }
 >> function(\Yay\Ast $ast, \Yay\TokenStream $ts, \Yay\Index $start, \Yay\Index $end, \Yay\Engine $engine){
     ob_start();
     var_dump($ast, $ts, $start, $end, get_class($engine));
     $result = PHP_EOL . ob_get_clean();
 
-    $ast->append(new \Yay\Ast('·debug', new \Yay\Token(T_CONSTANT_ENCAPSED_STRING, $result)));
+    $ast->append(new \Yay\Ast('debug', new \Yay\Token(T_CONSTANT_ENCAPSED_STRING, $result)));
 }
 >> {
-    ··stringify(·debug)
+    $$(stringify($(debug)))
 }
 
 $x($y);
@@ -27,10 +27,10 @@ $x($y);
 '
 object(Yay\\Ast)#%d (%d) {
   ["label":protected]=>
-  NULL
+  string(0) ""
   ["ast":protected]=>
   array(%d) {
-    ["T_VARIABLE·A"]=>
+    ["A"]=>
     object(Yay\\Token)#%d (%d) {
       [0]=>
       string(14) "T_VARIABLE($x)"
@@ -40,7 +40,7 @@ object(Yay\\Ast)#%d (%d) {
       [0]=>
       string(%d) "\'(\'"
     }
-    ["T_VARIABLE·B"]=>
+    ["B"]=>
     object(Yay\\Token)#%d (%d) {
       [0]=>
       string(14) "T_VARIABLE($y)"

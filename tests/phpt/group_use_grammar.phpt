@@ -3,24 +3,24 @@ A proof of concept polyfill for group use --pretty-print
 --FILE--
 <?php
 
-macro ·grammar {
+$(macro :grammar) {
 
-    ·entries { list(·entry , '','') }
-    ·entry { ·type ·namespace{}·name ·alias }
-    ·type ?{ ''const'' | ''function'' }
-    ·alias ?{ ''as'' ·identifier()·label }
-    ·namespace { ·ns() }
+    $(entries) { list($(entry) , '','') }
+    $(entry) { $(type) $(namespace as name) $(alias) }
+    $(type) ?{ ''const'' | ''function'' }
+    $(alias) ?{ ''as'' $(identifier() as label) }
+    $(namespace) { $(ns()) }
 
-    << ·group_use { ''use'' ·namespace{}·base ''\'' ''{'' ·entries !! ''}'' }
+    << $(group_use) { ''use'' $(namespace as base) ''\'' ''{'' $(entries) $! ''}'' }
 
 } >> {
-    ·group_use ··· {
-        ·entries ··· {
-            ·entry ··· {
-                use ·type ·base\·name ·alias ···{as ·label};
-            }
-        }
-    }
+    $(group_use ... {
+        $(entries ... {
+            $(entry ... {
+                use $(type) $(base)\$(name) $(alias ...{as $(label)});
+            })
+        })
+    })
 }
 
 use A\B\C\{

@@ -19,7 +19,7 @@ abstract class Parser {
 
     protected
         $type,
-        $label,
+        $label = '',
         $stack,
         $onCommit,
         $errorLevel = Error::DISABLED,
@@ -41,7 +41,7 @@ abstract class Parser {
 
     final function __toString() : string
     {
-        return $this->type . ($this->label !== null ? " as {$this->label}" : '');
+        return $this->type . ($this->label !== '' ? " as {$this->label}" : '');
     }
 
     final function __debugInfo()
@@ -70,7 +70,7 @@ abstract class Parser {
             $result = $this->parser($ts, ...$this->stack);
 
             if ($result instanceof Ast) {
-                self::$tracer->trace($index, 'production', implode('', $result->tokens()));
+                self::$tracer->trace($index, 'production', $result->implode());
 
                 if (null !== $this->onCommit) ($this->onCommit)($result);
             }
@@ -105,7 +105,7 @@ abstract class Parser {
         return $this;
     }
 
-    final function as($label) : self
+    function as(string $label) : self
     {
         if ('' !== (string) $label) {
             if(false !== strpos($label, ' '))

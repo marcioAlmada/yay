@@ -5,10 +5,10 @@ HTML here, this should be preserved: @ "debug" public
 
 <?php
 
-macro { x } >> { }
-macro { @ } >> { }
-macro { public } >> { }
-macro { "debug" } >> { } // this comment should be preserved
+$(macro) { x } >> { }
+$(macro) { @ } >> { }
+$(macro) { public } >> { }
+$(macro) { "debug" } >> { } // this comment should be preserved
 
 @test("debug");
 

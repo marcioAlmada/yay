@@ -14,19 +14,21 @@ function enum_field_or_class_constant(string $class, string $field)
     return (\in_array(\Enum::class, \class_implements($class)) ? $class::$field() : \constant("{$class}::{$field}"));
 }
 
-macro ·unsafe {
+$(macro :unsafe) {
     // the enum declaration
-    enum T_STRING·name {
-        ·ls
-        (
-            ·label()·field
-            ,
-            ·token(',')
+    enum $(T_STRING as name) {
+        $(
+            ls
+            (
+                label() as field
+                ,
+                token(',')
+            )
+            as fields
         )
-        ·fields
     }
 } >> {
-    class T_STRING·name implements Enum {
+    class $(name) implements Enum {
         private static $store;
 
         private function __construct() {}
@@ -34,9 +36,9 @@ macro ·unsafe {
         static function __callStatic(string $field, array $args) : self {
             if(! self::$store) {
                 self::$store = new \stdclass;
-                ·fields ··· {
-                    self::$store->·field = new class extends T_STRING·name {};
-                }
+                $(fields ... {
+                    self::$store->$(field) = new class extends $(name) {};
+                })
             }
 
             if (isset(self::$store->$field)) return self::$store->$field;
@@ -46,15 +48,19 @@ macro ·unsafe {
     }
 }
 
-macro {
-    // sequence that matches the enum field access syntax:
-    ·ns()·class // matches a namespace
-    :: // matches T_DOUBLE_COLON used for static access
-    ·not(·token(T_CLASS))·_ // avoids matching ::class resolution syntax
-    ·label()·field // matches the enum field name
-    ·not(·token('('))·_ // avoids matching static method calls
+$(macro) {
+    $(
+        // sequence that matches the enum field access syntax:
+        chain(
+            ns() as class, // matches a namespace
+            token(T_DOUBLE_COLON), // matches T_DOUBLE_COLON used for static access
+            not(class), // avoids matching ::class resolution syntax
+            label() as field, // matches the enum field name
+            not(token('(')) // avoids matching static method calls
+        )
+    )
 } >> {
-    \enum_field_or_class_constant(·class::class, ··stringify(·field))
+    \enum_field_or_class_constant($(class)::class, $$(stringify($(field))))
 }
 
 //

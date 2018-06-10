@@ -3,15 +3,15 @@ Defer
 --FILE--
 <?php
 
-macro {
-    defer ·closure()·deferred;
+$(macro) {
+    defer $(closure() as deferred);
 } >> {
-    $deferred = new class(·deferred) {
-        ··unsafe {
+    $deferred = new class($(deferred)) {
+        $$(unsafe {
         private $deferred = null;
         function __construct(callable $deferred){ $this->deferred = $deferred; }
         function __destruct(){ ($this->deferred)(); }
-        }
+        })
     };
 }
 
@@ -28,13 +28,13 @@ app("request");
 <?php
 
 function app($input){
-    $deferred·0 = new class(function(){echo 'Bye!', PHP_EOL; }) {
+    $deferred___0 = new class(function(){echo 'Bye!', PHP_EOL; }) {
         private $deferred = null;
         function __construct(callable $deferred){ $this->deferred = $deferred; }
         function __destruct(){ ($this->deferred)(); }
         
     };
-    $deferred·1 = new class(function()use($input){echo "Handling {$input}\n"; }) {
+    $deferred___1 = new class(function()use($input){echo "Handling {$input}\n"; }) {
         private $deferred = null;
         function __construct(callable $deferred){ $this->deferred = $deferred; }
         function __destruct(){ ($this->deferred)(); }

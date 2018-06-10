@@ -3,77 +3,76 @@ General property  --pretty-print
 --FILE--
 <?php
 
-macro {
-    ·ns()·class {
-        ···body
-    }
+$(macro) {
+    $(ns() as class) $({...} as body)
 } >> {
-    ·class {
+    $(class) {
         use \Pre\AccessorsTrait;
 
-        ···body
+        $(body)
     }
 }
 
-macro {
-    private T_VARIABLE·variable {
-        ·repeat
-        (
-            ·either
+$(macro) {
+    private $(T_VARIABLE as variable) {
+        $(
+            repeat
             (
-                ·chain
+                either
                 (
-                    get,
-                    ·optional(·chain(·token(':'), ·ns()·_))·getter_return_type,
-                    ·between(·token('{'), ·layer(), ·token('}'))·getter_body
+                    chain
+                    (
+                        get,
+                        optional(chain(token(':'), ns())) as getter_return_type,
+                        between(token('{'), layer(), token('}')) as getter_body
+                    )
+                    as getter
+                    ,
+                    chain
+                    (
+                        set,
+                        token('('),
+                        layer() as setter_args,
+                        token(')'),
+                        optional(chain(token(':'), ns())) as setter_return_type,
+                        between(token('{'), layer(), token('}')) as setter_body
+                    )
+                    as setter
+                    ,
+                    chain
+                    (
+                        unset,
+                        optional(chain(token(':'), ns())) as unsetter_return_type,
+                        between(token('{'), layer(), token('}')) as unsetter_body
+                    )
+                    as unsetter
                 )
-                ·getter
-                ,
-                ·chain
-                (
-                    set,
-                    ·token('('),
-                    ·layer()·setter_args,
-                    ·token(')'),
-                    ·optional(·chain(·token(':'), ·ns()·_))·setter_return_type,
-                    ·between(·token('{'), ·layer(), ·token('}'))·setter_body
-                )
-                ·setter
-                ,
-                ·chain
-                (
-                    unset,
-                    ·optional(·chain(·token(':'), ·ns()·_))·unsetter_return_type,
-                    ·between(·token('{'), ·layer(), ·token('}'))·unsetter_body
-                )
-                ·unsetter
-            )
+            ) as accessors
         )
-        ·accessors
     };
 } >> {
-    private T_VARIABLE·variable;
+    private $(variable);
 
-    ·accessors ··· {
-        ·setter ?··· {
-            private function ··concat(__set_ ··unvar(T_VARIABLE·variable))(·setter_args) ·setter_return_type {
-                ·setter_body
+    $(accessors ... {
+        $(setter ?... {
+            private function $$(concat(__set_ $$(unvar($(variable)))))($(setter_args)) $(setter_return_type) {
+                $(setter_body)
             }
 
-        }
+        })
 
-        ·getter ?··· {
-            private function ··concat(__get_ ··unvar(T_VARIABLE·variable))() ·getter_return_type {
-                ·getter_body
+        $(getter ?... {
+            private function $$(concat(__get_ $$(unvar($(variable)))))() $(getter_return_type) {
+                $(getter_body)
             }
-        }
+        })
 
-        ·unsetter ?··· {
-            private function ··concat(__unset_ ··unvar(T_VARIABLE·variable))() ·unsetter_return_type {
-                ·unsetter_body
+        $(unsetter ?... {
+            private function $$(concat(__unset_ $$(unvar($(variable)))))() $(unsetter_return_type) {
+                $(unsetter_body)
             }
-        }
-    }
+        })
+    })
 }
 
 namespace App;

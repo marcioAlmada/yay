@@ -6,11 +6,15 @@ class Pattern extends MacroMember implements PatternInterface {
 
     const
         E_BAD_CAPTURE = "Bad macro capture identifier '%s' on line %d.",
-        E_BAD_DOMINANCE = "Bad dominant macro marker '·' offset %d on line %d.",
+        E_BAD_DOMINANCE = "Bad dominant macro marker '" . YAY_PATTERN_COMMIT . "' offset %d on line %d.",
         E_BAD_PARSER_NAME = "Bad macro parser identifier '%s' on line %d.",
         E_BAD_TOKEN_TYPE = "Undefined token type '%s' on line %d.",
         E_EMPTY_PATTERN = "Empty macro pattern on line %d.",
         E_IDENTIFIER_REDEFINITION = "Redefinition of macro capture identifier '%s' on line %d."
+    ;
+
+    const
+        NULL_LABEL = '_'
     ;
 
     protected
@@ -27,7 +31,7 @@ class Pattern extends MacroMember implements PatternInterface {
         $this->scope = $scope;
         $this->pattern = $this->compile($pattern);
 
-        if ($tags->contains('·optimize')) $this->pattern = $this->pattern->optimize();
+        if ($tags->contains('optimize')) $this->pattern = $this->pattern->optimize();
     }
 
     function match(TokenStream $ts) {
@@ -44,120 +48,135 @@ class Pattern extends MacroMember implements PatternInterface {
 
     private function compile(array $tokens) {
 
+        // cg is the compiler globals
         $cg = (object)[
             'ts' => TokenStream::fromSlice($tokens),
             'parsers' => [],
         ];
 
+        /*
+            Here we traverse the macro declaration token stream and look for
+            declared ast node matchers under the preprocessor sigil `$(...)`
+         */
         traverse
         (
-            rtoken('/^(T_\w+)·(\w+)$/')
+            /*
+                Matches:
+                    $(T_STRING)
+                Compiles to:
+                    token(T_STRING)
+
+                Matches:
+                    $(T_STRING as foo)
+                Compiles to:
+                    token(T_STRING)->as('foo')
+             */
+            sigil(token_constant(), optional(alias()))
                 ->onCommit(function(Ast $result) use($cg) {
-                    $token = $result->token();
-                    $identifier = $this->lookupCapture($token);
-                    $type = $this->lookupTokenType($token);
-                    $cg->parsers[] = token($type)->as($identifier);
+                    $token = $this->compileTokenConstant($result->{'* token_constant'});
+                    $alias = $this->compileAlias($result->{'* alias'});
+                    $cg->parsers[] = token($token)->as($alias);
                 })
             ,
-            (
-                $parser = chain
-                (
-                    rtoken('/^·\w+$/')->as('type')
-                    ,
-                    token('(')
-                    ,
-                    optional
-                    (
-                        ls
-                        (
-                            either
-                            (
-                                pointer
-                                (
-                                    $parser // recursion !!!
-                                )
-                                ->as('parser')
-                                ,
-                                chain
-                                (
-                                    token(T_FUNCTION)
-                                    ,
-                                    parentheses()->as('args')
-                                    ,
-                                    braces()->as('body')
-                                )
-                                ->as('function')
-                                ,
-                                string()->as('string')
-                                ,
-                                rtoken('/^T_\w+·\w+$/')->as('token')
-                                ,
-                                rtoken('/^T_\w+$/')->as('constant')
-                                ,
-                                rtoken('/^·this$/')->as('this')
-                                ,
-                                label()->as('label')
-                                ,
-                                between
-                                (
-                                    token(T_CONSTANT_ENCAPSED_STRING, "''"),
-                                    any(),
-                                    token(T_CONSTANT_ENCAPSED_STRING, "''")
-                                )
-                                ->as('literal')
-                            )
-                            ,
-                            token(',')
-                        )
-                    )
-                    ->as('args')
-                    ,
-                    commit
-                    (
-                        token(')')
-                    )
-                    ,
-                    optional
-                    (
-                        rtoken('/^·\w+$/')->as('label'), null
-                    )
-                )
-            )
-            ->onCommit(function(Ast $result) use($cg) {
-                $cg->parsers[] = $this->compileParser($result);
-            })
-            ,
-            // handles {···layer}
-            $this->layer('{', '}', braces(), $cg)
-            ,
-            // handles [···layer]
-            $this->layer('[', ']', brackets(), $cg)
-            ,
-            // handles (···layer)
-            $this->layer('(', ')', parentheses(), $cg)
-            ,
-            // handles  non delimited ···layer
-            rtoken('/^···(\w+)$/')
+            // Matches complex parser combinator declarations
+            sigil(parsec())
                 ->onCommit(function(Ast $result) use($cg) {
-                    $identifier = $this->lookupCapture($result->token());
-                    $cg->parsers[] = layer()->as($identifier);
+                    $cg->parsers[] = $this->compileParser($result->{'* parsec'});
                 })
             ,
-            token(T_STRING, '·')
+            /*
+                Matches:
+                    $({...})
+                Compiles to:
+                    braces()
+
+                Matches:
+                    $({...} as foo)
+                Compiles to:
+                    braces()->as('foo')
+            */
+            sigil($this->layer('{', '}', braces(), $cg))
+            ,
+            /*
+                Matches:
+                    $([...])
+                Compiles to:
+                    brackets()
+
+                Matches:
+                    $([...] as foo)
+                Compiles to:
+                    brackets()->as('foo')
+            */
+            sigil($this->layer('[', ']', brackets(), $cg))
+            ,
+            /*
+                Matches:
+                    $((...))
+                Compiles to:
+                    parentheses()
+
+                Matches:
+                    $((...) as foo)
+                Compiles to:
+                    parentheses()->as('foo')
+            */
+            sigil($this->layer('(', ')', parentheses(), $cg))
+            ,
+            /*
+                Matches:
+                    $(...)
+                Compiles to:
+                    layer()
+
+                Matches:
+                    $(... as foo)
+                Compiles to:
+                    layer()->as('foo')
+            */
+            sigil(token(T_ELLIPSIS), optional(alias()))
+                ->onCommit(function(Ast $result) use($cg) {
+                    $alias = $this->compileAlias($result->{'* alias'});
+                    $cg->parsers[] = layer()->as($alias);
+                })
+            ,
+            /*
+                Matches:
+                    $! <the rest of the pattern>
+                Compiles to:
+                    commit(<the rest of the pattern>)
+
+                > Causes the pattern after $ to throw a preprocessor error in case the pattern is
+                not fully matched. The normal behavior is to silent failure and backtrack. This is
+                useful to introduce first class language features with elegant syntax errors within
+                DSLs
+             */
+            pattern_commit()
                 ->onCommit(function(Ast $result) use ($cg) {
                     $offset = \count($cg->parsers);
                     if (0 !== $this->dominance || 0 === $offset) {
-                        $this->fail(self::E_BAD_DOMINANCE, $offset, $result->token()->line());
+                        $this->fail(self::E_BAD_DOMINANCE, $offset, $result->tokens()[0]->line());
                     }
                     $this->dominance = $offset;
                 })
             ,
-            rtoken('/·/')
-                ->onCommit(function(Ast $result) {
-                    $token = $result->token();
-                    $this->fail(self::E_BAD_CAPTURE, $token, $token->line());
+            /*
+                Matches:
+                    Possible orphaned $()
+
+                > Causes a preprocessor error pointing a macro syntax error
+             */
+            sigil(layer())
+                ->onCommit(function(Ast $result) use ($cg) {
+                    $this->fail(self::E_BAD_CAPTURE, $result->implode(), $result->{'sigil'}[0]->line());
                 })
             ,
+            /*
+                Matches:
+                    Anything the preprocessor is not aware of
+                Compiles to:
+                    A literal pattern of whatever was matched
+             */
             any()
                 ->onCommit(function(Ast $result) use($cg) {
                     $cg->parsers[] = token($result->token());
@@ -167,7 +186,7 @@ class Pattern extends MacroMember implements PatternInterface {
 
         $this->specificity = \count($cg->parsers);
 
-        // check if macro dominance '·' is last token
+        // check if macro dominance '$' is last token
         if ($this->dominance === $this->specificity)
             $this->fail(self::E_BAD_DOMINANCE, $this->dominance, $cg->ts->last()->line());
 
@@ -203,117 +222,100 @@ class Pattern extends MacroMember implements PatternInterface {
             (
                 token($start)
                 ,
-                rtoken('/^···(\w+)$/')->as('label')
+                token(T_ELLIPSIS)
                 ,
-                commit
-                (
-                    token($end)
-                )
+                commit(token($end))
+                ,
+                alias()
             )
             ->onCommit(function(Ast $result) use($parser, $cg) {
-                $identifier = $this->lookupCapture($result->label);
+                $identifier = $this->compileAlias($result->{'* alias'});
                 $cg->parsers[] = (clone $parser)->as($identifier);
             });
     }
 
-    protected function lookupTokenType(Token $token) : int {
-        $type = explode('·', (string) $token)[0];
+    protected function compileTokenConstant(Ast $constant) : int {
+        $type = (string) $constant->token();
         if (! defined($type))
-            $this->fail(self::E_BAD_TOKEN_TYPE, $type, $token->line());
+            $this->fail(self::E_BAD_TOKEN_TYPE, $type, $constant->token()->line());
 
         return constant($type);
     }
 
-    private function lookupCapture(Token $token) : string {
-        $identifier = (string) $token;
+    private function compileAlias(Ast $alias) : string {
+        $identifier = $alias->{'name'} ? (string) $alias->{'* name'}->token() : '_';
 
-        if ($identifier === '·_') return '';
+        if ($identifier === self::NULL_LABEL) return '';
 
         if ($this->scope->contains($identifier))
-            $this->fail(self::E_IDENTIFIER_REDEFINITION, $identifier, $token->line());
+            $this->fail(self::E_IDENTIFIER_REDEFINITION, $identifier, $alias->{'* name'}->token()->line());
 
         $this->scope->add($identifier);
 
         return $identifier;
     }
 
-    private function lookupParser(Token $token) : callable {
-        $identifier = (string) $token;
-        $parser = '\Yay\\' . explode('·', $identifier)[1];
+    private function compileParserCallable(Ast $type) : callable {
+        $function = $type->implode();
 
-        if ($identifier === '·_')
-            return function(){ return midrule(function(){ return new Ast; }); };
+        if (0 !== strpos($function, '\\')) $function = '\Yay\\' . $function;
 
-        if (! function_exists($parser))
-            $this->fail(self::E_BAD_PARSER_NAME, $identifier, $token->line());
+        if (! function_exists($function)) {
+            $tokens = $type->tokens();
+            $this->fail(
+                self::E_BAD_PARSER_NAME,
+                $function,
+                $tokens[0] != '\\' ? $tokens[0]->line() : $tokens[1]->line()
+            );
+        }
 
-        return $parser;
+        return $function;
     }
 
     protected function compileParser(Ast $ast) : Parser {
-        $parser = $this->lookupParser($ast->{'* type'}->token());
-        $args = $this->compileParserArgs($ast->{'* args'});
+        $parser = $this->compileParserCallable($ast->{'* type'});
+        $args = $ast->{'* args'}->isEmpty() ? [] : $this->compileParserArgs($ast->{'* args'});
         $parser = $parser(...$args);
-        if (($label = $ast->{'label'}) && $ast->{'* type'}->token() != '·_')
-            $parser->as($this->lookupCapture($label));
+        $alias = $this->compileAlias($ast->{'* alias'});
+        $parser->as((string) $alias);
 
         return $parser;
     }
 
     protected function compileParserArgs(Ast $args) : array {
         $compiled = [];
-
-        foreach ($args->list() as $arg) switch ((string) $arg->label()) {
-            case 'this':
-                $compiled[] = pointer($this->pattern);
-                break;
-            case 'token':
-                $token = $arg->token();
-                $type = $this->lookupTokenType($token);
-                $label = $this->lookupCapture($token);
-                $compiled[] = token($type)->as($label);
-                break;
-            case 'label':
-            case 'literal':
-                $compiled[] = token($arg->token());
-                break;
-            case 'parser':
-                $compiled[] = $this->compileParser($arg);
-                break;
-            case 'string':
-                $compiled[] = trim((string) $arg->token(), '"\'');
-                break;
-            case 'constant': // T_*
-                $compiled[] = $this->lookupTokenType($arg->token());
-                break;
-            case 'function': // function(...){...}
-                $compiled[] = $this->compileAnonymousFunctionArg($arg);
-                break;
-            default:
-                $compiled = array_merge(
-                    $compiled, $this->compileParserArgs($arg));
+        foreach ($args->list() as $ast) {
+            $type = key($ast->array());
+            $arg = $ast->{"* {$type}"};
+            switch ($type) {
+                case 'this':
+                    $compiled[] = pointer($this->pattern);
+                    break;
+                case 'named_token_constant':
+                    $token = $this->compileTokenConstant($arg->{'* token_constant'});
+                    $alias = $this->compileAlias($arg->{'* alias'});
+                    $compiled[] = token($token)->as($alias);
+                    break;
+                case 'token_constant':
+                    $compiled[] = $this->compileTokenConstant($arg);
+                    break;
+                case 'literal':
+                    $compiled[] = token($arg->token());
+                    break;
+                case 'parsec':
+                    $compiled[] = $this->compileParser($arg);
+                    break;
+                case 'string':
+                    $compiled[] = trim((string) $arg->token(), '"\'');
+                    break;
+                case 'function': // function(...){...}
+                    $compiled[] = new AnonymousFunction($arg);
+                    break;
+                default:
+                    assert(false, "Unknown parser argument type '{$type}'");
+            }
         }
 
         return $compiled;
-    }
-
-    private function compileAnonymousFunctionArg($arg) : \Closure {
-        if ($arg instanceof Ast) {
-            $arg = $arg->unwrap();
-        }
-
-        if (!is_array($arg)) {
-            throw new InvalidArgumentException('$arg should be an array or instance of Yay\Ast');
-        }
-
-        $arglist = implode('', $arg['args']);
-        $body = implode('', $arg['body']);
-        $source = "<?php\nreturn static function({$arglist}){\n{$body}\n};";
-        $file = sys_get_temp_dir() . '/yay-function-' . sha1($source);
-
-        if (!is_readable($file))
-            file_put_contents($file, $source);
-
-        return include $file;
     }
 }

@@ -3,22 +3,22 @@ Ensures preprocessor syntax errors occurs in the right line number
 --FILE--
 <?php
 
-macro {
+$(macro) {
 
-	·token(T_STRING, 'foo')·captured;
+	$(token(T_STRING, 'foo') as captured);
 
 } >> {
 
 	function expansion()
 	{
-		·captured ·captured;
+		$(captured) $(captured);
 	}
 
 }
 
-macro {
+$(macro) {
 
-	·token(T_STRING, 'foo') · expected
+	$(token(T_STRING, 'foo')) $! expected
 
 } >> {
 

@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group large
  */
-class MacroScopeTest extends \PHPUnit_Framework_TestCase {
+class MacroScopeTest extends \PHPUnit\Framework\TestCase {
 
     const
         FIXTURES_DIR = 'fixtures/scope',

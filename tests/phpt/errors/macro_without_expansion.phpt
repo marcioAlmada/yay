@@ -3,7 +3,7 @@ Malformed macro
 --FILE--
 <?php
 
-macro { x } // bad macro, missing expansion section
+$(macro) { x } // bad macro, missing expansion section
 
 ?>
 --EXPECTF--

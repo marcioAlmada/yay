@@ -23,8 +23,8 @@ class Expansion extends MacroMember {
 
     function __construct(array $expansion, Map $tags, Map $scope) {
         $this->expansion = $this->compile($expansion, $scope);
-        if ($tags->contains('·unsafe')) $this->unsafe = false;
-        $this->recursive = $tags->contains('·recursion');
+        if ($tags->contains('unsafe')) $this->unsafe = false;
+        $this->recursive = $tags->contains('recursion');
     }
 
     function isRecursive() : bool {
@@ -38,8 +38,7 @@ class Expansion extends MacroMember {
     function expand(Ast $crossover, Engine $engine) : TokenStream {
             $expansion = clone $this->expansion;
 
-            if ($this->unsafe)
-                hygienize($expansion, $engine);
+            if ($this->unsafe) hygienize($expansion, $engine);
 
             if ($this->constant) return $expansion;
 
@@ -54,6 +53,24 @@ class Expansion extends MacroMember {
 
         $cg->ts->trim();
 
+        /*
+           Here we analyze the expansion looking for "unsafe" productions like:
+
+            - variables
+            - goto labels
+            - goto instructions
+
+           These will be escaped later if the macro is considered unsafe and does NOT
+           contain the explicit `:unsafe` tag as in:
+
+           ```
+           $(macro :unsafe) {
+               # the pattern
+           } >> {
+               # the expansion
+           }
+           ```
+        */
         traverse
         (
             either
@@ -74,117 +91,124 @@ class Expansion extends MacroMember {
 
         traverse
         (
+            /*
+                Matches `\\$(...)` and `\\$$(...)` escape syntax, as in:
+
+                    \\$(something to be ignored by the preprocessor)
+
+                Compiles to:
+
+                    Token(Token::ESCAPED, '$(something to be ignored by the preprocessor)')
+
+                This enables anyone to use the reserved sigil `$()` as part of an expansion
+                by escapting it as `\\$()`
+             */
             consume
             (
                 chain
                 (
-                    token(T_NS_SEPARATOR)
+                    either(escaped_sigil_prefix(), escaped_expander_sigil_prefix())->as('declaration')
                     ,
-                    token(T_NS_SEPARATOR)
+                    layer()
                     ,
-                    parentheses()->as('cloaked')
+                    token(')')
                 )
             )
             ->onCommit(function(Ast $result) use ($cg){
                 $cg->ts->inject(
                     TokenStream::fromSequence(
                         new Token(
-                            Token::CLOAKED,
-                            implode('', $result->cloaked),
-                            $result->cloaked[0]->line()
+                            Token::ESCAPED,
+                            $result->implode(),
+                            $result->{'* declaration'}->tokens()[0]->line()
                         )
                     )
                 );
                 $this->cloaked = true;
-            })
-            ,
-            token(Token::CLOAKED)
-            ,
-            chain
-            (
-                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
-                ,
-                token('?')
-                ,
-                token('!')
-                ,
-                token(T_STRING, '·')
-                ,
-                braces()->as('expansion')
-            )
-            ->onCommit(function(Ast $result) {
                 $this->constant = false;
             })
             ,
-            chain
-            (
-                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
-                ,
-                token('?')
-                ,
-                token(T_STRING, '·')
-                ,
-                braces()->as('expansion')
-            )
-            ->onCommit(function(Ast $result) {
-                $this->constant = false;
-            })
+            // skips the escape token produced by the rule above ^
+            token(Token::ESCAPED)
             ,
-            chain
+            /*
+                Here we analyze the expansion and mark the expansion as constant or not.
+                Constant means the expansion is not variable. An expansion is considered not
+                constant when it contains one of the following constructs:
+
+                - $(name)
+                - $(name ? {...}) // if not empty, expand
+                - $(name ! {...}) // if empty, expand
+                - $(name ?! {...}) // if empty, expand
+                - $(name... ? {...}) // if present, expand
+
+             */
+            either
             (
-                rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
-                ,
-                token('!')
-                ,
-                token(T_STRING, '·')
-                ,
-                braces()->as('expansion')
-            )
-            ->onCommit(function(Ast $result) {
-                $this->constant = false;
-            })
-            ,
-            chain
-            (
-                rtoken('/^··\w+$/')->as('expander')
-                ,
-                either(parentheses(), braces())->as('args')
-            )
-            ->onCommit(function(){
-                $this->constant = false;
-            })
-            ,
-            chain
-            (
-                rtoken('/^·\w+|···\w+$/')->as('label')
-                ,
-                optional(token('?'))->as('optional')
-                ,
-                token(T_STRING, '···')
-                ,
-                optional
+                sigil
                 (
-                    parentheses()->as('delimiters')
+                    label()->as('label')
+                    ,
+                    token('?')
+                    ,
+                    token('!')
+                    ,
+                    braces()->as('expansion')
                 )
                 ,
-                braces()->as('expansion')
+                sigil
+                (
+                    label()->as('label')
+                    ,
+                    token('?')
+                    ,
+                    braces()->as('expansion')
+                )
+                ,
+                sigil
+                (
+                    label()->as('label')
+                    ,
+                    token('!')
+                    ,
+                    braces()->as('expansion')
+                )
+                ,
+                expander_sigil
+                (
+                    ns()->as('expander')
+                    ,
+                    either(parentheses(), braces())->as('args')
+                )
+                ,
+                sigil
+                (
+                    label()->as('label')
+                    ,
+                    optional(token('?'))->as('optional')
+                    ,
+                    token(T_ELLIPSIS)
+                    ,
+                    optional
+                    (
+                        parentheses()->as('delimiters')
+                    )
+                    ,
+                    braces()->as('expansion')
+                )
+                ->onCommit(function(Ast $result) use($cg) {
+                    if (! $result->optional)
+                        $this->lookupScope($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
+                })
+                ,
+                sigil(label()->as('label'))
+                    ->onCommit(function(Ast $result) use($cg) {
+                        $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
+                    })
             )
-            ->onCommit(function(Ast $result) use($cg) {
-                if (! $result->optional)
-                    $this->lookupScope($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
+            ->onCommit(function(Ast $result) {
                 $this->constant = false;
             })
-            ,
-            rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')
-                ->onCommit(function(Ast $result) use($cg) {
-                    $this->lookupScope($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
-                    $this->constant = false;
-                })
-            ,
-            rtoken('/·/')
-                ->onCommit(function(Ast $result) use($cg) {
-                    $this->lookupScope($result->token(), $cg->context, self::E_BAD_EXPANSION);
-                })
         )
         ->parse($cg->ts);
 
@@ -203,19 +227,17 @@ class Expansion extends MacroMember {
             $parser ??
             traverse
             (
-                token(Token::CLOAKED)
+                token(Token::ESCAPED)
                 ,
                 consume
                 (
-                    chain
+                    sigil
                     (
-                        rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                        label()->as('label')
                         ,
                         token('?')
                         ,
                         token('!')
-                        ,
-                        token(T_STRING, '·')
                         ,
                         braces()->as('expansion')
                     )
@@ -225,7 +247,7 @@ class Expansion extends MacroMember {
 
                     $tokens = $cg->this->lookupAstOptional($result->{'label'}, $cg->context)->tokens();
 
-                    $expansion = TokenStream::fromSlice($tokens ? [$result->{'label'}] : $result->{'expansion'});
+                    $expansion = TokenStream::fromSlice($tokens ?: $result->{'expansion'});
 
                     $mutation = $cg->this->mutate(
                         $expansion,
@@ -238,13 +260,11 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    chain
+                    sigil
                     (
-                        rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                        label()->as('label')
                         ,
                         token('?')
-                        ,
-                        token(T_STRING, '·')
                         ,
                         braces()->as('expansion')
                     )
@@ -269,13 +289,11 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    chain
+                    sigil
                     (
-                        rtoken('/^(T_\w+·\w+|·\w+|···\w+)$/')->as('label')
+                        label()->as('label')
                         ,
                         token('!')
-                        ,
-                        token(T_STRING, '·')
                         ,
                         braces()->as('expansion')
                     )
@@ -298,28 +316,11 @@ class Expansion extends MacroMember {
                     $cg->ts->inject($mutation);
                 })
                 ,
-                rtoken('/^T_\w+·\w+$/')->onCommit(function(Ast $result) use ($states) {
-                    $cg = $states->current();
-                    $ts = $cg->ts;
-
-                    $ast = $cg->this->lookupAst($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
-
-                    $ts->previous();
-                    $node = $ts->index();
-
-                    if ($ast->isEmpty())
-                        $ts->extract($node, $node->next);
-                    else
-                        $node->token = $ast->token();
-
-                    $ts->next();
-                })
-                ,
                 consume
                 (
-                    chain
+                    expander_sigil
                     (
-                        rtoken('/^··\w+$/')->as('expander')
+                        ns()->as('expander')
                         ,
                         either(parentheses(), braces())->as('args')
                     )
@@ -327,9 +328,9 @@ class Expansion extends MacroMember {
                 ->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
 
-                    $expander = $result->{'expander'};
+                    $expander = $result->{'* expander'};
                     if (\count($result->{'args'}) === 0)
-                        $cg->this->fail(self::E_EMPTY_EXPANDER_SLICE, (string) $expander, $expander->line());
+                        $cg->this->fail(self::E_EMPTY_EXPANDER_SLICE, $expander->implode(), $expander->tokens()[0]->line());
 
                     $expansion = TokenStream::fromSlice($result->{'args'});
                     $mutation = $cg->this->mutate($expansion, $cg->context, $cg->engine);
@@ -340,13 +341,13 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    chain
+                    sigil
                     (
-                        rtoken('/^·\w+|···\w+$/')->as('label')
+                        label()->as('label')
                         ,
                         optional(token('?'))->as('optional')
                         ,
-                        token(T_STRING, '···')
+                        token(T_ELLIPSIS)
                         ,
                         optional
                         (
@@ -375,7 +376,7 @@ class Expansion extends MacroMember {
                         $expansion = TokenStream::fromSlice($result->{'expansion'});
                         $mutation = $cg->this->mutate(
                             $expansion,
-                            (new Ast(null, $subContext))->withParent($cg->context),
+                            (new Ast('', $subContext))->withParent($cg->context),
                             $cg->engine
                         );
                         if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
@@ -385,11 +386,12 @@ class Expansion extends MacroMember {
                 ,
                 consume
                 (
-                    rtoken('/^·\w+|···\w+$/')
+                    sigil(label()->as('label'))
                 )
                 ->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
-                    $tokens = $cg->this->lookupAst($result->token(), $cg->context, self::E_UNDEFINED_EXPANSION)->tokens();
+                    $label = $result->{'* label'}->token();
+                    $tokens = $cg->this->lookupAst($label, $cg->context, self::E_UNDEFINED_EXPANSION)->tokens();
                     $cg->ts->inject(TokenStream::fromSlice($tokens));
                 })
             )
@@ -397,7 +399,7 @@ class Expansion extends MacroMember {
 
         $cg = (object) [
             'ts' => $ts,
-            'context' => $context->label() ? new Ast(null, [$context->label() => $context->unwrap()]) : $context,
+            'context' => $context->label() ? new Ast('', [$context->label() => $context->unwrap()]) : $context,
             'engine' => $engine,
             'this' => $this,
         ];
@@ -415,12 +417,12 @@ class Expansion extends MacroMember {
             (
                 consume
                 (
-                    token(Token::CLOAKED)
+                    token(Token::ESCAPED)
                 )
                 ->onCommit(function(Ast $result) use($cg) {
                     $cg->ts->inject(
                         TokenStream::fromSourceWithoutOpenTag(
-                            (string) $result->token()
+                            ltrim((string) $result->token(), '\\')
                         )
                     );
                 })
@@ -433,14 +435,15 @@ class Expansion extends MacroMember {
         return $cg->ts;
     }
 
-    private function lookupExpander(Token $token) : string {
-        $identifier = (string) $token;
-        $expander = '\Yay\Dsl\Expanders\\' . explode('··', $identifier)[1];
+    private function lookupExpander(Ast $expander) : string {
+        $resolvedName = $name = $expander->implode();
 
-        if (! function_exists($expander))
-            $this->fail(self::E_BAD_EXPANDER, $identifier, $token->line());
+        if (! $expander->{'full-qualified'}) $resolvedName = '\Yay\Dsl\Expanders\\' . $name;
 
-        return $expander;
+        if (! function_exists($resolvedName))
+            $this->fail(self::E_BAD_EXPANDER, $name, $expander->tokens()[0]->line());
+
+        return $resolvedName;
     }
 
     private function lookupScope(Token $token, Map $context, string $error) : bool {

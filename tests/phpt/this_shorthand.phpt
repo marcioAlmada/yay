@@ -3,7 +3,7 @@ This shorthand $->
 --FILE--
 <?php
 
-macro ·unsafe { $ ·not(·token(T_VARIABLE))·_  ·not(·token('{'))·_ } >> { $this }
+$(macro :unsafe){ $ $(not(token(T_VARIABLE)))  $(not(token('{'))) } >> { $this }
 
 class Foo
 {

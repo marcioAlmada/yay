@@ -54,7 +54,7 @@ class Macro implements Directive {
             $ts->unskip();
             $to = $ts->index();
 
-            $this->compilerPass->apply($crossover, $ts, $from, $to->previous, $engine);
+            ($this->compilerPass)($crossover, $ts, $from, $to->previous, $engine);
 
             $blueContext = $engine->blueContext();
             $blueMacros = $blueContext->getDisabledMacrosFromTokens($crossover->tokens());

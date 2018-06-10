@@ -3,7 +3,7 @@ Malformed macro, empty expansion
 --FILE--
 <?php
 
-macro {
+$(macro) {
 
 } >> {
     x

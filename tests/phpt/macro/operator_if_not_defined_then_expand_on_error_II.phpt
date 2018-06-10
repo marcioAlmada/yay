@@ -1,12 +1,12 @@
 --TEST--
-Test for !· operator
+Test for ! operator
 --FILE--
 <?php
 
-macro {
-    T_STRING·foo;
+$(macro) {
+    $(T_STRING as foo);
 } >> {
-    ·bar !· {pass(T_STRING·foo)};
+    $(bar ! {pass($(foo))});
 }
 
 test;

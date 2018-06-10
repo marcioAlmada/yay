@@ -3,36 +3,38 @@ A proof of concept polyfill for group use --pretty-print
 --FILE--
 <?php
 
-macro {
-    use ·ns()·base \ · {
-        ·ls(
-            ·chain(
-                ·optional(·either(const, function))·type
-                ,
-                ·ns()·name
-                ,
-                ·optional(
-                    ·chain(
-                        as
-                        ,
-                        ·identifier()·label
+$(macro) {
+    use $(ns() as base) \ $! {
+        $(
+            ls(
+                chain(
+                    optional(either(const, function)) as type
+                    ,
+                    ns() as name
+                    ,
+                    optional(
+                        chain(
+                            as
+                            ,
+                            identifier() as label
+                        )
                     )
+                    as alias
                 )
-                ·alias
+                as entry
+                ,
+                token(',')
             )
-            ·entry
-            ,
-            ·token(',')
+            as entries
         )
-        ·entries
     }
 } >> {
 
-    ·entries ··· {
-        ·entry ··· {
-            use ·type ·base\·name ·alias ··· {as ·label};
-        }
-    }
+    $(entries ... {
+        $(entry ... {
+            use $(type) $(base)\$(name) $(alias ... {as $(label)});
+        })
+    })
 }
 
 use A\B\C\{

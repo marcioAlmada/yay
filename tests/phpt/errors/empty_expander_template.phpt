@@ -3,14 +3,14 @@ Empty expander template
 --FILE--
 <?php
 
-macro {
-    ·token(T_STRING)·foo
+$(macro) {
+    $(token(T_STRING) as foo)
 } >> {
-    ··concat() // forgot to pass ·foo
+    $$(concat()) // forgot to pass $(foo)
 }
 
 SOME_T_STRING;
 
 ?>
 --EXPECTF--
-Empty expander slice on '··concat()' at line 6.
+Empty expander slice on 'concat()' at line 6.

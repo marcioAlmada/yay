@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class AstTest extends \PHPUnit_Framework_TestCase {
+class AstTest extends \PHPUnit\Framework\TestCase {
 
     function testAstFetch() {
         $ast = new Ast('foo', ['bar' => ['baz' => true, 'buz' => false]]);
@@ -45,8 +45,9 @@ class AstTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider providerForTestMapAstCastOnFailure
      */
     function testMapAstCastOnFailure(string $path, string $castMethod, string $typeName) {
-        $this->setExpectedExceptionRegExp(YayException::class, "/^Ast cannot be casted to '{$typeName}'$/");
-        $ast = new Ast(null, ['defined' => true]);
+        $this->expectException(YayException::class);
+        $this->expectExceptionMessageRegExp("/^Ast cannot be casted to '{$typeName}'$/");
+        $ast = new Ast('', ['defined' => true]);
         var_dump($ast->{$path}->$castMethod());
     }
 
@@ -65,7 +66,7 @@ class AstTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider providerForTestAstCast
      */
     function testAstCast(string $path, string $castMethod, $expected) {
-        $ast = new Ast(null, [
+        $ast = new Ast('', [
             'some' => [
                 'null' => null,
                 'boolean' => true,
@@ -83,7 +84,7 @@ class AstTest extends \PHPUnit_Framework_TestCase {
     }
 
     function testAstFlattenning() {
-        $ast = new Ast(null, [
+        $ast = new Ast('', [
             'deep' => [
                 'token' => $token1 = new Token(T_STRING, 'foo'),
                 'deeper' => [

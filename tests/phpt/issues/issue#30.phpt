@@ -3,44 +3,44 @@ Issue #30 --pretty-print
 --FILE--
 <?php
 
-macro ·global ·unsafe {
-    ·lst
-    (
-        ·chain
+$(macro :global :unsafe) {
+    $(
+        lst
         (
-            ·token('@'), ·ns()·class,
-            ·token('('),
-            ·optional
+            chain
             (
-                ·lst
+                token('@'), ns() as class,
+                token('('),
+                optional
                 (
-                    ·chain(T_STRING·field, ·token('='), ·label()·value),
-                    ·token(',')
-                )
-                ·annotation_arguments
+                    lst
+                    (
+                        chain(token(T_STRING) as field, token('='), label() as value),
+                        token(',')
+                    ) as annotation_arguments
+                ),
+                token(')')
             ),
-            ·token(')')
-        ),
-        ·token(';')
+            token(';')
+        ) as annotations
     )
-    ·annotations
 
-    class T_STRING·class_name
+    class $(T_STRING as class_name)
 } >> {
-    ·annotations ··· {
-        new class(new \ReflectionClass(T_STRING·class_name::class)) extends ·class
+    $(annotations ... {
+        new class(new \ReflectionClass($(class_name)::class)) extends $(class)
         {
             public function __construct(\ReflectionClass $context)
             {
                 $fields = [];
-                ·annotation_arguments ··· {
-                    $this->T_STRING·field = $fields[··stringify(T_STRING·field)] = ·value;
-                }
+                $(annotation_arguments ... {
+                    $this->$(field) = $fields[$$(stringify($(field)))] = $(value);
+                })
                 parent::__construct($fields, $context);
             }
         };
-    }
-    class T_STRING·class_name
+    })
+    class $(class_name)
 }
 
 @EmptyAparameters();

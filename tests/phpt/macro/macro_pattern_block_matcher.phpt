@@ -3,14 +3,14 @@ Some macros
 --FILE--
 <?php
 
-macro {
+$(macro) {
 
-    block { ···body }
+    block { $(layer() as body) }
 
 } >> {
 
     test {
-    ···body
+    $(body)
     }
 
 }

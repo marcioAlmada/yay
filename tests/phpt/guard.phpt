@@ -5,15 +5,15 @@ Guards
 
 class GuardError extends \Error {}
 
-macro { guard (···condition) : ·string()·message ; } >> {
-    guard (···condition) {
-        throw new \GuardError(·message);
+$(macro) { guard $((...) as condition) : $(string() as message) ; } >> {
+    guard ($(condition)) {
+        throw new \GuardError($(message));
     }
 }
 
-macro { guard (···condition) {···body} } >> {
-    if (! (···condition)) {
-        ···body
+$(macro) { guard $((...) as condition) $({...} as body) } >> {
+    if (! ($(condition))) {
+        $(body)
         throw new \GuardError("Guard error.");
     }
 }

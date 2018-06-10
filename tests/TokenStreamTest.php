@@ -5,7 +5,7 @@ namespace Yay;
 /**
  * @group small
  */
-class TokenStreamTest extends \PHPUnit_Framework_TestCase
+class TokenStreamTest extends \PHPUnit\Framework\TestCase
 {
 
     function testToString() {
@@ -132,11 +132,11 @@ class TokenStreamTest extends \PHPUnit_Framework_TestCase
 
     function testExtract() {
         $ts = TokenStream::fromSequence(
-            new Token(T_STRING, 'T_VARIABLE·A', 0), new Token(T_WHITESPACE, ' ', 0), new Token(T_STRING, 'T_VARIABLE·B', 0));
+            new Token(T_STRING, 'A', 0), new Token(T_WHITESPACE, ' ', 0), new Token(T_STRING, 'B', 0));
 
         $ts->extract($ts->index(), $ts->index()->next);
 
-        $this->assertEquals(' T_VARIABLE·B', (string) $ts);
+        $this->assertEquals(' B', (string) $ts);
     }
 
     function testInject() {
