@@ -194,6 +194,11 @@ class Expansion extends MacroMember {
                         parentheses()->as('delimiters')
                     )
                     ,
+                    optional
+                    (
+                        label()->as('key')
+                    )
+                    ,
                     braces()->as('expansion')
                 )
                 ->onCommit(function(Ast $result) use($cg) {
@@ -355,6 +360,11 @@ class Expansion extends MacroMember {
                             parentheses()->as('delimiters')
                         )
                         ,
+                        optional
+                        (
+                            label()->as('key')
+                        )
+                        ,
                         braces()->as('expansion')
                     )
                 )
@@ -373,7 +383,11 @@ class Expansion extends MacroMember {
                     // normalize associative arrays
                     if (array_values($context) !== $context) $context = [$context];
 
+                    $iteration = count($context) - 1;
                     foreach (array_reverse($context) as $i => $subContext) {
+                        if ($key = $result->{'key'}) {
+                            $subContext[(string) $result->{'key'}] = new Token(T_LNUMBER, (string) $iteration);
+                        }
                         $expansion = TokenStream::fromSlice($result->{'expansion'});
                         $mutation = $cg->this->mutate(
                             $expansion,
@@ -382,6 +396,7 @@ class Expansion extends MacroMember {
                         );
                         if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
+                        $iteration--;
                     }
                 })
                 ,
