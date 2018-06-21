@@ -383,20 +383,18 @@ class Expansion extends MacroMember {
                     // normalize associative arrays
                     if (array_values($context) !== $context) $context = [$context];
 
-                    $iteration = count($context) - 1;
-                    foreach (array_reverse($context) as $i => $subContext) {
+                    foreach (array_reverse($context, true) as $i => $iterationContext) {
                         if ($key = $result->{'key'}) {
-                            $subContext[(string) $result->{'key'}] = new Token(T_LNUMBER, (string) $iteration);
+                            $iterationContext[(string) $result->{'key'}] = new Token(T_LNUMBER, (string) $i);
                         }
                         $expansion = TokenStream::fromSlice($result->{'expansion'});
                         $mutation = $cg->this->mutate(
                             $expansion,
-                            (new Ast('', $subContext))->withParent($cg->context),
+                            (new Ast('', $iterationContext))->withParent($cg->context),
                             $cg->engine
                         );
-                        if ($i !== 0) foreach ($delimiters as $d) $mutation->push($d);
+                        if ($i !== count($context)-1) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
-                        $iteration--;
                     }
                 })
                 ,
