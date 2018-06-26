@@ -225,13 +225,16 @@ function buffer(string $match) : Parser
  *
  * <code>
  * $parser =
- *     either
+ *     repeat
  *     (
- *         <parser 1>,
- *         <parser 2>,
- *         <parser 3>,
- *         <...>,
- *         any()
+ *         either
+ *         (
+ *             <parser 1>,
+ *             <parser 2>,
+ *             <parser 3,
+ *             <parser ...>,
+ *             any()
+ *         )
  *     )
  * ;
  *
