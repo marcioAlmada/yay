@@ -1,0 +1,23 @@
+{
+    "bootstrap": "vendor/autoload.php",
+    "reports": {
+        "aggregate": {
+            "generator": "table",
+            "cols": [
+				"benchmark",
+				"subject",
+				"groups",
+				"revs",
+				"its",
+				"mem_peak",
+				"best",
+				"mean",
+				"mode",
+				"worst",
+				"stdev",
+				"rstdev",
+				"diff"
+            ]
+        }
+    }
+}
