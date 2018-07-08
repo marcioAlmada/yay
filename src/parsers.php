@@ -1079,6 +1079,22 @@ function midrule(callable $midrule, bool $isFallible = true, Expected $expected 
     };
 }
 
+function node(Parser $parser) : Parser
+{
+    return midrule(
+        function($ts) use ($parser) {
+            $result = $parser->parse($ts);
+
+            if ($result instanceof Ast)
+                $result = new Ast('', [$result->label() => $result->unwrap()]);
+
+            return $result;
+        },
+        $parser->isFallible(),
+        $parser->expected()
+    );
+}
+
 function _() : Parser {
     return new  class(__FUNCTION__) extends Parser
     {

@@ -139,77 +139,24 @@ class Expansion extends MacroMember {
                 - $(name)
                 - $(name ? {...}) // if not empty, expand
                 - $(name ! {...}) // if empty, expand
-                - $(name ?! {...}) // if empty, expand
-                - $(name... ? {...}) // if present, expand
-
+                - $(name ?! {...}) // try name or fallback {...}
+                - $(name... {...}) // expand as a list
+                - $(name... ? {...}) // if defined, expand as a list
              */
             either
             (
-                sigil
-                (
-                    label()->as('label')
-                    ,
-                    token('?')
-                    ,
-                    token('!')
-                    ,
-                    braces()->as('expansion')
-                )
+                $this->conditionalLabelExpansion()
                 ,
-                sigil
-                (
-                    label()->as('label')
-                    ,
-                    token('?')
-                    ,
-                    braces()->as('expansion')
-                )
+                $this->expanderExpansion()
                 ,
-                sigil
-                (
-                    label()->as('label')
-                    ,
-                    token('!')
-                    ,
-                    braces()->as('expansion')
-                )
-                ,
-                expander_sigil
-                (
-                    ns()->as('expander')
-                    ,
-                    either(parentheses(), braces())->as('args')
-                )
-                ,
-                sigil
-                (
-                    label()->as('label')
-                    ,
-                    optional(token('?'))->as('optional')
-                    ,
-                    token(T_ELLIPSIS)
-                    ,
-                    optional
-                    (
-                        parentheses()->as('delimiters')
-                    )
-                    ,
-                    optional
-                    (
-                        label()->as('key')
-                    )
-                    ,
-                    braces()->as('expansion')
-                )
-                ->onCommit(function(Ast $result) use($cg) {
+                $this->astEllipsisExpansion()->onCommit(function(Ast $result) use($cg) {
                     if (! $result->optional)
-                        $this->lookupScope($result->label, $cg->context, self::E_UNDEFINED_EXPANSION);
+                        $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
                 })
                 ,
-                sigil(label()->as('label'))
-                    ->onCommit(function(Ast $result) use($cg) {
-                        $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
-                    })
+                $this->labelExpansion()->onCommit(function(Ast $result) use($cg) {
+                    $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
+                })
             )
             ->onCommit(function(Ast $result) {
                 $this->constant = false;
@@ -234,25 +181,24 @@ class Expansion extends MacroMember {
             (
                 token(Token::ESCAPED)
                 ,
-                consume
-                (
-                    sigil
-                    (
-                        label()->as('label')
-                        ,
-                        token('?')
-                        ,
-                        token('!')
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($states) {
+                consume($this->conditionalLabelExpansion())->onCommit(function(Ast $result)  use($states) {
+
                     $cg = $states->current();
 
-                    $tokens = $cg->this->lookupAstOptional($result->{'label'}, $cg->context)->tokens();
-
-                    $expansion = TokenStream::fromSlice($tokens ?: $result->{'expansion'});
+                    switch ($result->{'* condition-type'}->list()->current()->label()) {
+                        case 'node-coalesce':
+                            $tokens = $cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context)->tokens();
+                            $expansion = TokenStream::fromSlice($tokens ?: $result->{'expansion'});
+                        break;
+                        case 'if-node-is-not-empty':
+                            if ($cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context)->isEmpty()) return;
+                            $expansion = TokenStream::fromSlice($result->{'expansion'});
+                        break;
+                        case 'if-node-is-empty':
+                            if (! $cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context)->isEmpty()) return;
+                            $expansion = TokenStream::fromSlice($result->{'expansion'});
+                        break;
+                    }
 
                     $mutation = $cg->this->mutate(
                         $expansion,
@@ -263,74 +209,7 @@ class Expansion extends MacroMember {
                     $cg->ts->inject($mutation);
                 })
                 ,
-                consume
-                (
-                    sigil
-                    (
-                        label()->as('label')
-                        ,
-                        token('?')
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($states) {
-                    $cg = $states->current();
-
-                    $context = $cg->this->lookupAstOptional($result->{'label'}, $cg->context);
-
-                    if ($context->isEmpty()) return;
-
-                    $expansion = TokenStream::fromSlice($result->{'expansion'});
-
-                    $mutation = $cg->this->mutate(
-                        $expansion,
-                        $cg->context,
-                        $cg->engine
-                    );
-
-                    $cg->ts->inject($mutation);
-                })
-                ,
-                consume
-                (
-                    sigil
-                    (
-                        label()->as('label')
-                        ,
-                        token('!')
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($states) {
-                    $cg = $states->current();
-
-                    $context = $cg->this->lookupAstOptional($result->{'label'}, $cg->context);
-
-                    if (! $context->isEmpty()) return;
-
-                    $expansion = TokenStream::fromSlice($result->{'expansion'});
-
-                    $mutation = $cg->this->mutate(
-                        $expansion,
-                        $cg->context,
-                        $cg->engine
-                    );
-
-                    $cg->ts->inject($mutation);
-                })
-                ,
-                consume
-                (
-                    expander_sigil
-                    (
-                        ns()->as('expander')
-                        ,
-                        either(parentheses(), braces())->as('args')
-                    )
-                )
-                ->onCommit(function(Ast $result) use ($states) {
+                consume($this->expanderExpansion())->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
 
                     $expander = $result->{'* expander'};
@@ -345,38 +224,17 @@ class Expansion extends MacroMember {
                     $cg->ts->inject($mutation);
                 })
                 ,
-                consume
-                (
-                    sigil
-                    (
-                        label()->as('label')
-                        ,
-                        optional(token('?'))->as('optional')
-                        ,
-                        token(T_ELLIPSIS)
-                        ,
-                        optional
-                        (
-                            parentheses()->as('delimiters')
-                        )
-                        ,
-                        optional
-                        (
-                            label()->as('key')
-                        )
-                        ,
-                        braces()->as('expansion')
-                    )
-                )
-                ->onCommit(function(Ast $result)  use($states) {
+                consume($this->astEllipsisExpansion())->onCommit(function(Ast $result)  use($states) {
                     $cg = $states->current();
 
                     if ($result->optional)
-                        $context = $cg->this->lookupAstOptional($result->{'label'}, $cg->context)->unwrap();
+                        $context = $cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context);
                     else
-                        $context = $cg->this->lookupAst($result->{'label'}, $cg->context, self::E_UNDEFINED_EXPANSION)->unwrap();
+                        $context = $cg->this->lookupAst($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
 
-                    if (null === $context) return;
+                    if ($context->isEmpty()) return;
+
+                    $context = $context->unwrap();
 
                     $delimiters = $result->{'delimiters'};
 
@@ -398,11 +256,7 @@ class Expansion extends MacroMember {
                     }
                 })
                 ,
-                consume
-                (
-                    sigil(label()->as('label'))
-                )
-                ->onCommit(function(Ast $result) use ($states) {
+                consume($this->labelExpansion())->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
                     $label = $result->{'* label'}->token();
                     $tokens = $cg->this->lookupAst($label, $cg->context, self::E_UNDEFINED_EXPANSION)->tokens();
@@ -487,5 +341,69 @@ class Expansion extends MacroMember {
         $result = $context->get('* ' . (string) $token);
 
         return $result;
+    }
+
+    private function conditionalLabelExpansion() : Parser {
+        return
+            sigil
+            (
+                label()->as('label')
+                ,
+                node
+                (
+                    either
+                    (
+                        chain(token('?'), token('!'))->as('node-coalesce')
+                        ,
+                        token('?')->as('if-node-is-not-empty')
+                        ,
+                        token('!')->as('if-node-is-empty')
+                    )
+                )
+                ->as('condition-type')
+                ,
+                braces()->as('expansion')
+            )
+        ;
+    }
+
+    private function expanderExpansion() : Parser {
+        return
+            expander_sigil
+            (
+                ns()->as('expander')
+                ,
+                either(parentheses(), braces())->as('args')
+            )
+        ;
+    }
+
+    private function astEllipsisExpansion() : Parser {
+        return
+            sigil
+            (
+                label()->as('label')
+                ,
+                optional(token('?'))->as('optional')
+                ,
+                token(T_ELLIPSIS)
+                ,
+                optional
+                (
+                    parentheses()->as('delimiters')
+                )
+                ,
+                optional
+                (
+                    label()->as('key')
+                )
+                ,
+                braces()->as('expansion')
+            )
+        ;
+    }
+
+    private function labelExpansion() : Parser {
+        return sigil(label()->as('label'));
     }
 }
