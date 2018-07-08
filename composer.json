@@ -31,6 +31,9 @@
         }
     },
     "autoload-dev": {
+        "psr-4": {
+            "Yay\\": "tests/"
+        },
         "files": [
             "tests/fixtures/parsers.php",
             "tests/fixtures/expanders.php"

@@ -18,9 +18,10 @@ $(macro) {
             }),
             ns() as ns
         )
+        as x
     )
 } >> {
-    mateched $(ns)
+    mateched $(x[ns])
 }
 
 

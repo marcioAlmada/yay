@@ -324,25 +324,25 @@ class ExpressionParser extends Parser
                 foreach ($buffer as $member) switch ($member->meta()->get('arity')) {
                     case ExpressionParser::ARITY_TERNARY:
                         $label = 'expression<ternary>';
-                        assert(null !== ($right = array_pop($output)));
-                        assert(null !== ($left = array_pop($output)));
+                        $right = array_pop($output);
+                        $left = array_pop($output);
                         $output[] = new Ast($label, ['left' => $left, 'middle' => $member, 'right' => $right]);
                         break;
                     case ExpressionParser::ARITY_BINARY:
                         $label = $lable ?? 'expression<binary>';
-                        assert(null !== ($right = array_pop($output)));
-                        assert(null !== ($left = array_pop($output)));
+                        $right = array_pop($output);
+                        $left = array_pop($output);
                         $output[] = new Ast($label, ['left' => $left, 'operator' => $member, 'right' => $right]);
                         break;
                     case ExpressionParser::ARITY_UNARY:
                         switch ($member->meta()->get('associativity')) {
                             case ExpressionParser::ASSOC_LEFT:
-                                assert(null !== ($left = array_pop($output)));
+                                $left = array_pop($output);
                                 $output[] = new Ast('expression<unary>', ['left' => $left, 'operator' => $member]);
                                 break;
                             case ExpressionParser::ASSOC_RIGHT:
                             case ExpressionParser::ASSOC_NONE:
-                                assert(null !== ($right = array_pop($output)));
+                                $right = array_pop($output);
                                 $output[] = new Ast('expression<unary>', ['operator' => $member, 'right' => $right]);
                                 break;
                         }
