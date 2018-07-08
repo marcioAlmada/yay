@@ -4,10 +4,7 @@
         "aggregate": {
             "generator": "table",
             "cols": [
-				"benchmark",
-				"subject",
-				"groups",
-				"revs",
+				"params",
 				"its",
 				"mem_peak",
 				"best",
