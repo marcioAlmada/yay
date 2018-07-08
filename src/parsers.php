@@ -300,24 +300,17 @@ function repeat(Parser $parser) : Parser
 
 function set(Parser $parser) : Parser
 {
-    if (! $parser->isFallible())
-        throw new InvalidArgumentException(
-            'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
-
-    return new class(__FUNCTION__, $parser) extends Parser
+    return new class(__FUNCTION__, repeat($parser)) extends Parser
     {
         protected function parser(TokenStream $ts, Parser $parser) /*: Result|null*/
         {
-            $ast = new Ast($this->label);
+            $set = new Ast;
+            $ast = $parser->parse($ts);
+            if ($ast instanceof Ast)
+                foreach ($ast->list() as $branch)
+                    foreach ($branch->list() as $leaf) $set->append($leaf);
 
-            while(
-                (null !== $ts->current()) &&
-                (($partial = $parser->parse($ts)) instanceof Ast)
-            ){
-                $ast->append($partial);
-            }
-
-            return $ast->isEmpty() ? ($partial ?? $this->error($ts)) : $ast;
+            return $set->isEmpty() ? $this->error($ts) : $set;
         }
 
         function expected() : Expected
