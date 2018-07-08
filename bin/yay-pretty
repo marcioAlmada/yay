@@ -3,32 +3,30 @@
 
 use PhpParser\{ParserFactory, PrettyPrinter};
 
-$autoloads = [
-    __DIR__ . '/../../../autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
-];
+set_error_handler(function($errno, $errstr) {
+    throw new Exception($errstr, $errno);
+});
 
-foreach ($autoloads as $file) {
-    if (file_exists($file) && is_readable($file)) {
-        define('YAY_AUTOLOAD', $file);
-        break;
+(function(){
+    $autoloads = [
+        __DIR__ . '/../../../autoload.php', // as dependency
+        __DIR__ . '/../vendor/autoload.php', // as main package
+    ];
+
+    foreach ($autoloads as $file) if (file_exists($file) && is_readable($file)) {
+        require_once($file);
+
+        return;
     }
-}
 
-if (!defined('YAY_AUTOLOAD')) {
-    fwrite(STDERR, 'autoload.php not found. Check your composer installation.');
-    exit(1);
-}
+    throw new Exception('Could not find autoload file. Check your composer installation.');
+})();
 
-require_once(YAY_AUTOLOAD);
-
-$file = $argv[1] ?? '';
 
 try {
-    $source = @file_get_contents($file) ?: file_get_contents('php://stdin');
+    $file = $argv[1] ?? '';
 
-    if ($source === false)
-        throw new InvalidArgumentException("File '{$file}' not found'.");
+    $source = file_get_contents($file) ?: file_get_contents('php://stdin');
 
     $parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
     $prettyPrinter = new PrettyPrinter\Standard;
