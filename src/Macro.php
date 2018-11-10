@@ -9,7 +9,8 @@ class Macro implements Directive {
         $expansion,
         $compilerPass,
         $tags,
-        $isTerminal
+        $isTerminal,
+        $enableParserTracer
     ;
 
     private
@@ -25,6 +26,7 @@ class Macro implements Directive {
         $this->compilerPass = $compilerPass;
         $this->expansion = $expansion;
 
+        $this->enableParserTracer = $this->tags->contains('enable_parser_tarcer');
         $this->isTerminal = !$this->expansion->isRecursive();
     }
 
@@ -48,7 +50,14 @@ class Macro implements Directive {
 
         $from = $ts->index();
 
-        $crossover = $this->pattern->match($ts);
+        try {
+            if($this->enableParserTracer) Parser::setTracer(new ParserTracer\CliParserTracer);
+
+            $crossover = $this->pattern->match($ts);
+        }
+        finally {
+            if($this->enableParserTracer) Parser::setTracer(new ParserTracer\NullParserTracer);
+        }
 
         if ($crossover instanceof Ast ) {
             $ts->unskip();
