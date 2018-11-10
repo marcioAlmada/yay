@@ -132,3 +132,30 @@ function parsec() : Parser {
 function pattern_commit() : Parser {
     return buffer(YAY_PATTERN_COMMIT);
 }
+
+function label_or_array_access() : Parser {
+    return
+        /**
+         * Matches `foo` or `foo[bar]` or `foo[bar][baz]` and so on...
+         */
+        chain
+        (
+            label()
+            ,
+            optional(repeat(chain(token('['), label(), token(']'))))->as('complex')
+        )
+        ->as('label')
+        ->onCommit(function(Ast $ast){
+            // modifying the Ast so `T_STRING(foo) T_STRING(bar) T_STRING(baz)`
+            // becomes  a single Ast path string like `T_STRING(foo bar baz)`
+            $ast->__construct(
+                $ast->label(),
+                [
+                    'name' => new Token(T_STRING, str_replace(['[', ']'], [' ', ''], $ast->implode()), $ast->tokens()[0]->line()),
+                    'complex_name' => new Token(T_STRING, $ast->implode(), $ast->tokens()[0]->line()),
+                    'complex' => (bool) $ast->complex,
+                ]
+            );
+        })
+    ;
+}

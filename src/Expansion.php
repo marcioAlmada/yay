@@ -21,8 +21,8 @@ class Expansion extends MacroMember {
         $recursive = false
     ;
 
-    function __construct(array $expansion, Map $tags, Map $scope) {
-        $this->expansion = $this->compile($expansion, $scope);
+    function __construct(array $expansion, Map $tags) {
+        $this->expansion = $this->compile($expansion);
         if ($tags->contains('unsafe')) $this->unsafe = false;
         $this->recursive = $tags->contains('recursion');
     }
@@ -45,10 +45,9 @@ class Expansion extends MacroMember {
             return $this->mutate($expansion, $crossover, $engine);
     }
 
-    private function compile(array $expansion, Map $context) : TokenStream {
+    private function compile(array $expansion) : TokenStream {
         $cg = (object) [
             'ts' => TokenStream::fromSlice($expansion),
-            'context' => $context
         ];
 
         $cg->ts->trim();
@@ -149,14 +148,9 @@ class Expansion extends MacroMember {
                 ,
                 $this->expanderExpansion()
                 ,
-                $this->astEllipsisExpansion()->onCommit(function(Ast $result) use($cg) {
-                    if (! $result->optional)
-                        $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
-                })
+                $this->astEllipsisExpansion()
                 ,
-                $this->labelExpansion()->onCommit(function(Ast $result) use($cg) {
-                    $this->lookupScope($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
-                })
+                $this->labelExpansion()
             )
             ->onCommit(function(Ast $result) {
                 $this->constant = false;
@@ -187,15 +181,15 @@ class Expansion extends MacroMember {
 
                     switch ($result->{'* condition-type'}->list()->current()->label()) {
                         case 'node-coalesce':
-                            $tokens = $cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context)->tokens();
+                            $tokens = $cg->this->lookupAstOptional($result->{'* label'}, $cg->context)->tokens();
                             $expansion = TokenStream::fromSlice($tokens ?: $result->{'expansion'});
                         break;
                         case 'if-node-is-not-empty':
-                            if ($cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context)->isEmpty()) return;
+                            if ($cg->this->lookupAstOptional($result->{'* label'}, $cg->context)->isEmpty()) return;
                             $expansion = TokenStream::fromSlice($result->{'expansion'});
                         break;
                         case 'if-node-is-empty':
-                            if (! $cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context)->isEmpty()) return;
+                            if (! $cg->this->lookupAstOptional($result->{'* label'}, $cg->context)->isEmpty()) return;
                             $expansion = TokenStream::fromSlice($result->{'expansion'});
                         break;
                     }
@@ -228,9 +222,9 @@ class Expansion extends MacroMember {
                     $cg = $states->current();
 
                     if ($result->optional)
-                        $context = $cg->this->lookupAstOptional($result->{'* label'}->token(), $cg->context);
+                        $context = $cg->this->lookupAstOptional($result->{'* label'}, $cg->context);
                     else
-                        $context = $cg->this->lookupAst($result->{'* label'}->token(), $cg->context, self::E_UNDEFINED_EXPANSION);
+                        $context = $cg->this->lookupAst($result->{'* label'}, $cg->context, self::E_UNDEFINED_EXPANSION);
 
                     if ($context->isEmpty()) return;
 
@@ -248,7 +242,7 @@ class Expansion extends MacroMember {
                         $expansion = TokenStream::fromSlice($result->{'expansion'});
                         $mutation = $cg->this->mutate(
                             $expansion,
-                            (new Ast('', $iterationContext))->withParent($cg->context),
+                            (new Ast('', $cg->context->unwrap() + $iterationContext)),
                             $cg->engine
                         );
                         if ($i !== count($context)-1) foreach ($delimiters as $d) $mutation->push($d);
@@ -258,8 +252,7 @@ class Expansion extends MacroMember {
                 ,
                 consume($this->labelExpansion())->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
-                    $label = $result->{'* label'}->token();
-                    $tokens = $cg->this->lookupAst($label, $cg->context, self::E_UNDEFINED_EXPANSION)->tokens();
+                    $tokens = $cg->this->lookupAst($result->{'* label'}, $cg->context, self::E_UNDEFINED_EXPANSION)->tokens();
                     $cg->ts->inject(TokenStream::fromSlice($tokens));
                 })
             )
@@ -303,32 +296,18 @@ class Expansion extends MacroMember {
         return $cg->ts;
     }
 
-    private function lookupScope(Token $token, Map $context, string $error) : bool {
-        $symbol = (string) $token;
-        if (! ($result = $context->get($symbol))) {
-            $this->fail(
-                $error,
-                $symbol,
-                $token->line(),
-                json_encode(
-                    $context->symbols(),
-                    self::PRETTY_PRINT
-                )
-            );
-        }
-
-        return $result;
-    }
-
-    private function lookupAst(Token $token, Ast $context, string $error) : Ast {
-        $symbol = (string) $token;
+    private function lookupAst(Ast $label, Ast $context, string $error) : Ast {
+        $symbol = $label->{'* name'}->token();
         if (null === ($result = $context->get('* ' . $symbol))->unwrap()) {
             $this->fail(
                 $error,
-                $symbol,
-                $token->line(),
+                $label->{'complex'} ? $label->{'* complex_name'}->implode() : $symbol,
+                $symbol->line(),
                 json_encode(
-                    $context->symbols(),
+                    $label->{'complex'}
+                        ? array_values(array_filter($context->symbols(), 'is_string'))
+                        : $context->symbols()
+                    ,
                     self::PRETTY_PRINT
                 )
             );
@@ -337,8 +316,8 @@ class Expansion extends MacroMember {
         return $result;
     }
 
-    private function lookupAstOptional(Token $token, Ast $context) : Ast {
-        $result = $context->get('* ' . (string) $token);
+    private function lookupAstOptional(Ast $label, Ast $context) : Ast {
+        $result = $context->get('* ' . (string) $label->{'* name'}->token());
 
         return $result;
     }
@@ -347,7 +326,7 @@ class Expansion extends MacroMember {
         return
             sigil
             (
-                label()->as('label')
+                label_or_array_access()->as('label')
                 ,
                 node
                 (
@@ -382,7 +361,7 @@ class Expansion extends MacroMember {
         return
             sigil
             (
-                label()->as('label')
+                label_or_array_access()->as('label')
                 ,
                 optional(token('?'))->as('optional')
                 ,
@@ -404,6 +383,6 @@ class Expansion extends MacroMember {
     }
 
     private function labelExpansion() : Parser {
-        return sigil(label()->as('label'));
+        return sigil(label_or_array_access());
     }
 }

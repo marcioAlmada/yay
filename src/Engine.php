@@ -95,20 +95,18 @@ final class Engine {
             )
             ->onCommit(function(Ast $macroAst) {
 
-                $scope = Map::fromEmpty();
-
                 $tags = Map::fromValues(array_map(
                     function(Ast $node) :string { return (string) $node->{'* tag'}->token(); },
                     iterator_to_array($macroAst->{'* declaration tags'}->list())
                 ));
 
                 if ($tags->contains('grammar'))
-                    $pattern = new GrammarPattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
+                    $pattern = new GrammarPattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, Map::fromEmpty());
                 else
-                    $pattern = new Pattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, $scope);
+                    $pattern = new Pattern($macroAst->{'declaration'}[0]->line(), $macroAst->{'macro body pattern'}, $tags, Map::fromEmpty());
 
                 $compilerPass = new CompilerPass($macroAst->{'* macro body compiler_pass'});
-                $expansion = new Expansion($macroAst->{'macro body expansion'}, $tags, $scope);
+                $expansion = new Expansion($macroAst->{'macro body expansion'}, $tags);
                 $macro = new Macro($tags, $pattern, $compilerPass, $expansion);
 
                 $this->registerDirective($macro);

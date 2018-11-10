@@ -54,8 +54,6 @@ object(Yay\\Ast)#%d (%d) {
     array(%d) {
     }
   }
-  ["parent":"Yay\\Ast":private]=>
-  NULL
   ["meta":"Yay\\Ast":private]=>
   NULL
 }

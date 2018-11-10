@@ -16,7 +16,6 @@ class Ast implements Result {
     ;
 
     private
-        $parent,
         $meta
     ;
 
@@ -41,8 +40,6 @@ class Ast implements Result {
         }
 
         $ret = $this->getIn((array) $this->ast, $path);
-
-        if (null === $ret && $this->parent) $ret = $this->parent->get($strPath);
 
         if ($wrap) {
             $label = end($path) ?: '';
@@ -144,12 +141,6 @@ class Ast implements Result {
 
     function label() {
         return $this->label;
-    }
-
-    function withParent(self $parent) : self {
-        $this->parent = $parent;
-
-        return $this;
     }
 
     function withMeta(Map $meta) : Result {

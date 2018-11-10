@@ -18,5 +18,6 @@ $a >> $b;
 --EXPECTF--
 Undefined macro expansion 'baz' on line 7 with context: [
     "foo",
+    0,
     "bar"
 ]
