@@ -33,9 +33,18 @@ $(macro) {
         })
 }
 
+$(macro) {
+    $(\Custom\parser())
+} >> {
+    $(alias ? {
+        "replaced"
+    })
+}
+
 test(foo);
 test_aliased_ast(?string $x);
 test_non_aliased_ast(int $y);
+found;
 
 ?>
 --EXPECTF--
@@ -53,5 +62,6 @@ test___2:
 'Argument is not nullable';
 'Argument type is int';
 'Argument name is $y';
+"replaced";
 
 ?>

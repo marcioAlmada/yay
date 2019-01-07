@@ -36,6 +36,7 @@
         },
         "files": [
             "tests/fixtures/parsers.php",
+            "tests/fixtures/more-parsers.php",
             "tests/fixtures/expanders.php"
         ]
     },
