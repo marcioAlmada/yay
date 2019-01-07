@@ -34,17 +34,17 @@ $(macro) {
 }
 
 $(macro) {
-    $(\Custom\parser())
+    $(\Custom\helloWorld())
 } >> {
-    $(alias ? {
-        "replaced"
+    $(alias ... {
+        $$(stringify($(first))) . $$(stringify($(second)))
     })
 }
 
 test(foo);
 test_aliased_ast(?string $x);
 test_non_aliased_ast(int $y);
-found;
+hello world;
 
 ?>
 --EXPECTF--
@@ -62,6 +62,6 @@ test___2:
 'Argument is not nullable';
 'Argument type is int';
 'Argument name is $y';
-"replaced";
+'hello' . 'world';
 
 ?>

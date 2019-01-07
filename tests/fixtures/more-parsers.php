@@ -3,8 +3,12 @@
 namespace Custom {
     use Yay\Parser;
     use function Yay\buffer;
+    use function Yay\chain;
 
-    function parser() : Parser {
-        return buffer("found")->as("parser");
+    function helloWorld() : Parser {
+        return chain(
+            buffer("hello")->as("first"),
+            buffer("world")->as("second")
+        )->as("alias");
     }
 }
