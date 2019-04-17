@@ -230,6 +230,16 @@ class Expansion extends MacroMember {
 
                     $context = $context->unwrap();
 
+                    if (! is_array($context))
+                        $this->fail(
+                            "Error unpacking a non unpackable Ast node on `$(%s%s... {` at line %d with context: %s\n\n%s",
+                            $result->{'* label name'}->token(),
+                            $result->optional,
+                            $result->{'* label name'}->token()->line(),
+                            json_encode([$context], self::PRETTY_PRINT),
+                            sprintf("Hint: use a non ellipsis expansion as in `$(%s %s {`", $result->{'* label name'}->token(), $result->optional)
+                        );
+
                     $delimiters = $result->{'delimiters'};
 
                     // normalize associative arrays
