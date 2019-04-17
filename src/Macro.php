@@ -26,7 +26,7 @@ class Macro implements Directive {
         $this->compilerPass = $compilerPass;
         $this->expansion = $expansion;
 
-        $this->enableParserTracer = $this->tags->contains('enable_parser_tarcer');
+        $this->enableParserTracer = $this->tags->contains('enable_parser_tracer');
         $this->isTerminal = !$this->expansion->isRecursive();
     }
 
