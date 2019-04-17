@@ -130,7 +130,7 @@ class Ast implements Result {
     }
 
     function isEmpty() : bool {
-        return null === $this->ast || 0 === \count($this->ast);
+        return null === $this->ast || [] === $this->ast;
     }
 
     function as(string $label = '') : Result {
