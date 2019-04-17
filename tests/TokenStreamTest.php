@@ -187,4 +187,14 @@ class TokenStreamTest extends \PHPUnit\Framework\TestCase
         $ts->push(new Token(T_WHITESPACE, ' '));
         $this->assertEquals('<?php A B ', (string) $ts);
     }
+
+    function testHasAst() {
+        $source = new Ast("foo");
+
+        $stream = ParsedTokenStream::fromSlice($source->tokens());
+        $stream->setAst($source);
+
+
+        $this->assertSame($source, $stream->getAst());
+    }
 }
