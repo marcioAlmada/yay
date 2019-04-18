@@ -27,6 +27,23 @@ class Ast implements Result {
         $this->label = $label;
     }
 
+    function __set($path, $value) {
+        return $this->set($path, $value);
+    }
+
+    function set($strPath, $value) {
+        $keys = preg_split('/\s+/', $strPath);
+
+        if ([] === $keys) return;
+
+        $current = &$this->ast;
+        foreach ($keys as $key) {
+            if (!is_array($current)) $current = [];
+            $current = &$current[$key];
+        }
+        $current = $value;
+    }
+
     function __get($path) {
         return $this->get($path);
     }
