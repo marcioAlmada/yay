@@ -105,4 +105,32 @@ class AstTest extends \PHPUnit\Framework\TestCase {
 
         $this->assertEquals([$token1, $token2], $flattened->array());
     }
+
+    function testAstSet() {
+        $ast = new Ast('label', [
+            'deep' => [
+                'token' => new Token(T_STRING, 'foo'),
+                'deeper' => [
+                    'tokens' => [0 => new Token(T_STRING, 'bar'), 1 => new Token(T_STRING, 'baz')],
+                ],
+            ],
+        ]);
+
+        $ast->set('deep token', $patchedFooToken = new Token(T_STRING, 'patched_foo'));
+
+        $ast->{'deep deeper tokens 0'} = $patchedBarToken = new Token(T_STRING, 'patched_bar');
+        $ast->{'deep deeper tokens 1'} = $patchedBazToken = new Token(T_STRING, 'patched_baz');
+
+        $expected = [
+            'deep' => [
+                'token' => $patchedFooToken,
+                'deeper' => [
+                    'tokens' => [0 => $patchedBarToken, 1 => $patchedBazToken],
+                ],
+            ],
+        ];
+
+        $this->assertSame($expected, $ast->unwrap());
+        $this->assertSame($expected, $ast->array());
+    }
 }
