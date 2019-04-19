@@ -210,10 +210,8 @@ class Expansion extends MacroMember {
                     if (\count($result->{'args'}) === 0)
                         $cg->this->fail(self::E_EMPTY_EXPANDER_SLICE, $expander->implode(), $expander->tokens()[0]->line());
 
-                    $expansion = ParsedTokenStream::fromSlice($result->{'args'});
-
+                    $expansion = TokenStream::fromSlice($result->{'args'});
                     $mutation = $cg->this->mutate($expansion, $cg->context, $cg->engine);
-                    $mutation->setAst($cg->context);
 
                     $expander = $cg->this->compileCallable('\Yay\Dsl\Expanders\\', $expander, self::E_BAD_EXPANDER);
                     $mutation = $expander($mutation, $cg->engine);
@@ -251,15 +249,12 @@ class Expansion extends MacroMember {
                         if ($key = $result->{'key'}) {
                             $scope[(string) $result->{'key'}] = new Token(T_LNUMBER, (string) $i);
                         }
-
                         $expansion = TokenStream::fromSlice($result->{'expansion'});
-
                         $mutation = $cg->this->mutate(
                             $expansion,
                             (new Ast('', $cg->context->unwrap() + (is_array($scope) ? $scope : [$scope]))),
                             $cg->engine
                         );
-
                         if ($i !== count($context)-1) foreach ($delimiters as $d) $mutation->push($d);
                         $cg->ts->inject($mutation);
                     }

@@ -235,7 +235,7 @@ class TokenStream {
     }
 
     static function fromSourceWithoutOpenTag(string $source) : self {
-        $ts = static::fromSource('<?php ' . $source);
+        $ts = self::fromSource('<?php ' . $source);
         $ts->first->next = $ts->first->next->next;
         $ts->first->next->previous = $ts->first;
         $ts->reset();
@@ -246,7 +246,7 @@ class TokenStream {
     static function fromSource(string $source) : self {
         $tokens = \token_get_all($source);
 
-        $ts = new static;
+        $ts = new self;
         $first = new NodeStart;
         $last = new NodeEnd;
 
@@ -293,7 +293,7 @@ class TokenStream {
     }
 
     static function fromSlice(array $tokens) : self {
-        $ts = new static;
+        $ts = new self;
         $first = new NodeStart;
         $last = new NodeEnd;
 
@@ -321,6 +321,6 @@ class TokenStream {
     }
 
     static function fromSequence(Token ...$tokens) : self {
-        return static::fromSlice($tokens);
+        return self::fromSlice($tokens);
     }
 }
