@@ -1,12 +1,12 @@
 --TEST--
-Uses a custom fully qualified expansion function
+Uses a custom fully qualified expansion function --pretty-print
 --FILE--
 <?php
 
 $(macro) {
-    hello($(token(T_STRING) as matched))
+    hello($(token(T_STRING) as matched));
 } >> {
-    $$(\Yay\tests\fixtures\expanders\my_hello_expander($(matched)))
+    $$(\Yay\tests\fixtures\expanders\my_hello_tokenstream_expander($(matched)));
 }
 
 hello(Chris);
@@ -15,6 +15,6 @@ hello(Chris);
 --EXPECTF--
 <?php
 
-'Hello, Chris';
+'Hello, Chris. From TokenStream.';
 
 ?>

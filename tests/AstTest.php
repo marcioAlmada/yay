@@ -133,4 +133,19 @@ class AstTest extends \PHPUnit\Framework\TestCase {
         $this->assertSame($expected, $ast->unwrap());
         $this->assertSame($expected, $ast->array());
     }
+
+    function testAstHiddenNodes() {
+        $exposed = new Token(T_STRING, 'exposed');
+        $hidden = new Token(T_STRING, '_hidden');
+        $ast = new Ast('', [
+            'exposed' => $exposed,
+            '_hidden' => $hidden,
+            'deep' => [
+                'exposed' => $exposed,
+                '_hidden' => $hidden,
+            ]
+        ]);
+        $this->assertSame([$exposed, $exposed], $ast->tokens());
+        $this->assertSame('exposed,exposed', $ast->implode(','));
+    }
 }

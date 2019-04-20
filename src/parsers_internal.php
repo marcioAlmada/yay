@@ -189,10 +189,10 @@ function label_or_array_access() : Parser {
             // becomes  a single Ast path string like `T_STRING(foo bar baz)`
             $ast->__construct(
                 $ast->label(),
-                [
-                    'name' => new Token(T_STRING, str_replace(['[', ']'], [' ', ''], $ast->implode()), $ast->tokens()[0]->line()),
-                    'complex_name' => new Token(T_STRING, $ast->implode(), $ast->tokens()[0]->line()),
-                    'complex' => (bool) $ast->complex,
+                $ast->unwrap() + [
+                    '_name' => new Token(T_STRING, str_replace(['[', ']'], [' ', ''], $ast->implode()), $ast->tokens()[0]->line()),
+                    '_complex_name' => new Token(T_STRING, $ast->implode(), $ast->tokens()[0]->line()),
+                    '_complex' => (bool) $ast->complex,
                 ]
             );
         })

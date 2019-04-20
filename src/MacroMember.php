@@ -16,6 +16,10 @@ abstract class MacroMember {
         throw new YayParseError(sprintf($error, ...$args));
     }
 
+    protected function failRuntime(string $error, ...$args) {
+        throw new YayRuntimeException(sprintf($error, ...$args));
+    }
+
     protected function compileCallable(string $namespace, Ast $type, string $error): callable {
         $name = $function = $type->implode();
 

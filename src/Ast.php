@@ -10,6 +10,10 @@ use
 
 class Ast implements Result {
 
+    const
+        NULL_LABEL = '_'
+    ;
+
     protected
         $label = '',
         $ast = []
@@ -85,7 +89,8 @@ class Ast implements Result {
 
         array_walk_recursive(
             $exposed,
-            function($i) use(&$tokens){
+            function($i, $key) use(&$tokens){
+                if (0 === strpos((string) $key, self::NULL_LABEL)) return;
                 if($i instanceof Token) $tokens[] = $i;
                 elseif ($i instanceof self) $tokens = array_merge($tokens, $i->tokens());
             }
@@ -120,7 +125,7 @@ class Ast implements Result {
     }
 
     function list() {
-        foreach (array_keys($this->array()) as $index) yield $index => $this->{"* {$index}"};
+        foreach (array_keys($this->array()) as $i) if($i !== self::NULL_LABEL) yield $i => $this->{"* {$i}"};
     }
 
     function flatten() : self {
@@ -167,7 +172,7 @@ class Ast implements Result {
     }
 
     function meta() : Map {
-        return $this->meta ?: Map::fromEmpty();
+        return $this->meta ?: $this->meta = Map::fromEmpty();
     }
 
 
