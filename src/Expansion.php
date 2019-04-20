@@ -206,15 +206,8 @@ class Expansion extends MacroMember {
                 consume($this->expanderExpansion())->onCommit(function(Ast $result) use ($states) {
                     $cg = $states->current();
 
-                    $expander = $result->{'* expander'};
-                    if (\count($result->{'args'}) === 0)
-                        $cg->this->fail(self::E_EMPTY_EXPANDER_SLICE, $expander->implode(), $expander->tokens()[0]->line());
+                    $mutation = $this->doExpanderCall($result, $cg);
 
-                    $expansion = TokenStream::fromSlice($result->{'args'});
-                    $mutation = $cg->this->mutate($expansion, $cg->context, $cg->engine);
-
-                    $expander = $cg->this->compileCallable('\Yay\Dsl\Expanders\\', $expander, self::E_BAD_EXPANDER);
-                    $mutation = $expander($mutation, $cg->engine);
                     $cg->ts->inject($mutation);
                 })
                 ,
@@ -231,13 +224,13 @@ class Expansion extends MacroMember {
                     $context = $context->unwrap();
 
                     if (! is_array($context))
-                        $this->fail(
+                        $this->failRuntime(
                             "Error unpacking a non unpackable Ast node on `$(%s%s... {` at line %d with context: %s\n\n%s",
-                            $result->{'* label name'}->token(),
+                            $result->{'* label _name'}->token(),
                             $result->optional,
-                            $result->{'* label name'}->token()->line(),
+                            $result->{'* label _name'}->token()->line(),
                             json_encode([$context], self::PRETTY_PRINT),
-                            sprintf("Hint: use a non ellipsis expansion as in `$(%s %s {`", $result->{'* label name'}->token(), $result->optional)
+                            sprintf("Hint: use a non ellipsis expansion as in `$(%s %s {`", $result->{'* label _name'}->token(), $result->optional)
                         );
 
                     $delimiters = $result->{'delimiters'};
@@ -307,14 +300,14 @@ class Expansion extends MacroMember {
     }
 
     private function lookupAst(Ast $label, Ast $context, string $error) : Ast {
-        $symbol = $label->{'* name'}->token();
+        $symbol = $label->{'* _name'}->token();
         if (null === ($result = $context->get('* ' . $symbol))->unwrap()) {
-            $this->fail(
+            $this->failRuntime(
                 $error,
-                $label->{'complex'} ? $label->{'* complex_name'}->implode() : $symbol,
+                $label->{'_complex'} ? $label->{'* _complex_name'}->implode() : $symbol,
                 $symbol->line(),
                 json_encode(
-                    $label->{'complex'}
+                    $label->{'_complex'}
                         ? array_values(array_filter($context->symbols(), 'is_string'))
                         : $context->symbols()
                     ,
@@ -327,9 +320,80 @@ class Expansion extends MacroMember {
     }
 
     private function lookupAstOptional(Ast $label, Ast $context) : Ast {
-        $result = $context->get('* ' . (string) $label->{'* name'}->token());
+        $result = $context->get('* ' . (string) $label->{'* _name'}->token());
 
         return $result;
+    }
+
+    private function doExpanderCall(Ast $ast, $cg) : TokenStream {
+        $function = $cg->this->compileCallable('\Yay\Dsl\Expanders\\', $ast->{'* expander'}, self::E_BAD_EXPANDER);
+        $expander = new \ReflectionFunction($function);
+        $delayed = function($expander) { return $expander->invoke(); };
+        if ($expander->getParameters()) {
+            if (($class = $expander->getParameters()[0]->getClass()) && Ast::class === $class->getName()) {
+                $delayed = function($expander, $ast, $cg) { return $this->doAstExpanderCall($expander, $ast, $cg); };
+            } else {
+                $delayed = function($expander, $ast, $cg) { return $this->doTokenStreamExpanderCall($expander, $ast, $cg); };
+            }
+        }
+
+        $mutation = $delayed($expander, $ast, $cg);
+
+        if (! ($mutation instanceof TokenStream || $mutation instanceof Ast)) $this->failRuntime(
+            'Expander call `%s(%s)` must return Ast or TokenStream, %s returned on line %d',
+            $expander->getName(),
+            implode(
+                ', ',
+                array_map(function($p){ return preg_replace('/Parameter #\d+ \[ |<.+> | \]/', '', $p); },
+                $expander->getParameters())
+            ),
+            gettype($mutation),
+            $ast->{'* expander'}->tokens()[0]->line()
+        );
+
+        if ($mutation instanceof Ast) $mutation = TokenStream::fromSlice($mutation->tokens());
+
+        return $mutation;
+    }
+
+    private function doTokenStreamExpanderCall(\ReflectionFunction $expander, Ast $expanderAst, $cg): TokenStream {
+        $ts = TokenStream::fromSlice(array_slice($expanderAst->{'* args'}->tokens(), 1, -1));
+
+        if ($ts->isEmpty()) $this->failRuntime(
+            'TokenStream expander called without tokens `%s` as function %s(%s) on line %d',
+            $expanderAst->implode(),
+            $expander->getName(),
+            implode(
+                ', ',
+                array_map(function($p){ return preg_replace('/Parameter #\d+ \[ |<.+> | \]/', '', $p); },
+                $expander->getParameters())
+            ),
+            $expanderAst->{'* expander'}->tokens()[0]->line()
+        );
+
+        return $expander->invoke($cg->this->mutate($ts, $cg->context, $cg->engine), $cg->engine);
+    }
+
+    private function doAstExpanderCall(\ReflectionFunction $expander, Ast $expanderAst, $cg) {
+        $arg = null;
+        if ($expanderAst->{'args leaf_arg'}) {
+            $arg = $this->lookupAst($expanderAst->{'* args leaf_arg label'}, $cg->context, self::E_UNDEFINED_EXPANSION);
+        }
+        else if($expanderAst->{'args expander_call'}) {
+            $arg = $this->doAstExpanderCall(
+                new \ReflectionFunction(
+                    $cg->this->compileCallable(
+                        '\Yay\Dsl\Expanders\\',
+                        $expanderAst->{'* args expander_call expander'},
+                        self::E_BAD_EXPANDER
+                    )
+                ),
+                $expanderAst->{'* args expander_call'},
+                $cg
+            );
+        }
+
+        return $expander->invoke($arg, $cg->engine);
     }
 
     private function conditionalLabelExpansion() : Parser {
@@ -362,8 +426,37 @@ class Expansion extends MacroMember {
             (
                 ns()->as('expander')
                 ,
-                either(parentheses(), braces())->as('args')
+                either
+                (
+                    chain(token('('), optional($this->expanderAstExpansion()), token(')')) // recursion !!!
+                    ,
+                    chain(token('('), $this->labelExpansion()->as('leaf_arg'), token(')'))
+                    ,
+                    chain(token('('), optional(layer()->as('layer_arg')), token(')'))
+                    ,
+                    chain(token('{'), optional(layer()->as('layer_arg')), token('}'))
+                )
+                ->as('args')
             )
+            ->as('expander_call')
+        ;
+    }
+
+    private function expanderAstExpansion() : Parser {
+        return
+            $expander = expander_sigil
+            (
+                ns()->as('expander')
+                ,
+                either
+                (
+                    chain(token('('), pointer($expander), token(')')) // recursion !!!
+                    ,
+                    chain(token('('), $this->labelExpansion()->as('leaf_arg'), token(')'))
+                )
+                ->as('args')
+            )
+            ->as('expander_call')
         ;
     }
 
