@@ -115,6 +115,8 @@ class Test {
             } catch(YayParseError $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;
+            } catch(YayRuntimeException $e) {
+                $this->out = $e->getMessage();
             } catch(\PhpParser\Error $e){
                 $this->out = 'PHP ' . $e->getMessage();
                 // $this->out = (string) $e;
