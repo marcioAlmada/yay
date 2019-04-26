@@ -1060,7 +1060,7 @@ function midrule(callable $midrule, bool $isFallible = true, Expected $expected 
     {
         function parser(TokenStream $ts) /*: Result|null*/
         {
-            $result = $this->stack[0]($ts);
+            $result = $this->stack[0]($ts, $this->label);
 
             if ($result instanceof Ast) $result->as($this->label);
 
