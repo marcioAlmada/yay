@@ -255,6 +255,44 @@ class Pattern extends MacroMember implements PatternInterface {
         return $identifier;
     }
 
+    protected function compileArray(Ast $array) : array {
+        $compiled = [];
+        foreach ($array->{'* values'}->list() as $valueNode) {
+            $key = count($compiled);
+            $value = $valueNode->{'* value'};
+
+            if ($valueNode->{'key_value_pair'}) {
+                $value = $valueNode->{'* key_value_pair value'};
+                $type = key($valueNode->{'* key_value_pair key'}->array());
+                $key = $valueNode->{"* key_value_pair key {$type}"};
+                switch ($type) {
+                  case 'string':
+                      $key =  trim((string) $key->token(), '"\'');
+                      break;
+                  case 'int':
+                      $key =  (int) $key->token()->value();
+                }
+            }
+
+            $type = key($value->array());
+            $value = $value->{"* {$type}"};
+            switch ($type) {
+              case 'string':
+                  $value =  trim((string) $value->token(), '"\'');
+                  break;
+              case 'int':
+                  $value =  (int) $value->token()->value();
+                  break;
+              case 'array':
+                  $value = $this->compileArray($value);
+            }
+
+            $compiled[$key] = $value;
+        }
+
+        return $compiled;
+    }
+
     protected function compileParser(Ast $ast) : Parser {
         $parser = $this->compileCallable('\Yay\\', $ast->{'* type'}, self::E_BAD_PARSER_NAME);
         $args = $ast->{'* args'}->isEmpty() ? [] : $this->compileParserArgs($ast->{'* args'});
@@ -290,6 +328,9 @@ class Pattern extends MacroMember implements PatternInterface {
                     break;
                 case 'string':
                     $compiled[] = trim((string) $arg->token(), '"\'');
+                    break;
+                case 'array':
+                    $compiled[] = $this->compileArray($arg);
                     break;
                 case 'function': // function(...){...}
                     $compiled[] = new AnonymousFunction($arg);

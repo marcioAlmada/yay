@@ -75,6 +75,43 @@ function token_constant() : Parser {
     return rtoken('/^T_\w+$/')->as('token_constant');
 }
 
+function array_arg(): Parser {
+    $string = string()->as('string');
+    $int = token(T_LNUMBER)->as('int');
+    return $array =
+        chain(
+            token('[')
+            ,
+            commit(
+                optional(
+                    lst(
+                        either(
+                            chain(
+                                either($int, $string)->as('key'),
+                                token(T_DOUBLE_ARROW),
+                                either(
+                                    chain($int)->as('value'),
+                                    chain($string)->as('value'),
+                                    chain(pointer($array))->as('value')
+                                )
+                            )
+                            ->as('key_value_pair')
+                            ,
+                            chain($int)->as('value'),
+                            chain($string)->as('value'),
+                            chain(pointer($array))->as('value')
+                        ),
+                        token(',')
+                    )
+                    ->as('values')
+                )
+            )
+            ,
+            token(']')
+        )
+        ->as('array');
+}
+
 function parsec() : Parser {
     return
         $parser =
@@ -114,6 +151,8 @@ function parsec() : Parser {
                             sigil(token(T_STRING, 'this'))->as('this')
                             ,
                             label()->as('literal')
+                            ,
+                            array_arg()->as('array')
                         )
                         ,
                         token(',')
