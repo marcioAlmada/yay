@@ -751,7 +751,7 @@ function commit(Parser $parser) : Parser
         {
             $result = $parser->withErrorLevel(Error::ENABLED)->parse($ts);
 
-            if ($result instanceof Error) $result->halt();
+            if ($result instanceof Error) throw new YayParseError($result->message());
 
             return $result->as($this->label);
         }

@@ -30,7 +30,7 @@ final class StreamWrapper {
         if (true === self::$registered) return;
 
         if (@stream_wrapper_register(self::SCHEME, __CLASS__) === false)
-            throw new YayException(
+            throw new YayParseError(
                 'A handler has already been registered for the ' .
                 self::SCHEME . ' protocol.'
             );
@@ -43,7 +43,7 @@ final class StreamWrapper {
     {
         if (!self::$registered) {
             if (in_array(self::SCHEME, stream_get_wrappers()))
-                throw new YayException(
+                throw new YayParseError(
                     'The URL wrapper for the protocol ' . self::SCHEME .
                     ' was not registered with this version of YAY.'
                 );
@@ -52,7 +52,7 @@ final class StreamWrapper {
         }
 
         if (!@stream_wrapper_unregister(self::SCHEME))
-            throw new YayException(
+            throw new YayParseError(
                 'Failed to unregister the URL wrapper for the ' . self::SCHEME .
                 ' protocol.'
             );
@@ -146,6 +146,6 @@ final class StreamWrapper {
     function dir_closedir() { $this->notImplemented(__FUNCTION__); }
 
     private function notImplemented(string $from) {
-        throw new YayException(__CLASS__ . "->{$from} is not implemented.");
+        throw new YayParseError(__CLASS__ . "->{$from} is not implemented.");
     }
 }

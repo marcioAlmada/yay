@@ -7,4 +7,4 @@ $(macro) { $(T_HAKUNAMATATA as foo) } >> { };
 
 ?>
 --EXPECTF--
-Undefined token type 'T_HAKUNAMATATA' on line 3.
+Undefined token type 'T_HAKUNAMATATA', in %s.phpt on line 3.

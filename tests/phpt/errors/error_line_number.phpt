@@ -29,4 +29,4 @@ foo; // L:25
 
 ?>
 --EXPECTF--
-Unexpected T_STRING(foo) on line 25, expected T_STRING(expected).
+Unexpected T_STRING(foo), in %s.phpt on line 25, expected T_STRING(expected).

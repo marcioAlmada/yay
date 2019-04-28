@@ -13,4 +13,4 @@ $(macro) {
 
 ?>
 --EXPECTF--
-Unexpected end at T_CLOSE_TAG(?>) on line 11, expected ')'.
+Unexpected end at T_CLOSE_TAG(?>), in %s.phpt on line 11, expected ')'.

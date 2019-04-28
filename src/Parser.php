@@ -79,7 +79,7 @@ abstract class Parser {
                 self::$tracer->trace($index, 'error');
             }
         }
-        catch(Halt $e) {
+        catch(YayParseError $e) {
             $ts->jump($index);
             self::$tracer->trace($index, 'error');
 

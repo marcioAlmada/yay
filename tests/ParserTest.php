@@ -18,7 +18,7 @@ class ParserTest extends \PHPUnit\Framework\TestCase {
     }
 
     protected function parseHalt(TokenStream $ts, Parser $parser, $msg) {
-        $this->expectException(Halt::class);
+        $this->expectException(YayParseError::class);
         $this->expectExceptionMessage(implode(PHP_EOL, (array) $msg));
 
         $current = $ts->current();
@@ -32,7 +32,7 @@ class ParserTest extends \PHPUnit\Framework\TestCase {
             ->withErrorLevel(Error::ENABLED)
             ->parse($ts);
         }
-        catch (Halt $e) {
+        catch (YayParseError $e) {
             $this->assertSame($current, $ts->current(), 'Failed to backtrack.');
 
             throw $e;

@@ -11,4 +11,4 @@ $(macro) {
 
 ?>
 --EXPECTF--
-Empty macro pattern on line 3.
+Empty macro pattern, in %s.phpt on line 3.

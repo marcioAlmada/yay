@@ -2,12 +2,6 @@
 
 namespace Yay;
 
-use
-    InvalidArgumentException,
-    ArrayIterator,
-    TypeError
-;
-
 class Ast implements Result {
 
     protected
@@ -21,7 +15,7 @@ class Ast implements Result {
 
     function __construct(string $label = '', $ast = []) {
         if ($ast instanceof self)
-            throw new InvalidArgumentException('Unmerged AST.');
+            throw new \InvalidArgumentException('Unmerged AST.');
 
         $this->ast = $ast;
         $this->label = $label;
@@ -130,8 +124,7 @@ class Ast implements Result {
     function append(self $ast) : self {
         if ('' !== $ast->label) {
             if (isset($this->ast[$ast->label]))
-                throw new InvalidArgumentException(
-                    "Duplicated AST label '{$ast->label}'.");
+                throw new \InvalidArgumentException("Duplicated AST label '{$ast->label}'.");
 
             $this->ast[$ast->label] = $ast->ast;
         }
@@ -206,6 +199,6 @@ class Ast implements Result {
     }
 
     private function failCasting(string $type) {
-        throw new YayException(sprintf("Ast cannot be casted to '%s'", $type));
+        throw new YayParseError(sprintf("Ast cannot be casted to '%s'", $type));
     }
 }
