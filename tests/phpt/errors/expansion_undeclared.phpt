@@ -16,7 +16,7 @@ $a >> $b;
 
 ?>
 --EXPECTF--
-Undefined macro expansion 'baz' on line 7 with context: [
+Undefined macro expansion 'baz', in %s.phpt on line 7 with context: [
     "foo",
     0,
     "bar"

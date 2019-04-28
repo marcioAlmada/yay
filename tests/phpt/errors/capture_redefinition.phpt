@@ -11,4 +11,4 @@ $(macro) {
 
 ?>
 --EXPECTF--
-Redefinition of macro capture identifier 'foo' on line 4.
+Redefinition of macro capture identifier 'foo', in %s.phpt on line 4.

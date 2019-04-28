@@ -2,7 +2,7 @@
 
 namespace Yay\DSL\Expanders;
 
-use Yay\{Engine, Token, TokenStream, Ast, YayException, Cycle, Parser, Context};
+use Yay\{Engine, Token, TokenStream, Ast, Cycle, Parser, Context};
 use function Yay\{
     token, rtoken, identifier, chain, either, any, parentheses, braces, traverse, midrule, buffer
 };
@@ -38,7 +38,7 @@ function concat(TokenStream $ts) : TokenStream {
     while($t = $ts->current()) {
         $str = (string) $t;
         if (! preg_match('/^\w+$/', $str))
-            throw new YayException(
+            throw new \InvalidArgumentException(
                 "Only valid identifiers are mergeable, '{$t->dump()}' given.");
 
         $buffer .= $str;

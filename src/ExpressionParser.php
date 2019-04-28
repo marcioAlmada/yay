@@ -406,7 +406,7 @@ class ExpressionParser extends Parser
     {
         foreach ([self::POS_PREFIX, self::POS_INFIX, self::POS_SUFFIX] as $p) if(($flags & $p) === $flags) return $p;
 
-        throw new \Exception('Could not infer operator positional behaviour.');
+        throw new YayPreprocessorError('Could not infer operator positional behaviour.');
     }
 
     /**
@@ -414,7 +414,7 @@ class ExpressionParser extends Parser
      */
     private function validateBitTable(int $flags, string $message)
     {
-        if (! ($flags && !($flags & ($flags-1)))) throw new \Exception($message);
+        if (! ($flags && !($flags & ($flags-1)))) throw new YayPreprocessorError($message);
     }
 
     private function inferPrecedence() : int

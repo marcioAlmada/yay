@@ -13,11 +13,7 @@ abstract class MacroMember {
     ;
 
     protected function fail(string $error, ...$args) {
-        throw new YayParseError(sprintf($error, ...$args));
-    }
-
-    protected function failRuntime(string $error, ...$args) {
-        throw new YayRuntimeException(sprintf($error, ...$args));
+        throw new YayPreprocessorError(sprintf($error, ...$args));
     }
 
     protected function compileCallable(string $namespace, Ast $type, string $error): callable {

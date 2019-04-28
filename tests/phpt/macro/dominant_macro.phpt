@@ -14,4 +14,4 @@ entry_point_b { X => Y -> Z } // fails at "->"
 ?>
 --EXPECTF--
 
-Unexpected T_OBJECT_OPERATOR(->) on line 9, expected '}'.
+Unexpected T_OBJECT_OPERATOR(->), in %s.phpt on line 9, expected '}'.

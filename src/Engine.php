@@ -175,28 +175,43 @@ final class Engine {
     }
 
     function expand(string $source, string $filename = '', int $gc = self::GC_ENGINE_ENABLED) : string {
-
         $this->filename = $filename;
 
         foreach ($this->globalDirectives as $d) $this->registerDirective($d);
 
         $ts = TokenStream::{$filename && self::GC_ENGINE_ENABLED === $gc ? 'fromSource' : 'FromSourceWithoutOpenTag'}($source);
 
-        ($this->expander)($ts);
-        $expansion = (string) $ts;
+        try {
+            ($this->expander)($ts);
 
-        if (self::GC_ENGINE_ENABLED === $gc) {
-            // almost everything is local per file so state must be destroyed after expansion
-            // unless the flag ::GC_ENGINE_ENABLED forces a recycle during nested expansions
-            // global directives are allocated again later to give impression of persistence
-            // ::GC_ENGINE_DISABLED indicates the current pass is an internal Engine recursion
-            $this->cycle = new Cycle;
-            $this->literalHitMap= $this->typeHitMap = [];
-            $this->blueContext = new BlueContext;
+            return (string) $ts;
         }
-
-        $this->filename = '';
-
-        return $expansion;
+        catch(YayPreprocessorError $error) {
+            throw new class(
+                str_replace(' on line', sprintf(', in %s on line', $this->filename), $error->getMessage()),
+                $error->getCode(),
+                $error,
+                $this->filename ?: '-',
+                1
+            ) extends YayPreprocessorError {
+                function __construct($message = '', $code = 0, \Throwable $error = null, $file = '', $line = 0) {
+                    parent::__construct($message, $code, $error);
+                    $this->file = $file;
+                    $this->line = $line;
+                }
+            };
+        }
+        finally {
+            if (self::GC_ENGINE_ENABLED === $gc) {
+                // almost everything is local per file so state must be destroyed after expansion
+                // unless the flag ::GC_ENGINE_ENABLED forces a recycle during nested expansions
+                // global directives are allocated again later to give impression of persistence
+                // ::GC_ENGINE_DISABLED indicates the current pass is an internal Engine recursion
+                $this->cycle = new Cycle;
+                $this->literalHitMap= $this->typeHitMap = [];
+                $this->blueContext = new BlueContext;
+            }
+            $this->filename = '';
+        }
     }
 }

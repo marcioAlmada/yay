@@ -13,4 +13,4 @@ yay\undefined(...);
 
 ?>
 --EXPECTF--
-Bad macro expander 'undefined' on line 6.
+Bad macro expander 'undefined', in %s.phpt on line 6.

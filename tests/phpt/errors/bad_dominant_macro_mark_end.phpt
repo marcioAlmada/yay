@@ -11,4 +11,4 @@ $(macro) {
 
 ?>
 --EXPECTF--
-Bad dominant macro marker '$!' offset 2 on line 4.
+Bad dominant macro marker '$!' offset 2, in %s.phpt on line 4.
