@@ -224,7 +224,7 @@ class Expansion extends MacroMember {
                     $context = $context->unwrap();
 
                     if (! is_array($context))
-                        $this->failRuntime(
+                        $this->fail(
                             "Error unpacking a non unpackable Ast node on `$(%s%s... {` at line %d with context: %s\n\n%s",
                             $result->{'* label _name'}->token(),
                             $result->optional,
@@ -302,7 +302,7 @@ class Expansion extends MacroMember {
     private function lookupAst(Ast $label, Ast $context, string $error) : Ast {
         $symbol = $label->{'* _name'}->token();
         if (null === ($result = $context->get('* ' . $symbol))->unwrap()) {
-            $this->failRuntime(
+            $this->fail(
                 $error,
                 $label->{'_complex'} ? $label->{'* _complex_name'}->implode() : $symbol,
                 $symbol->line(),
@@ -339,7 +339,7 @@ class Expansion extends MacroMember {
 
         $mutation = $delayed($expander, $ast, $cg);
 
-        if (! ($mutation instanceof TokenStream || $mutation instanceof Ast)) $this->failRuntime(
+        if (! ($mutation instanceof TokenStream || $mutation instanceof Ast)) $this->fail(
             'Expander call `%s(%s)` must return Ast or TokenStream, %s returned on line %d',
             $expander->getName(),
             implode(
@@ -359,8 +359,8 @@ class Expansion extends MacroMember {
     private function doTokenStreamExpanderCall(\ReflectionFunction $expander, Ast $expanderAst, $cg): TokenStream {
         $ts = TokenStream::fromSlice(array_slice($expanderAst->{'* args'}->tokens(), 1, -1));
 
-        if ($ts->isEmpty()) $this->failRuntime(
-            'TokenStream expander called without tokens `%s` as function %s(%s) on line %d',
+        if ($ts->isEmpty()) $this->fail(
+            'TokenStream expander call without tokens `%s` as function %s(%s) on line %d',
             $expanderAst->implode(),
             $expander->getName(),
             implode(

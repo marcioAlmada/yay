@@ -38,6 +38,6 @@ match {
 
 ?>
 --EXPECTF--
-Undefined macro expansion 'level_a[level_b][level_c][leaf_level_x]' on line 27 with context: [
+Undefined macro expansion 'level_a[level_b][level_c][leaf_level_x]', in %s.phpt on line 27 with context: [
     "level_a"
 ]

@@ -79,7 +79,7 @@ abstract class Parser {
                 self::$tracer->trace($index, 'error');
             }
         }
-        catch(Halt $e) {
+        catch(YayPreprocessorError $e) {
             $ts->jump($index);
             self::$tracer->trace($index, 'error');
 
@@ -109,7 +109,7 @@ abstract class Parser {
     {
         if ('' !== (string) $label) {
             if(false !== strpos($label, ' '))
-                throw new InvalidArgumentException(
+                throw new YayPreprocessorError(
                     "Parser label cannot contain spaces, '{$label}' given.");
 
             $this->label = $label;

@@ -14,4 +14,4 @@ match(foo);
 ?>
 --EXPECTF--
 
-TokenStream expander called without tokens `$$(stringify())` as function Yay\DSL\Expanders\stringify(Yay\TokenStream $ts) on line 6
+TokenStream expander call without tokens `$$(stringify())` as function Yay\DSL\Expanders\stringify(Yay\TokenStream $ts), in %s.phpt on line 6

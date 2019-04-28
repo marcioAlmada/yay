@@ -1,7 +1,7 @@
-#!/usr/bin/env php 
+#!/usr/bin/env php
 <?php declare(strict_types=1);
 
-use Yay\{Engine};
+use Yay\{Engine, YayPreprocessorError};
 
 set_error_handler(function($errno, $errstr) {
     throw new Exception($errstr, $errno);
@@ -22,7 +22,6 @@ set_error_handler(function($errno, $errstr) {
     throw new Exception('Could not find autoload file. Check your composer installation.');
 })();
 
-
 try {
     $file = $argv[1] ?? '';
 
@@ -36,6 +35,9 @@ try {
 
     file_put_contents('php://stdout', $expansion);
 }
+catch (YayPreprocessorError $e) {
+    file_put_contents('php://stderr', (getenv('YAY_STACK_TRACE') ? $e : sprintf("% % \n", get_class($e), $e->getMessage())));
+}
 catch (Exception $e) {
-    file_put_contents('php://stderr', $e . PHP_EOL);
+    file_put_contents('php://stderr', $e);
 }

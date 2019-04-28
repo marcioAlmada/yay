@@ -78,8 +78,4 @@ class Error implements Result {
 
         return implode(PHP_EOL, $messages);
     }
-
-    function halt() {
-        throw new Halt($this->message());
-    }
 }

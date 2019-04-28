@@ -45,7 +45,7 @@ class AstTest extends \PHPUnit\Framework\TestCase {
      * @dataProvider providerForTestMapAstCastOnFailure
      */
     function testMapAstCastOnFailure(string $path, string $castMethod, string $typeName) {
-        $this->expectException(YayException::class);
+        $this->expectException(YayPreprocessorError::class);
         $this->expectExceptionMessageRegExp("/^Ast cannot be casted to '{$typeName}'$/");
         $ast = new Ast('', ['defined' => true]);
         var_dump($ast->{$path}->$castMethod());

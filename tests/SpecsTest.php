@@ -112,7 +112,7 @@ class Test {
                     $stmts = $parser->parse($this->out);
                     $this->out = $prettyPrinter->prettyPrintFile($stmts) . PHP_EOL . PHP_EOL . '?>';
                 }
-            } catch(YayParseError $e) {
+            } catch(YayPreprocessorError $e) {
                 $this->out = $e->getMessage();
                 // $this->out = (string) $e;
             } catch(YayRuntimeException $e) {

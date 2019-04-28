@@ -13,4 +13,4 @@ $(macro) {
 
 ?>
 --EXPECTF--
-Unexpected '}' on line 9, expected ']'.
+Unexpected '}', in %s.phpt on line 9, expected ']'.

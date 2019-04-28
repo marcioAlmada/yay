@@ -68,7 +68,7 @@ function token($type, $value = null) : Parser
 function rtoken(string $regexp) : Parser
 {
     if (false === preg_match($regexp, ''))
-        throw new InvalidArgumentException('Invalid regexp at ' . __FUNCTION__);
+        throw new YayPreprocessorError('Invalid regexp at ' . __FUNCTION__);
 
     return new class(__FUNCTION__, $regexp) extends Parser
     {
@@ -267,7 +267,7 @@ function traverse(Parser ...$parsers) : Parser
 function repeat(Parser $parser) : Parser
 {
     if (! $parser->isFallible())
-        throw new InvalidArgumentException(
+        throw new YayPreprocessorError(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
     return new class(__FUNCTION__, $parser) extends Parser
@@ -534,7 +534,7 @@ function either(Parser ...$routes) : Parser
     foreach ($routes as $i => $route)
         if ($route !== $last && ! $route->isFallible()) {
             $parser = $routes[++$i];
-            throw new InvalidArgumentException(
+            throw new YayPreprocessorError(
                 "Dead {$parser}() parser at " . __FUNCTION__ . "(...[{$i}])");
         }
 
@@ -601,7 +601,7 @@ function either(Parser ...$routes) : Parser
                     foreach ($parser->expected()->all() as $prefixToken)
                         $jumptable[$prefixToken->type()][] = $parser->optimize();
                 else
-                    throw new \Exception("Cannot optimize {$this} parser stack at {$parser}");
+                    throw new YayPreprocessorError("Cannot optimize {$this} parser stack at {$parser}");
 
             foreach ($jumptable as $prefix => $possibleRoutes) {
                 if (count($possibleRoutes) > 1) $jumptable[$prefix] = either(...$possibleRoutes);
@@ -719,7 +719,7 @@ function lookahead(Parser $parser) : Parser
 function optional(Parser $parser, $default = []) : Parser
 {
     if ($default instanceof Parser)
-        throw new InvalidArgumentException("optional() default value must not be <Parser>");
+        throw new YayPreprocessorError("optional() default value must not be <Parser>");
 
     return new class(__FUNCTION__, $parser, $default) extends Parser
     {
@@ -751,7 +751,7 @@ function commit(Parser $parser) : Parser
         {
             $result = $parser->withErrorLevel(Error::ENABLED)->parse($ts);
 
-            if ($result instanceof Error) $result->halt();
+            if ($result instanceof Error) throw new YayPreprocessorError($result->message());
 
             return $result->as($this->label);
         }
@@ -815,7 +815,7 @@ const
 function ls(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
 {
     if (! $parser->isFallible())
-        throw new InvalidArgumentException(
+        throw new YayPreprocessorError(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
     return new class(__FUNCTION__, $parser, $delimiter, $flags) extends Parser
@@ -866,7 +866,7 @@ function ls(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER
 function lst(Parser $parser, Parser $delimiter, int $flags = LS_DISCARD_DELIMITER) : Parser
 {
     if (! $parser->isFallible())
-        throw new InvalidArgumentException(
+        throw new YayPreprocessorError(
             'Infinite loop at ' . __FUNCTION__ . '('. $parser . '(*))');
 
     return new class(__FUNCTION__, $parser, $delimiter, $flags) extends Parser
@@ -962,7 +962,7 @@ function pointer(&$parser) : Parser
         private function preventCircularPointerDereference()
         {
             if (pointer::class === $this->type && $this->stack[0] === $this->stack[0]()->stack[0])
-                throw new \Exception("Circular pointer dereference at {$this}.");
+                throw new YayPreprocessorError("Circular pointer dereference at {$this}.");
         }
     };
 }

@@ -13,7 +13,7 @@ test;
 
 ?>
 --EXPECTF--
-Undefined macro expansion 'undefined' on line 6 with context: [
+Undefined macro expansion 'undefined', in %s.phpt on line 6 with context: [
     "foo",
     0
 ]
