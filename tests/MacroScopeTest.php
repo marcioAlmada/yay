@@ -8,25 +8,16 @@ namespace Yay;
 class MacroScopeTest extends \PHPUnit\Framework\TestCase {
 
     const
-        FIXTURES_DIR = 'fixtures/scope',
-        ABSOLUTE_FIXTURES_DIR = __DIR__ . '/' . self::FIXTURES_DIR
+        ABSOLUTE_FIXTURES_DIR = __DIR__ . '/fixtures/scope'
     ;
 
-    function setUp() {
-        StreamWrapper::register(new Engine);
-    }
-
     function testGlobalMacro() {
-        include 'yay://' . self::ABSOLUTE_FIXTURES_DIR . '/macros.php';
-        $result = include 'yay://' . self::ABSOLUTE_FIXTURES_DIR . '/test_global.php';
-        $this->assertTrue($result);
-    }
+        $engine = new Engine;
 
-    function testLocalMacro() {
-        include 'yay://' . self::ABSOLUTE_FIXTURES_DIR . '/macros.php';
-        $result = include 'yay://' . self::ABSOLUTE_FIXTURES_DIR . '/test_local.php';
-        $this->assertEquals('LOCAL_MACRO', $result);
-    }
+        $source = str_replace('<?php', '', $engine->expand(file_get_contents(self::ABSOLUTE_FIXTURES_DIR . '/macros.php')));
+        $this->assertSame([true, true], eval($source));
 
-    function tearDown() { StreamWrapper::unregister(); }
+        $source = str_replace('<?php', '', $engine->expand(file_get_contents(self::ABSOLUTE_FIXTURES_DIR . '/run.php')));
+        $this->assertSame([true, 'LOCAL_MACRO'], eval($source));
+    }
 }
