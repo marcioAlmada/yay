@@ -2,10 +2,6 @@
 
 namespace Yay;
 
-use
-    InvalidArgumentException
-;
-
 function token($type, $value = null) : Parser
 {
     $token = $type instanceof Token ? $type : new Token($type, $value);

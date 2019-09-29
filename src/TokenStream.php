@@ -2,10 +2,6 @@
 
 namespace Yay;
 
-use
-    InvalidArgumentException
-;
-
 class TokenStream {
 
     protected

@@ -2,10 +2,6 @@
 
 namespace Yay;
 
-use
-    InvalidArgumentException
-;
-
 use Yay\ParserTracer\{ParserTracer, NullParserTracer};
 
 /**
