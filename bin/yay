@@ -23,21 +23,61 @@ set_error_handler(function($errno, $errstr) {
 })();
 
 try {
-    $file = $argv[1] ?? '';
 
-    $source = file_get_contents($file) ?: file_get_contents('php://stdin');
+$doc = <<<DOC
+YAY!
+
+Usage:
+  yay
+  yay <file>
+  yay --macros=<macros>
+  yay --macros=<macros> <file>
+  yay -h | --help
+  yay --version
+
+Options:
+  -h --help         Show this screen.
+  --version         Show version.
+  --macros=<macros> PHP glob pattern for macros to be loaded. Ex: my/macros/*.yay [default: '']
+
+Examples:
+
+``` 
+# Process file:
+yay input.php > output.php
+
+# Process file, preload project macros:
+> yay --macros="./project-macros/*.yay" input.php > output.php
+
+# Process stdin:
+> cat input.php | yay > output.php
+
+# Process stdin, preload project macros:
+> cat input.php | yay --macros="./project-macros/*.yay" > output.php
+```
+DOC;
+
+    $argv = Docopt::handle($doc, include __DIR__ . '/../meta.php');
+
+    $file = $argv['<file>'] ?? 'php://stdin';
+
+    $source = file_get_contents($file);
+
+    $engine = new Engine;
 
     gc_disable();
 
-    $expansion = (new Engine)->expand($source, $file);
+    foreach(glob((string) $argv['--macros']) as $f) $engine->expand(file_get_contents($f), $f);
+
+    $expansion = $engine->expand($source, $file);
 
     gc_enable();
 
     file_put_contents('php://stdout', $expansion);
 }
 catch (YayPreprocessorError $e) {
-    file_put_contents('php://stderr', (getenv('YAY_STACK_TRACE') ? $e : sprintf("% % \n", get_class($e), $e->getMessage())));
+    file_put_contents('php://stderr', $e . PHP_EOL);
 }
 catch (Exception $e) {
-    file_put_contents('php://stderr', $e);
+    file_put_contents('php://stderr', $e . PHP_EOL);
 }
