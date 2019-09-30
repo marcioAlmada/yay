@@ -45,7 +45,7 @@
         "bin/yay-pretty"
     ],
     "require-dev": {
-        "phpunit/phpunit": "^8.3",
+        "phpunit/phpunit": "^7.5|^8.3",
         "phpbench/phpbench": "@dev"
     },
     "scripts": {
