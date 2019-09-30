@@ -18,8 +18,10 @@
         "php": "7.*",
         "ext-mbstring": "*",
         "ext-tokenizer": "*",
-        "nikic/php-parser": "^2.1|^3.0|^4.0",
-        "docopt/docopt": "^1.0"
+        "nikic/php-parser": "^2.1|^3.0|^4.0"
+    },
+    "suggest": {
+        "docopt/docopt": "Allows the usage of the command line tool `bin/yay`"
     },
     "autoload": {
         "files": [
