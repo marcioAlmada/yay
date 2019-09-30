@@ -16,7 +16,7 @@ use PhpParser\{ ParserFactory, PrettyPrinter };
  */
 class SpecsTest extends \PHPUnit\Framework\TestCase
 {
-    public static function setupBeforeClass() {
+    public static function setupBeforeClass(): void {
         /**
          * Abusing namespaces to make Cycle->id() predictable during tests only!
          */

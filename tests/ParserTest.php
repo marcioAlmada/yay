@@ -7,12 +7,12 @@ namespace Yay;
  */
 class ParserTest extends \PHPUnit\Framework\TestCase {
 
-    function setUp()
+    function setUp(): void
     {
         if ((bool) getenv('YAY_CLI_PARSER_TRACER')) Parser::setTracer(new \Yay\ParserTracer\CliParserTracer);
     }
 
-    function tearDown()
+    function tearDown(): void
     {
         Parser::setTracer(new \Yay\ParserTracer\NullParserTracer);
     }

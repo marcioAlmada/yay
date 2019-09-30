@@ -14,3 +14,4 @@ tests/phpt/*/*.php
 tests/phpt/*/*.exp
 tests/phpt/*/*.log
 tests/phpt/*/*.sh
+.phpunit.result.cache
