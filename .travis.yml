@@ -17,7 +17,6 @@ sudo: false
 
 before_script:
   - phpenv config-rm xdebug.ini || true
-  - composer self-update
   - composer require satooshi/php-coveralls:~2.0.0 --no-update --dev
   - composer install --prefer-source
 
