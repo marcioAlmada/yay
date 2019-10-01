@@ -17,7 +17,6 @@ sudo: false
 
 before_script:
   - phpenv config-rm xdebug.ini || true
-  - composer self-update
   - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then export COMPOSER_FLAGS=" --ignore-platform-reqs"; fi
   - composer update $COMPOSER_FLAGS
   - composer require satooshi/php-coveralls:~2.0.0 --no-update --dev $COMPOSER_FLAGS
