@@ -75,7 +75,7 @@ class ExpressionParser extends Parser
         $arguments = pointer($arguments)->as('arguments_pointer');
         // }
 
-        if (null === $this->stack[0]) {
+        if (null === $this->stack) {
             $this->addOperator(self::ARITY_UNARY|self::ASSOC_RIGHT, token(T_INCLUDE), token(T_INCLUDE_ONCE), token(T_REQUIRE), token(T_REQUIRE_ONCE));
             $this->addOperator(self::ARITY_BINARY|self::ASSOC_LEFT, chain(token(T_LOGICAL_OR), optional(indentation())));
             $this->addOperator(self::ARITY_BINARY|self::ASSOC_LEFT, chain(token(T_LOGICAL_XOR), optional(indentation())));
