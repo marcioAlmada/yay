@@ -17,8 +17,9 @@ sudo: false
 
 before_script:
   - phpenv config-rm xdebug.ini || true
-  - composer require satooshi/php-coveralls:~2.0.0 --no-update --dev
-  - composer install --prefer-source
+  - if [[ $TRAVIS_PHP_VERSION = nightly ]]; then export COMPOSER_FLAGS=" --ignore-platform-reqs"; fi
+  - composer require satooshi/php-coveralls:~2.0.0 --no-update --dev $COMPOSER_FLAGS
+  - composer install --prefer-source $COMPOSER_FLAGS
 
 script:
   - php vendor/bin/phpunit
