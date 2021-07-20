@@ -1,0 +1,29 @@
+on: push
+name: Test
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ '7.0', '7.1', '7.2', '7.3', '7.4' ]
+
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install Dependencies
+        run: |
+          composer require satooshi/php-coveralls:~2.0.0 --no-update --dev
+          composer install --prefer-source
+
+      - name: Test
+        run: php vendor/bin/phpunit
+
+      - name: Coverage
+        run: php vendor/bin/coveralls
