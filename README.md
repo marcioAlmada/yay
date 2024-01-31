@@ -65,7 +65,7 @@ This macro is actually very naive, a more producion ready version would be:
 
 
 ```php
-$(macro :unsafe){
+$(macro :unsafe) {
     $ // litterally matches '$'
     // but not followed by:
     $(not(token(T_VARIABLE))) // avoids var var false positives such as '$$foo'
